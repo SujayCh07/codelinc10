@@ -793,7 +793,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
     }
 
     setError(null)
-    setSuccessMessage("✅ Answers saved")
+    setSuccessMessage("Answers saved")
     setTimeout(() => setSuccessMessage(null), 2200)
 
     if (currentStep === totalSteps - 1) {

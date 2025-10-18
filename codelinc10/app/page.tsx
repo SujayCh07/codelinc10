@@ -16,18 +16,15 @@ const INSIGHTS_STORAGE_KEY = "lifelens-insights-cache"
 
 type Screen = "landing" | "quiz" | "insights"
 
-const PROFILE_STORAGE_KEY = "lifelens-profile-v2"
-const INSIGHTS_STORAGE_KEY = "lifelens-insights-v2"
-
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("landing")
   const [formData, setFormData] = useState<EnrollmentFormData | null>(null)
   const [insights, setInsights] = useState<LifeLensInsights | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
 
+  // ✅ Load cache safely
   useEffect(() => {
     if (typeof window === "undefined") return
-
     try {
       const storedForm = window.localStorage.getItem(FORM_STORAGE_KEY)
       const storedInsights = window.localStorage.getItem(INSIGHTS_STORAGE_KEY)
@@ -47,26 +44,17 @@ export default function Home() {
     }
   }, [])
 
-  const initialEnrollmentData = useMemo(() => {
-    if (profile) {
-      return profile
-    }
-
-    return {
-      isGuest: startMode === "guest",
-    } satisfies Partial<EnrollmentFormData>
-  }, [profile, startMode])
-
+  // ✅ Start flow
   const handleStart = (asGuest: boolean) => {
     const nextForm = {
       ...(formData ?? DEFAULT_ENROLLMENT_FORM),
       isGuest: asGuest,
     }
-
     setFormData(nextForm)
     setScreen("quiz")
   }
 
+  // ✅ Update local form progress
   const handleEnrollmentUpdate = (data: EnrollmentFormData) => {
     setFormData(data)
     if (typeof window !== "undefined") {
@@ -74,13 +62,13 @@ export default function Home() {
     }
   }
 
+  // ✅ Navigation handlers
   const handleBackToLanding = () => {
     setScreen("landing")
   }
 
   const handleRestartQuiz = () => {
-    const base = formData ?? DEFAULT_ENROLLMENT_FORM
-    const reset = { ...DEFAULT_ENROLLMENT_FORM, isGuest: base.isGuest }
+    const reset = { ...DEFAULT_ENROLLMENT_FORM, isGuest: formData?.isGuest ?? true }
     setFormData(reset)
     setScreen("quiz")
   }
@@ -105,11 +93,6 @@ export default function Home() {
       window.localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(regenerated))
     }
   }
-
-  const initialFormData = useMemo(() => {
-    if (!formData) return undefined
-    return formData
-  }, [formData])
 
   if (!isHydrated) {
     return (
@@ -145,7 +128,7 @@ export default function Home() {
             onComplete={handleEnrollmentComplete}
             onBackToLanding={handleBackToLanding}
             onUpdate={handleEnrollmentUpdate}
-            initialData={initialFormData}
+            initialData={formData ?? DEFAULT_ENROLLMENT_FORM}
           />
         </motion.div>
       )}
@@ -170,87 +153,85 @@ export default function Home() {
   )
 }
 
+// ✅ Basic insight generator (replace with Bedrock later)
 function buildInsights(data: EnrollmentFormData): LifeLensInsights {
   const persona = data.hasDependents
     ? "Family Guardian"
     : data.riskTolerance === "Growth-focused"
-      ? "Momentum Builder"
-      : "Balanced Navigator"
+    ? "Momentum Builder"
+    : "Balanced Navigator"
 
-  const focusGoal = data.financialGoals[0] ?? "strengthen your financial foundation"
-  const summaryPieces = [
-    `${data.preferredName || data.fullName}, you're building a ${data.householdStructure.toLowerCase() || "resilient"} home base`,
-    `with ${data.employmentType || "your role"} work and ${data.hasDependents ? `${data.dependentCount} dependents` : "personal goals"}.`,
-  ]
+  const focusGoal = data.financialGoals?.[0] ?? "strengthen your financial foundation"
+
+  const summary = `${data.preferredName || data.fullName}, you're building a ${
+    data.householdStructure?.toLowerCase() || "resilient"
+  } home base with ${data.employmentType || "your current role"} work and ${
+    data.hasDependents ? `${data.dependentCount} dependents` : "personal goals"
+  }. Your next focus: ${focusGoal.toLowerCase()}.`
 
   const priorities = [
     {
       title: "Elevate your safety net",
-      description: data.emergencySavingsMonths < 3
-        ? "Grow your emergency savings toward 3-6 months using automatic transfers into a high-yield account."
-        : "You’re on track with savings—consider directing extra dollars toward targeted goals and protection.",
+      description:
+        data.emergencySavingsMonths && data.emergencySavingsMonths < 3
+          ? "Grow your emergency savings toward 3–6 months using automatic transfers into a high-yield account."
+          : "You’re on track—consider directing extra funds toward long-term goals and protection.",
     },
     {
-      title: data.hasDependents ? "Protect your household income" : "Optimize core coverage",
+      title: data.hasDependents ? "Protect your household income" : "Optimize your core coverage",
       description: data.hasDependents
-        ? "Review life and disability options to shield your family’s lifestyle and future milestones."
-        : "Fine-tune health, disability, and supplemental coverage so your benefits work as hard as you do.",
+        ? "Review life and disability options to shield your family’s future."
+        : "Refine your health, disability, and supplemental plans to fit your goals.",
     },
     {
-      title: data.riskTolerance === "Growth-focused" ? "Accelerate long-term growth" : "Build confident retirement habits",
+      title:
+        data.riskTolerance === "Growth-focused"
+          ? "Accelerate long-term growth"
+          : "Build confident retirement habits",
       description:
         data.riskTolerance === "Growth-focused"
-          ? "Increase contributions toward retirement accounts and align investments with your ambitious growth focus."
-          : "Confirm your retirement contributions, explore employer match opportunities, and set annual check-ins.",
+          ? "Boost retirement contributions and align investments with your growth strategy."
+          : "Review employer match and set recurring check-ins.",
     },
   ]
 
   const tips = [
     {
       title: "Automate your momentum",
-      description: "Schedule calendar nudges for contributions, debt payments, and wellness appointments to stay consistent.",
+      description: "Set reminders for savings, payments, and checkups to stay consistent.",
       icon: "⏱️",
     },
     {
       title: "Leverage Lincoln guidance",
-      description: "Tap into coaching sessions and on-demand learning tailored to your preferred " + (data.preferredLearningStyle || "style"),
+      description: "Access tailored learning based on your preferred style.",
       icon: "🎓",
     },
     {
       title: "Celebrate micro wins",
-      description: "Highlight each milestone—from budgeting check-ins to debt payoff—to keep energy high across the year.",
+      description: "Recognize small financial victories to sustain motivation.",
       icon: "🎉",
     },
   ]
 
   const timeline = [
     {
-      period: "This week",
-      title: "Confirm your benefits snapshot",
-      description: "Review medical, life, and supplemental coverage to make sure every household need is addressed.",
+      period: "This Week",
+      title: "Review your benefits snapshot",
+      description: "Ensure your coverage reflects your current household and needs.",
     },
     {
-      period: "Next 30 days",
+      period: "Next 30 Days",
       title: "Dial in spending and savings",
       description: data.hasBudget
-        ? "Refine your spending plan to route extra dollars toward " + focusGoal.toLowerCase() + "."
-        : "Sketch a light-touch budget with 50/30/20 guardrails so you can fund " + focusGoal.toLowerCase() + ".",
+        ? `Refine your budget to fund ${focusGoal.toLowerCase()}.`
+        : `Create a simple 50/30/20 budget to support ${focusGoal.toLowerCase()}.`,
     },
     {
-      period: "90 days",
-      title: "Plan your next milestone review",
-      description: "Meet with a LifeLens coach to refresh coverage, investments, and wellness goals as life evolves.",
+      period: "90 Days",
+      title: "Revisit your milestones",
+      description: "Meet with a LifeLens coach to adjust plans as life evolves.",
     },
   ]
 
-  const aiPrompt = `${data.aiPrompt || "I want support"} | Goals: ${data.financialGoals.join(", ")} | Household: ${data.householdStructure || "n/a"}`
-
-  return {
-    persona,
-    statement: `${summaryPieces.join(" ")} Your next focus: ${focusGoal.toLowerCase()}.`,
-    priorities,
-    tips,
-    timeline,
-    aiPrompt,
-  }
+  return { persona, statement: summary, priorities, tips, timeline, aiPrompt: focusGoal }
 }
