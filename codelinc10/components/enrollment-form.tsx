@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ChevronLeft, ChevronRight, Loader2, Sparkles } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -45,7 +46,8 @@ export interface EnrollmentFormData {
   financialGoals: string[]
   preferredLearningStyle: string
   wantsCoaching: boolean | null
-  aiPrompt: string
+  milestoneFocus: string
+  consentToFollowUp: boolean
   additionalNotes: string
   isGuest: boolean
 }
@@ -84,7 +86,8 @@ export const DEFAULT_ENROLLMENT_FORM: EnrollmentFormData = {
   financialGoals: [],
   preferredLearningStyle: "",
   wantsCoaching: null,
-  aiPrompt: "",
+  milestoneFocus: "",
+  consentToFollowUp: false,
   additionalNotes: "",
   isGuest: false,
 }
@@ -744,12 +747,12 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="aiPrompt">Describe your life in one sentence</Label>
+              <Label htmlFor="milestoneFocus">Upcoming milestone in the next 12 months</Label>
               <Textarea
-                id="aiPrompt"
-                value={data.aiPrompt}
-                onChange={(event) => update({ aiPrompt: event.target.value })}
-                placeholder="LifeLens will use this to craft your AI guidance."
+                id="milestoneFocus"
+                value={data.milestoneFocus}
+                onChange={(event) => update({ milestoneFocus: event.target.value })}
+                placeholder="Share the next big financial moment you're planning for—wedding, college savings, new home, or something else."
               />
             </div>
             <div className="space-y-2">
@@ -761,11 +764,27 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
                 placeholder="Share wins, worries, or goals we didn’t cover."
               />
             </div>
+            <div className="flex items-start gap-3 rounded-2xl border border-[#A41E34]/20 bg-white/80 p-4">
+              <Checkbox
+                id="consent"
+                checked={data.consentToFollowUp}
+                onCheckedChange={(value) => update({ consentToFollowUp: value === true })}
+              />
+              <div className="space-y-1 text-sm text-[#3F2A2C]">
+                <Label htmlFor="consent" className="text-base font-semibold text-[#2A1A1A]">
+                  I consent to LifeLens guiding me with Lincoln Financial resources
+                </Label>
+                <p>
+                  We'll save your responses to tailor recommendations, follow up on benefits enrollment, and link you with a coach when you ask.
+                </p>
+              </div>
+            </div>
           </div>
         ),
         validate: (data) => {
           if (data.financialGoals.length === 0) return "Pick at least one focus so we can prioritize recommendations."
-          if (!data.aiPrompt.trim()) return "Tell LifeLens about your current life in a sentence."
+          if (!data.milestoneFocus.trim()) return "Share the milestone you're planning for so we can personalize the plan."
+          if (!data.consentToFollowUp) return "Please confirm consent so we can deliver Lincoln guidance tailored to you."
           return null
         },
       },
@@ -808,20 +827,23 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
 
   if (mode === "analyzing") {
     return (
-      <div className="relative min-h-screen bg-white px-6 py-16">
+      <div className="relative min-h-screen bg-[#F7F4F2] px-6 py-16">
         <button
           type="button"
           onClick={onBackToLanding}
-          className="absolute left-6 top-8 text-sm font-semibold text-[#A41E34] hover:text-[#FF4F00]"
+          className="absolute left-6 top-8 text-sm font-semibold text-[#A41E34] hover:text-[#7F1527]"
         >
           ← Back to landing
         </button>
-        <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#A41E34]/10 to-[#FF4F00]/20">
+        <div className="mx-auto flex max-w-sm flex-col items-center gap-5 text-center">
+          <img src="/lifelens-logo.svg" alt="LifeLens" className="h-12 w-auto" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#A41E34]/20 bg-white shadow-md">
             <Loader2 className="h-8 w-8 animate-spin text-[#A41E34]" />
           </div>
-          <h2 className="text-2xl font-semibold text-[#2A1A1A]">Analyzing your profile with LifeLens AI…</h2>
-          <p className="text-sm text-[#5B4444]">Generating personalized benefit insights and a guided timeline.</p>
+          <h2 className="text-2xl font-semibold text-[#2A1A1A]">Crafting your Lincoln Financial playbook…</h2>
+          <p className="text-sm text-[#5B4444]">
+            We’re matching your milestones with benefits, protection, and savings guidance tailored to you.
+          </p>
         </div>
       </div>
     )
@@ -830,32 +852,32 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
   const activeStep = steps[currentStep]
 
   return (
-    <div className="relative min-h-screen bg-white pb-16">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 pt-10">
+    <div className="relative min-h-screen bg-[#F7F4F2] pb-24">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-5 pt-8">
         <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={onBackToLanding}
-            className="text-sm font-semibold text-[#A41E34] transition hover:text-[#FF4F00]"
+            className="text-sm font-semibold text-[#A41E34] transition hover:text-[#7F1527]"
           >
             ← Back to landing
           </button>
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#A41E34]/20 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[#A41E34]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#A41E34]/15 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A41E34] shadow-sm">
             <Sparkles className="h-4 w-4" />
             Lifesync questionnaire
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-sm font-semibold text-[#A41E34]">
+          <div className="flex items-center justify-between text-[13px] font-semibold text-[#7F1527]">
             <span>
               Step {currentStep + 1} of {totalSteps}
             </span>
             <span>{progress}% complete</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-[#F5E9EA]">
+          <div className="h-2 w-full rounded-full bg-[#E6D7D9]">
             <motion.div
-              className="h-2 rounded-full bg-gradient-to-r from-[#A41E34] to-[#FF4F00]"
+              className="h-2 rounded-full bg-[#A41E34]"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.4 }}
@@ -888,7 +910,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
           )}
         </div>
 
-        <div className="rounded-3xl border border-[#A41E34]/10 bg-white/80 p-6 shadow-xl shadow-[#A41E34]/5 backdrop-blur">
+        <div className="rounded-3xl border border-[#A41E34]/15 bg-white p-5 shadow-lg">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeStep.id}
@@ -908,7 +930,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
             {currentStep > 0 ? (
               <Button
                 variant="ghost"
-                className="text-[#A41E34] hover:text-[#FF4F00]"
+                className="text-[#A41E34] hover:text-[#7F1527]"
                 onClick={goToPrevious}
               >
                 <ChevronLeft className="mr-2 h-4 w-4" /> Back
@@ -919,7 +941,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
           </div>
           <Button
             onClick={handleNext}
-            className="group rounded-2xl bg-gradient-to-r from-[#A41E34] to-[#FF4F00] px-6 py-6 text-base font-semibold text-white shadow-lg"
+            className="group rounded-2xl bg-[#A41E34] px-6 py-5 text-base font-semibold text-white shadow-lg shadow-[#A41E34]/20 hover:bg-[#7F1527]"
           >
             {currentStep === totalSteps - 1 ? (
               <span className="flex items-center">

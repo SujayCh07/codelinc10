@@ -10,6 +10,7 @@ import {
   type EnrollmentFormData,
 } from "@/components/enrollment-form"
 import { InsightsDashboard, type LifeLensInsights } from "@/components/insights-dashboard"
+import { SupportDock } from "@/components/support-dock"
 
 const FORM_STORAGE_KEY = "lifelens-form-cache"
 const INSIGHTS_STORAGE_KEY = "lifelens-insights-cache"
@@ -26,16 +27,22 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return
     try {
-      const storedForm = window.localStorage.getItem(FORM_STORAGE_KEY)
-      const storedInsights = window.localStorage.getItem(INSIGHTS_STORAGE_KEY)
+      const storedFormRaw = window.localStorage.getItem(FORM_STORAGE_KEY)
+      const storedInsightsRaw = window.localStorage.getItem(INSIGHTS_STORAGE_KEY)
 
-      if (storedForm) {
-        setFormData(JSON.parse(storedForm) as EnrollmentFormData)
+      const parsedForm = storedFormRaw ? (JSON.parse(storedFormRaw) as EnrollmentFormData) : null
+      const parsedInsights = storedInsightsRaw ? (JSON.parse(storedInsightsRaw) as Partial<LifeLensInsights>) : null
+
+      if (parsedForm) {
+        setFormData(parsedForm)
       }
 
-      if (storedInsights) {
-        setInsights(JSON.parse(storedInsights) as LifeLensInsights)
-        setScreen("insights")
+      if (parsedInsights) {
+        const hydratedInsights = parsedInsights.focusGoal ? parsedInsights : parsedForm ? buildInsights(parsedForm) : null
+        if (hydratedInsights) {
+          setInsights(hydratedInsights as LifeLensInsights)
+          setScreen("insights")
+        }
       }
     } catch (error) {
       console.error("LifeLens cache could not be restored", error)
@@ -103,53 +110,62 @@ export default function Home() {
   }
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      {screen === "landing" && (
-        <motion.div
-          key="landing"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
-        >
-          <LandingScreen onStart={handleStart} />
-        </motion.div>
-      )}
+    <>
+      <AnimatePresence mode="wait" initial={false}>
+        {screen === "landing" && (
+          <motion.div
+            key="landing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+          >
+            <LandingScreen onStart={handleStart} />
+          </motion.div>
+        )}
 
-      {screen === "quiz" && (
-        <motion.div
-          key="quiz"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.3 }}
-        >
-          <EnrollmentForm
-            onComplete={handleEnrollmentComplete}
-            onBackToLanding={handleBackToLanding}
-            onUpdate={handleEnrollmentUpdate}
-            initialData={formData ?? DEFAULT_ENROLLMENT_FORM}
-          />
-        </motion.div>
-      )}
+        {screen === "quiz" && (
+          <motion.div
+            key="quiz"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <EnrollmentForm
+              onComplete={handleEnrollmentComplete}
+              onBackToLanding={handleBackToLanding}
+              onUpdate={handleEnrollmentUpdate}
+              initialData={formData ?? DEFAULT_ENROLLMENT_FORM}
+            />
+          </motion.div>
+        )}
 
-      {screen === "insights" && insights && (
-        <motion.div
-          key="insights"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.3 }}
-        >
-          <InsightsDashboard
-            insights={insights}
-            onBackToLanding={handleBackToLanding}
-            onRegenerate={handleRegenerate}
-            onRestartQuiz={handleRestartQuiz}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {screen === "insights" && insights && (
+          <motion.div
+            key="insights"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <InsightsDashboard
+              insights={insights}
+              onBackToLanding={handleBackToLanding}
+              onRegenerate={handleRegenerate}
+              onRestartQuiz={handleRestartQuiz}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <SupportDock
+        persona={insights?.persona}
+        focusGoal={insights?.focusGoal}
+        screen={screen}
+        onBackToLanding={screen === "insights" ? handleBackToLanding : undefined}
+      />
+    </>
   )
 }
 
@@ -162,12 +178,13 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
     : "Balanced Navigator"
 
   const focusGoal = data.financialGoals?.[0] ?? "strengthen your financial foundation"
+  const milestone = data.milestoneFocus?.trim() || focusGoal
 
   const summary = `${data.preferredName || data.fullName}, you're building a ${
     data.householdStructure?.toLowerCase() || "resilient"
   } home base with ${data.employmentType || "your current role"} work and ${
     data.hasDependents ? `${data.dependentCount} dependents` : "personal goals"
-  }. Your next focus: ${focusGoal.toLowerCase()}.`
+  }. Your next focus: ${milestone.toLowerCase()}.`
 
   const priorities = [
     {
@@ -233,5 +250,94 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
     },
   ]
 
-  return { persona, statement: summary, priorities, tips, timeline, aiPrompt: focusGoal }
+  const goalTheme = data.financialGoals.includes("Plan for retirement")
+    ? "retirement"
+    : data.financialGoals.includes("Protect my family")
+      ? "protection"
+      : data.financialGoals.includes("Increase savings")
+        ? "savings"
+        : "foundation"
+
+  const resourceLibrary: Record<
+    string,
+    { title: string; description: string; url: string }[]
+  > = {
+    retirement: [
+      {
+        title: "Retirement income estimator",
+        description: "Model how increasing your 401(k) contribution changes future income.",
+        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/retirement-plans",
+      },
+      {
+        title: "Quarterly market outlook",
+        description: "Stay current on guidance from Lincoln’s retirement strategists.",
+        url: "https://newsroom.lfg.com/",
+      },
+    ],
+    protection: [
+      {
+        title: "Benefits protection checklist",
+        description: "Review life, disability, and supplemental coverage options available through work.",
+        url: "https://www.lincolnfinancial.com/public/individuals/protect-my-income",
+      },
+      {
+        title: "Family security playbook",
+        description: "Understand how to align dependents, beneficiaries, and emergency contacts.",
+        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
+      },
+    ],
+    savings: [
+      {
+        title: "Budget & savings hub",
+        description: "Use calculators and articles to balance debt payoff with savings goals.",
+        url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+      },
+      {
+        title: "Emergency savings toolkit",
+        description: "Step-by-step guidance to automate 3–6 months of essential expenses.",
+        url: "https://www.lincolnfinancial.com/public/individuals/financial-wellness",
+      },
+    ],
+    foundation: [
+      {
+        title: "LifeLens learning studio",
+        description: "Short lessons on budgeting, benefits enrollment, and debt confidence.",
+        url: "https://www.lincolnfinancial.com/public/individuals/financial-wellness",
+      },
+      {
+        title: "Lincoln Financial resource center",
+        description: "Find HR contacts, FAQs, and on-demand webinars tailored to your workplace.",
+        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits",
+      },
+    ],
+  }
+
+  const resources = resourceLibrary[goalTheme]
+
+  const conversation = [
+    data.milestoneFocus
+      ? {
+          speaker: "You" as const,
+          message: `I'm gearing up for ${data.milestoneFocus.toLowerCase()}.`,
+        }
+      : null,
+    {
+      speaker: "LifeLens" as const,
+      message: `Great—we'll align your benefits and savings moves so ${milestone.toLowerCase()} feels achievable without losing protection.`,
+    },
+    data.preferredLearningStyle
+      ? {
+          speaker: "You" as const,
+          message: `I absorb guidance best through ${data.preferredLearningStyle.toLowerCase()}.`,
+        }
+      : null,
+    {
+      speaker: "LifeLens" as const,
+      message: `We'll send resources in that format and highlight when to check in with a coach${
+        data.wantsCoaching ? " so a person is ready when you are." : "."
+      }`,
+    },
+  ].filter(Boolean) as { speaker: "LifeLens" | "You"; message: string }[]
+
+  return { persona, statement: summary, priorities, tips, timeline, focusGoal: milestone, resources, conversation }
 }
