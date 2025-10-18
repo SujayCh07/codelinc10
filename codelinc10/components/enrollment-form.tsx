@@ -1,330 +1,722 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { CheckCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Slider } from "@/components/ui/slider"
-import { ChevronRight, ChevronLeft, Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import {
+  DEFAULT_FORM_DATA,
+  type LifeLensFormData,
+  type BinaryChoice,
+  type CoveragePreference,
+  type EducationLevel,
+  type EmploymentType,
+  type HouseholdStructure,
+  type IncomeRange,
+  type MaritalStatus,
+  type PlanType,
+  type RiskAversion,
+  type SavingsRate,
+} from "@/types/form"
+import { TopNav } from "@/components/top-nav"
 
 interface EnrollmentFormProps {
-  onComplete: (profile: any) => void
-  existingProfile: any
+  onComplete: (data: LifeLensFormData) => void
+  onBackToHome: () => void
+  initialData?: Partial<LifeLensFormData>
+  onUpdate?: (data: LifeLensFormData) => void
 }
 
-export function EnrollmentForm({ onComplete, existingProfile }: EnrollmentFormProps) {
-  const [step, setStep] = useState(1)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
+interface StepDefinition {
+  id:
+    | "verification"
+    | "personal"
+    | "household"
+    | "employment"
+    | "financial"
+    | "health"
+    | "retirement"
+    | "additional"
+  title: string
+  description: string
+  validate: (data: LifeLensFormData) => string | null
+  render: (args: { data: LifeLensFormData; update: (values: Partial<LifeLensFormData>) => void }) => ReactNode
+}
 
-  const [formData, setFormData] = useState({
-    name: existingProfile?.name || "",
-    ageRange: existingProfile?.ageRange || "25-34",
-    employmentType: existingProfile?.employmentType || "Employee",
-    householdSize: existingProfile?.householdSize || 1,
-    dependents: existingProfile?.dependents || 0,
-    financialConfidence: existingProfile?.financialConfidence || 50,
-    stressLevel: existingProfile?.stressLevel || 50,
-    lifeEvents: existingProfile?.lifeEvents || [],
-    lifeDescription: existingProfile?.lifeDescription || "",
-    goals: existingProfile?.goals || [],
-  })
+const MARITAL_OPTIONS: MaritalStatus[] = ["Single", "Married", "Partnered", "Other"]
+const CITIZENSHIP_OPTIONS = ["US Citizen", "Permanent Resident", "Other"]
+const VETERAN_OPTIONS = ["None", "Active", "Veteran"]
+const EDUCATION_OPTIONS: EducationLevel[] = ["HS Diploma", "Bachelor's", "Master's", "Doctorate", "Other"]
+const HOUSEHOLD_OPTIONS: HouseholdStructure[] = ["Alone", "With Partner", "With Dependents"]
+const COVERAGE_OPTIONS: CoveragePreference[] = ["Yes", "No", "Not Applicable"]
+const HOUSING_OPTIONS = ["Rent", "Own", "Other"]
+const BINARY_OPTIONS: BinaryChoice[] = ["Yes", "No", "Not Applicable"]
+const EMPLOYMENT_OPTIONS: EmploymentType[] = ["Full-time", "Part-time", "Contractor"]
+const INCOME_OPTIONS: IncomeRange[] = ["$0–50k", "$50–100k", "$100–150k", "$150k+"]
+const RISK_OPTIONS: RiskAversion[] = ["Conservative", "Moderate", "Growth", "Aggressive"]
+const SAVINGS_OPTIONS: SavingsRate[] = ["<5%", "5–10%", "10–20%", ">20%"]
+const CREDIT_OPTIONS = ["<600", "600–699", "700–749", "750+"]
+const HSA_OPTIONS = ["HSA", "FSA", "Neither"]
+const PLAN_OPTIONS: PlanType[] = ["Roth", "Traditional", "Unknown"]
+const COUNTRY_OPTIONS = ["United States", "Canada", "Mexico"]
+const STATE_OPTIONS = [
+  "Pennsylvania",
+  "New York",
+  "New Jersey",
+  "Massachusetts",
+  "California",
+  "Texas",
+  "Ontario",
+]
 
-  const lifeEventOptions = ["New job", "Marriage", "Baby", "Relocation", "Retirement", "Illness"]
+export function EnrollmentForm({ onComplete, onBackToHome, initialData, onUpdate }: EnrollmentFormProps) {
+  const [formData, setFormData] = useState<LifeLensFormData>(DEFAULT_FORM_DATA)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [mode, setMode] = useState<"form" | "analyzing">("form")
+  const [error, setError] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState<string | null>(null)
 
-  const goalOptions = [
-    "Lower monthly expenses",
-    "Save for family / retirement",
-    "Maximize employer benefits",
-    "Understand insurance options",
-    "Reduce debt or financial anxiety",
-  ]
+  useEffect(() => {
+    if (!initialData) return
+    setFormData((prev) => ({
+      ...prev,
+      ...initialData,
+      consent: initialData.consent ?? prev.consent,
+      isGuest: initialData.isGuest ?? prev.isGuest,
+    }))
+  }, [initialData])
 
-  const handleSubmit = async () => {
-    setIsAnalyzing(true)
+  useEffect(() => {
+    onUpdate?.(formData)
+  }, [formData, onUpdate])
 
-    const aiPersona = determinePersona(formData)
-
-    const profile = {
-      ...formData,
-      aiPersona,
-      isGuest: !formData.name,
-      createdAt: new Date().toISOString(),
-    }
-
-    await onComplete(profile)
+  const updateForm = (values: Partial<LifeLensFormData>) => {
+    setFormData((prev) => ({ ...prev, ...values }))
   }
 
-  const determinePersona = (data: typeof formData) => {
-    if (data.lifeEvents.includes("New job") && data.ageRange === "25-34") {
-      return "New Professional"
+  const steps: StepDefinition[] = useMemo(
+    () => [
+      {
+        id: "verification",
+        title: "Verification",
+        description: "We’ve synced your HR record. Please confirm.",
+        validate: (data) => {
+          if (!data.fullName.trim() || !data.userEmail.trim() || !data.dateOfBirth || !data.employmentStartDate) {
+            return "Please confirm your core profile before continuing."
+          }
+          return null
+        },
+        render: ({ data, update }) => (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Full name" required>
+              <Input
+                value={data.fullName}
+                onChange={(event) => update({ fullName: event.target.value })}
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <Field label="Work email" required>
+              <Input
+                type="email"
+                value={data.userEmail}
+                onChange={(event) => update({ userEmail: event.target.value })}
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <Field label="Phone (optional)">
+              <Input
+                value={data.phoneE164}
+                onChange={(event) => update({ phoneE164: event.target.value })}
+                placeholder="+1 555 000 0000"
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <Field label="Date of birth" required>
+              <Input
+                type="date"
+                value={data.dateOfBirth}
+                onChange={(event) => update({ dateOfBirth: event.target.value })}
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <Field label="Employment start date" required>
+              <Input
+                type="date"
+                value={data.employmentStartDate}
+                onChange={(event) => update({ employmentStartDate: event.target.value })}
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+          </div>
+        ),
+      },
+      {
+        id: "personal",
+        title: "Personal & Demographics",
+        description: "Help us understand your household context.",
+        validate: (data) => {
+          if (!data.maritalStatus || !data.citizenshipStatus || !data.veteranStatus || !data.educationLevel) {
+            return "Please select options for each demographic field."
+          }
+          return null
+        },
+        render: ({ data, update }) => (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField
+              label="Marital status"
+              required
+              value={data.maritalStatus}
+              options={MARITAL_OPTIONS}
+              onChange={(value) => update({ maritalStatus: value as MaritalStatus })}
+            />
+            <SelectField
+              label="Citizenship status"
+              required
+              value={data.citizenshipStatus}
+              options={CITIZENSHIP_OPTIONS}
+              onChange={(value) => update({ citizenshipStatus: value as typeof CITIZENSHIP_OPTIONS[number] })}
+            />
+            <SelectField
+              label="Veteran status"
+              required
+              value={data.veteranStatus}
+              options={VETERAN_OPTIONS}
+              onChange={(value) => update({ veteranStatus: value as typeof VETERAN_OPTIONS[number] })}
+            />
+            <SelectField
+              label="Education level"
+              required
+              value={data.educationLevel}
+              options={EDUCATION_OPTIONS}
+              onChange={(value) => update({ educationLevel: value as EducationLevel })}
+            />
+            <Field label="Field of study (optional)">
+              <Input
+                value={data.major}
+                onChange={(event) => update({ major: event.target.value })}
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+          </div>
+        ),
+      },
+      {
+        id: "household",
+        title: "Household Snapshot",
+        description: "Outline who you’re planning for.",
+        validate: (data) => {
+          if (!data.householdStructure || !data.spouseHasCoverage || !data.housingStatus || !data.tobaccoUser || !data.disabilityStatus) {
+            return "Please complete the household snapshot."
+          }
+          if (data.householdStructure === "With Dependents" && (data.dependentCount === null || Number.isNaN(data.dependentCount))) {
+            return "Tell us how many dependents you support."
+          }
+          return null
+        },
+        render: ({ data, update }) => (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField
+              label="Household structure"
+              required
+              value={data.householdStructure}
+              options={HOUSEHOLD_OPTIONS}
+              onChange={(value) => update({ householdStructure: value as HouseholdStructure })}
+            />
+            {data.householdStructure === "With Dependents" && (
+              <Field label="Dependent count" required>
+                <Input
+                  type="number"
+                  min={0}
+                  value={data.dependentCount ?? ""}
+                  onChange={(event) =>
+                    update({ dependentCount: event.target.value ? Number(event.target.value) : null })
+                  }
+                  className="rounded-xl border-[#A41E34]/20"
+                />
+              </Field>
+            )}
+            <SelectField
+              label="Spouse has coverage"
+              required
+              value={data.spouseHasCoverage}
+              options={COVERAGE_OPTIONS}
+              onChange={(value) => update({ spouseHasCoverage: value as CoveragePreference })}
+            />
+            <SelectField
+              label="Housing status"
+              required
+              value={data.housingStatus}
+              options={HOUSING_OPTIONS}
+              onChange={(value) => update({ housingStatus: value as typeof HOUSING_OPTIONS[number] })}
+            />
+            <SelectField
+              label="Tobacco use"
+              required
+              value={data.tobaccoUser}
+              options={BINARY_OPTIONS}
+              onChange={(value) => update({ tobaccoUser: value as BinaryChoice })}
+            />
+            <SelectField
+              label="Disability status"
+              required
+              value={data.disabilityStatus}
+              options={BINARY_OPTIONS}
+              onChange={(value) => update({ disabilityStatus: value as BinaryChoice })}
+            />
+          </div>
+        ),
+      },
+      {
+        id: "employment",
+        title: "Employment & Location",
+        description: "Where and how you work influences eligibility.",
+        validate: (data) => {
+          if (!data.workLocationCountry || !data.workLocationState || !data.employmentType || !data.incomeRange) {
+            return "Please confirm your work location and employment details."
+          }
+          return null
+        },
+        render: ({ data, update }) => (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField
+              label="Country"
+              required
+              value={data.workLocationCountry}
+              options={COUNTRY_OPTIONS}
+              onChange={(value) => update({ workLocationCountry: value })}
+            />
+            <SelectField
+              label="State / Province"
+              required
+              value={data.workLocationState}
+              options={STATE_OPTIONS}
+              onChange={(value) => update({ workLocationState: value })}
+            />
+            <SelectField
+              label="Employment type"
+              required
+              value={data.employmentType}
+              options={EMPLOYMENT_OPTIONS}
+              onChange={(value) => update({ employmentType: value as EmploymentType })}
+            />
+            <SelectField
+              label="Household income range"
+              required
+              value={data.incomeRange}
+              options={INCOME_OPTIONS}
+              onChange={(value) => update({ incomeRange: value as IncomeRange })}
+            />
+          </div>
+        ),
+      },
+      {
+        id: "financial",
+        title: "Financial Profile",
+        description: "This helps tailor savings and protection guidance.",
+        validate: (data) => {
+          if (
+            !data.riskAversion ||
+            !data.monthlySavingsRate ||
+            !data.creditScoreRange ||
+            data.emergencySavingsMonths === null ||
+            data.debtAmount === null
+          ) {
+            return "Please complete each financial profile field."
+          }
+          return null
+        },
+        render: ({ data, update }) => (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField
+              label="Risk profile"
+              required
+              value={data.riskAversion}
+              options={RISK_OPTIONS}
+              onChange={(value) => update({ riskAversion: value as RiskAversion })}
+            />
+            <Field label="Months of expenses saved" required>
+              <Input
+                type="number"
+                min={0}
+                value={data.emergencySavingsMonths ?? ""}
+                onChange={(event) =>
+                  update({ emergencySavingsMonths: event.target.value ? Number(event.target.value) : null })
+                }
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <Field label="Approximate total debt" required>
+              <Input
+                type="number"
+                min={0}
+                value={data.debtAmount ?? ""}
+                onChange={(event) => update({ debtAmount: event.target.value ? Number(event.target.value) : null })}
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <SelectField
+              label="Monthly savings rate"
+              required
+              value={data.monthlySavingsRate}
+              options={SAVINGS_OPTIONS}
+              onChange={(value) => update({ monthlySavingsRate: value as SavingsRate })}
+            />
+            <SelectField
+              label="Credit score range"
+              required
+              value={data.creditScoreRange}
+              options={CREDIT_OPTIONS}
+              onChange={(value) => update({ creditScoreRange: value })}
+            />
+          </div>
+        ),
+      },
+      {
+        id: "health",
+        title: "Health & Insurance",
+        description: "Confirm your current coverage choices.",
+        validate: (data) => {
+          if (
+            !data.currentMedicalCoverage ||
+            !data.disabilityInsurance ||
+            !data.hsaOrFsa ||
+            !data.interestInLifeInsurance ||
+            !data.prescriptionUse
+          ) {
+            return "Please confirm each insurance selection."
+          }
+          return null
+        },
+        render: ({ data, update }) => (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Medical plan" required>
+              <Input
+                value={data.currentMedicalCoverage}
+                onChange={(event) => update({ currentMedicalCoverage: event.target.value })}
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <SelectField
+              label="Disability insurance"
+              required
+              value={data.disabilityInsurance}
+              options={BINARY_OPTIONS}
+              onChange={(value) => update({ disabilityInsurance: value as BinaryChoice })}
+            />
+            <SelectField
+              label="HSA or FSA"
+              required
+              value={data.hsaOrFsa}
+              options={HSA_OPTIONS}
+              onChange={(value) => update({ hsaOrFsa: value as typeof HSA_OPTIONS[number] })}
+            />
+            <SelectField
+              label="Interest in life insurance"
+              required
+              value={data.interestInLifeInsurance}
+              options={BINARY_OPTIONS}
+              onChange={(value) => update({ interestInLifeInsurance: value as BinaryChoice })}
+            />
+            <SelectField
+              label="Regular prescription use"
+              required
+              value={data.prescriptionUse}
+              options={BINARY_OPTIONS}
+              onChange={(value) => update({ prescriptionUse: value as BinaryChoice })}
+            />
+          </div>
+        ),
+      },
+      {
+        id: "retirement",
+        title: "Retirement & Planning",
+        description: "Capture your long-term outlook.",
+        validate: (data) => {
+          if (
+            !data.contributesTo401k ||
+            !data.planType ||
+            !data.beneficiariesNamed ||
+            !data.retirementState
+          ) {
+            return "Please confirm retirement inputs."
+          }
+          return null
+        },
+        render: ({ data, update }) => (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField
+              label="401(k) contributions"
+              required
+              value={data.contributesTo401k}
+              options={BINARY_OPTIONS}
+              onChange={(value) => update({ contributesTo401k: value as BinaryChoice })}
+            />
+            <Field label="Contribution percent" subtitle="Optional">
+              <Input
+                type="number"
+                min={0}
+                value={data.contributionPercent ?? ""}
+                onChange={(event) =>
+                  update({ contributionPercent: event.target.value ? Number(event.target.value) : null })
+                }
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <SelectField
+              label="Plan type"
+              required
+              value={data.planType}
+              options={PLAN_OPTIONS}
+              onChange={(value) => update({ planType: value as PlanType })}
+            />
+            <SelectField
+              label="Beneficiaries named"
+              required
+              value={data.beneficiariesNamed}
+              options={BINARY_OPTIONS}
+              onChange={(value) => update({ beneficiariesNamed: value as BinaryChoice })}
+            />
+            <Field label="Retirement state" required>
+              <Input
+                value={data.retirementState}
+                onChange={(event) => update({ retirementState: event.target.value })}
+                placeholder="e.g. Pennsylvania"
+                className="rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+          </div>
+        ),
+      },
+      {
+        id: "additional",
+        title: "Additional Information",
+        description: "Share any context we should know.",
+        validate: (data) => {
+          if (!data.consent) {
+            return "Please provide consent to continue."
+          }
+          return null
+        },
+        render: ({ data, update }) => (
+          <div className="space-y-6">
+            <Field label="Additional notes (optional)">
+              <Textarea
+                value={data.additionalNotes}
+                onChange={(event) => update({ additionalNotes: event.target.value })}
+                className="min-h-[140px] rounded-xl border-[#A41E34]/20"
+              />
+            </Field>
+            <label className="flex items-start gap-3 rounded-2xl border border-[#A41E34]/20 bg-white p-4 text-sm text-[#1E1E1E] shadow-sm">
+              <input
+                type="checkbox"
+                checked={data.consent}
+                onChange={(event) => update({ consent: event.target.checked })}
+                className="mt-1 h-4 w-4 rounded border-[#A41E34]/50 text-[#A41E34] focus:ring-[#A41E34]"
+              />
+              <span className="leading-relaxed">
+                I consent to securely share this information with LifeLens for benefit guidance.
+              </span>
+            </label>
+          </div>
+        ),
+      },
+    ],
+    []
+  )
+
+  const totalSteps = steps.length
+  const progress = ((currentStep + 1) / totalSteps) * 100
+
+  const goToPrevious = () => {
+    setError(null)
+    setFeedback(null)
+    setCurrentStep((prev) => Math.max(prev - 1, 0))
+  }
+
+  const handleNext = () => {
+    const activeStep = steps[currentStep]
+    const validationMessage = activeStep.validate(formData)
+
+    if (validationMessage) {
+      setError(validationMessage)
+      setFeedback(null)
+      return
     }
-    if (data.lifeEvents.includes("Baby") || data.lifeEvents.includes("Marriage")) {
-      return "Family Builder"
+
+    setError(null)
+
+    if (currentStep < totalSteps - 1) {
+      setFeedback("Answers saved")
+      window.setTimeout(() => setFeedback(null), 2400)
+      setCurrentStep((prev) => prev + 1)
+    } else {
+      setMode("analyzing")
+      window.setTimeout(() => {
+        onComplete({ ...formData })
+        setMode("form")
+        setFeedback(null)
+      }, 1600)
     }
-    if (data.lifeEvents.includes("Retirement")) {
-      return "Transitioning Retiree"
-    }
-    if (data.stressLevel > 70) {
-      return "Financial Stabilizer"
-    }
-    return "Career Advancer"
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-2xl">
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex items-center flex-1">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                    s <= step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {s}
-                </div>
-                {s < 3 && (
-                  <div className={`flex-1 h-1 mx-2 rounded transition-all ${s < step ? "bg-primary" : "bg-muted"}`} />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Basic Info</span>
-            <span>Life Situation</span>
-            <span>Goals</span>
+    <div className="min-h-screen bg-white text-[#1E1E1E]">
+      <TopNav />
+      <div className="mx-auto flex w-full max-w-5xl flex-col px-6 pb-20 pt-10">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Button
+            variant="ghost"
+            className="w-fit rounded-xl text-sm font-semibold text-[#A41E34] hover:bg-[#A41E34]/10"
+            onClick={onBackToHome}
+          >
+            Back to Home
+          </Button>
+          <div className="space-y-2 text-right">
+            <p className="text-sm font-semibold text-[#A41E34]">Step {currentStep + 1} of {totalSteps}</p>
+            <div className="h-1.5 w-48 overflow-hidden rounded-full bg-[#A41E34]/10">
+              <div className="h-full rounded-full bg-[#A41E34] transition-all" style={{ width: `${progress}%` }} />
+            </div>
           </div>
         </div>
 
-        {/* Form card */}
-        <div className="glass-strong rounded-2xl p-8 shadow-2xl">
-          {isAnalyzing ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <Loader2 className="w-12 h-12 animate-spin text-primary" />
-              <h3 className="text-2xl font-bold text-center">Analyzing your situation...</h3>
-              <p className="text-muted-foreground text-center">Creating your personalized plan</p>
-            </div>
-          ) : (
-            <>
-              {/* Step 1: Basic Info */}
-              {step === 1 && (
-                <div className="space-y-6 animate-fade-in">
-                  <div>
-                    <h2 className="text-3xl font-bold mb-2">Tell us about yourself</h2>
-                    <p className="text-muted-foreground">Help us personalize your experience</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="name">Name (optional)</Label>
-                      <Input
-                        id="name"
-                        placeholder="Your name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="ageRange">Age Range</Label>
-                      <select
-                        id="ageRange"
-                        value={formData.ageRange}
-                        onChange={(e) => setFormData({ ...formData, ageRange: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-                      >
-                        <option value="18-24">18-24</option>
-                        <option value="25-34">25-34</option>
-                        <option value="35-44">35-44</option>
-                        <option value="45-54">45-54</option>
-                        <option value="55-64">55-64</option>
-                        <option value="65+">65+</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="employmentType">Employment Type</Label>
-                      <select
-                        id="employmentType"
-                        value={formData.employmentType}
-                        onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 rounded-lg border border-input bg-background"
-                      >
-                        <option value="Employee">Employee</option>
-                        <option value="Freelancer">Freelancer</option>
-                        <option value="Retired">Retired</option>
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="householdSize">Household Size</Label>
-                        <Input
-                          id="householdSize"
-                          type="number"
-                          min="1"
-                          value={formData.householdSize}
-                          onChange={(e) => setFormData({ ...formData, householdSize: Number.parseInt(e.target.value) })}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="dependents">Dependents</Label>
-                        <Input
-                          id="dependents"
-                          type="number"
-                          min="0"
-                          value={formData.dependents}
-                          onChange={(e) => setFormData({ ...formData, dependents: Number.parseInt(e.target.value) })}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Financial Confidence: {formData.financialConfidence}%</Label>
-                      <Slider
-                        value={[formData.financialConfidence]}
-                        onValueChange={([value]) => setFormData({ ...formData, financialConfidence: value })}
-                        max={100}
-                        step={1}
-                        className="mt-2"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                        <span>Not confident</span>
-                        <span>Very confident</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Stress Level: {formData.stressLevel}%</Label>
-                      <Slider
-                        value={[formData.stressLevel]}
-                        onValueChange={([value]) => setFormData({ ...formData, stressLevel: value })}
-                        max={100}
-                        step={1}
-                        className="mt-2"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                        <span>Low stress</span>
-                        <span>High stress</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Life Situation */}
-              {step === 2 && (
-                <div className="space-y-6 animate-fade-in">
-                  <div>
-                    <h2 className="text-3xl font-bold mb-2">What's happening in your life?</h2>
-                    <p className="text-muted-foreground">Select all that apply</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Recent Life Events</Label>
-                      <div className="grid grid-cols-2 gap-3 mt-2">
-                        {lifeEventOptions.map((event) => (
-                          <button
-                            key={event}
-                            onClick={() => {
-                              const updated = formData.lifeEvents.includes(event)
-                                ? formData.lifeEvents.filter((e) => e !== event)
-                                : [...formData.lifeEvents, event]
-                              setFormData({ ...formData, lifeEvents: updated })
-                            }}
-                            className={`p-4 rounded-lg border-2 transition-all text-left ${
-                              formData.lifeEvents.includes(event)
-                                ? "border-primary bg-primary/10"
-                                : "border-border hover:border-primary/50"
-                            }`}
-                          >
-                            <span className="font-medium">{event}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="lifeDescription">Tell us more (optional)</Label>
-                      <Textarea
-                        id="lifeDescription"
-                        placeholder="Describe what's going on in your life..."
-                        value={formData.lifeDescription}
-                        onChange={(e) => setFormData({ ...formData, lifeDescription: e.target.value })}
-                        className="mt-1 min-h-[120px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Goals & Priorities */}
-              {step === 3 && (
-                <div className="space-y-6 animate-fade-in">
-                  <div>
-                    <h2 className="text-3xl font-bold mb-2">What are your priorities?</h2>
-                    <p className="text-muted-foreground">Select all that matter to you</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Financial Goals</Label>
-                      <div className="space-y-3 mt-2">
-                        {goalOptions.map((goal) => (
-                          <button
-                            key={goal}
-                            onClick={() => {
-                              const updated = formData.goals.includes(goal)
-                                ? formData.goals.filter((g) => g !== goal)
-                                : [...formData.goals, goal]
-                              setFormData({ ...formData, goals: updated })
-                            }}
-                            className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                              formData.goals.includes(goal)
-                                ? "border-primary bg-primary/10"
-                                : "border-border hover:border-primary/50"
-                            }`}
-                          >
-                            <span className="font-medium">{goal}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Navigation buttons */}
-              <div className="flex justify-between mt-8 pt-6 border-t">
-                {step > 1 && (
-                  <Button variant="outline" onClick={() => setStep(step - 1)} className="gap-2">
-                    <ChevronLeft className="w-4 h-4" />
-                    Back
-                  </Button>
-                )}
-                {step < 3 ? (
-                  <Button onClick={() => setStep(step + 1)} className="ml-auto gap-2">
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button onClick={handleSubmit} className="ml-auto gap-2 bg-primary">
-                    Analyze My Situation
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                )}
+        <div className="relative flex-1">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={steps[currentStep].id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.35 }}
+              className="rounded-3xl border border-[#A41E34]/15 bg-white/90 p-6 shadow-xl sm:p-8"
+            >
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-[#1E1E1E]">{steps[currentStep].title}</h2>
+                <p className="mt-2 text-sm text-[#3D3D3D]">{steps[currentStep].description}</p>
               </div>
-            </>
+              <div className="space-y-6">{steps[currentStep].render({ data: formData, update: updateForm })}</div>
+            </motion.div>
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {feedback && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#4CAF50]/20 bg-[#4CAF50]/10 px-4 py-2 text-sm font-medium text-[#2E7D32]"
+              >
+                <CheckCircle className="h-4 w-4" />
+                {feedback}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {error && (
+            <div className="mt-4 rounded-2xl border border-[#A41E34]/30 bg-[#FFF1F1] px-4 py-3 text-sm text-[#A41E34]">
+              {error}
+            </div>
           )}
+        </div>
+
+        <div className="sticky bottom-0 mt-8 border-t border-[#A41E34]/10 bg-white/95 py-6 backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <Button
+              variant="outline"
+              className="rounded-xl border-[#A41E34]/30 bg-white px-6 py-3 text-sm font-semibold text-[#1E1E1E] hover:bg-[#A41E34]/10"
+              onClick={goToPrevious}
+              disabled={currentStep === 0 || mode === "analyzing"}
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+            </Button>
+            <Button
+              className="rounded-xl border border-[#A41E34] bg-white px-6 py-3 text-sm font-semibold text-[#A41E34] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#A41E34]/10"
+              onClick={handleNext}
+              disabled={mode === "analyzing"}
+            >
+              {mode === "analyzing" ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analyzing with LifeLens AI
+                </span>
+              ) : currentStep === totalSteps - 1 ? (
+                <span className="flex items-center gap-2">
+                  Submit & View Insights <ChevronRight className="h-4 w-4" />
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  Save & Continue <ChevronRight className="h-4 w-4" />
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
+  )
+}
+
+function Field({
+  label,
+  subtitle,
+  required,
+  children,
+}: {
+  label: string
+  subtitle?: string
+  required?: boolean
+  children: ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Label className="text-sm font-medium text-[#1E1E1E]">
+        {label}
+        {required ? <span className="ml-1 text-[#A41E34]">*</span> : null}
+        {subtitle ? <span className="ml-2 text-xs font-normal text-[#6B6B6B]">{subtitle}</span> : null}
+      </Label>
+      {children}
+    </div>
+  )
+}
+
+function SelectField({
+  label,
+  subtitle,
+  required,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  subtitle?: string
+  required?: boolean
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <Field label={label} subtitle={subtitle} required={required}>
+      <select
+        className={cn(
+          "rounded-xl border border-[#A41E34]/20 bg-white px-4 py-2 text-sm text-[#1E1E1E] focus:border-[#A41E34] focus:outline-none focus:ring-2 focus:ring-[#A41E34]/20",
+          !value && "text-[#A41E34]/50"
+        )}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">Select an option</option>
+        {options
+          .filter((option) => option)
+          .map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+      </select>
+    </Field>
   )
 }
