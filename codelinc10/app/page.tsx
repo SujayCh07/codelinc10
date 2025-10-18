@@ -10,6 +10,7 @@ import {
   type EnrollmentFormData,
 } from "@/components/enrollment-form"
 import { InsightsDashboard, type LifeLensInsights } from "@/components/insights-dashboard"
+import { SupportDock } from "@/components/support-dock"
 
 const FORM_STORAGE_KEY = "lifelens-form-cache"
 const INSIGHTS_STORAGE_KEY = "lifelens-insights-cache"
@@ -26,15 +27,34 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return
     try {
-      const storedForm = window.localStorage.getItem(FORM_STORAGE_KEY)
-      const storedInsights = window.localStorage.getItem(INSIGHTS_STORAGE_KEY)
+      const storedFormRaw = window.localStorage.getItem(FORM_STORAGE_KEY)
+      const storedInsightsRaw = window.localStorage.getItem(INSIGHTS_STORAGE_KEY)
 
-      if (storedForm) {
-        setFormData(JSON.parse(storedForm) as EnrollmentFormData)
+      const parsedForm = storedFormRaw ? (JSON.parse(storedFormRaw) as Partial<EnrollmentFormData>) : null
+      const hydratedForm = parsedForm ? { ...DEFAULT_ENROLLMENT_FORM, ...parsedForm } : null
+      const parsedInsights = storedInsightsRaw ? (JSON.parse(storedInsightsRaw) as Partial<LifeLensInsights>) : null
+
+      if (hydratedForm) {
+        setFormData(hydratedForm)
       }
 
-      if (storedInsights) {
-        setInsights(JSON.parse(storedInsights) as LifeLensInsights)
+      if (parsedInsights && hydratedForm) {
+        const rebuilt = buildInsights(hydratedForm)
+        const merged: LifeLensInsights = {
+          ...rebuilt,
+          ...parsedInsights,
+          ownerName:
+            parsedInsights.ownerName ?? rebuilt.ownerName ?? hydratedForm.preferredName ?? hydratedForm.fullName,
+          priorities: parsedInsights.priorities ?? rebuilt.priorities,
+          tips: parsedInsights.tips ?? rebuilt.tips,
+          timeline: parsedInsights.timeline ?? rebuilt.timeline,
+          resources: parsedInsights.resources ?? rebuilt.resources,
+          conversation: parsedInsights.conversation ?? rebuilt.conversation,
+          focusGoal: parsedInsights.focusGoal ?? rebuilt.focusGoal,
+          persona: parsedInsights.persona ?? rebuilt.persona,
+          statement: parsedInsights.statement ?? rebuilt.statement,
+        }
+        setInsights(merged)
         setScreen("insights")
       }
     } catch (error) {
@@ -46,11 +66,8 @@ export default function Home() {
 
   // ✅ Start flow
   const handleStart = (asGuest: boolean) => {
-    const nextForm = {
-      ...(formData ?? DEFAULT_ENROLLMENT_FORM),
-      isGuest: asGuest,
-    }
-    setFormData(nextForm)
+    const base = formData ? { ...DEFAULT_ENROLLMENT_FORM, ...formData } : DEFAULT_ENROLLMENT_FORM
+    setFormData({ ...base, isGuest: asGuest })
     setScreen("quiz")
   }
 
@@ -103,112 +120,123 @@ export default function Home() {
   }
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      {screen === "landing" && (
-        <motion.div
-          key="landing"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
-        >
-          <LandingScreen onStart={handleStart} />
-        </motion.div>
-      )}
+    <>
+      <AnimatePresence mode="wait" initial={false}>
+        {screen === "landing" && (
+          <motion.div
+            key="landing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+          >
+            <LandingScreen onStart={handleStart} />
+          </motion.div>
+        )}
 
-      {screen === "quiz" && (
-        <motion.div
-          key="quiz"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.3 }}
-        >
-          <EnrollmentForm
-            onComplete={handleEnrollmentComplete}
-            onBackToLanding={handleBackToLanding}
-            onUpdate={handleEnrollmentUpdate}
-            initialData={formData ?? DEFAULT_ENROLLMENT_FORM}
-          />
-        </motion.div>
-      )}
+        {screen === "quiz" && (
+          <motion.div
+            key="quiz"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <EnrollmentForm
+              onComplete={handleEnrollmentComplete}
+              onBackToLanding={handleBackToLanding}
+              onUpdate={handleEnrollmentUpdate}
+              initialData={formData ?? DEFAULT_ENROLLMENT_FORM}
+            />
+          </motion.div>
+        )}
 
-      {screen === "insights" && insights && (
-        <motion.div
-          key="insights"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.3 }}
-        >
-          <InsightsDashboard
-            insights={insights}
-            onBackToLanding={handleBackToLanding}
-            onRegenerate={handleRegenerate}
-            onRestartQuiz={handleRestartQuiz}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {screen === "insights" && insights && (
+          <motion.div
+            key="insights"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <InsightsDashboard
+              insights={insights}
+              onBackToLanding={handleBackToLanding}
+              onRegenerate={handleRegenerate}
+              onRestartQuiz={handleRestartQuiz}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <SupportDock
+        persona={insights?.persona}
+        focusGoal={insights?.focusGoal}
+        screen={screen}
+        onBackToLanding={screen === "insights" ? handleBackToLanding : undefined}
+      />
+    </>
   )
 }
 
 // ✅ Basic insight generator (replace with Bedrock later)
 function buildInsights(data: EnrollmentFormData): LifeLensInsights {
-  const persona = data.hasDependents
-    ? "Family Guardian"
-    : data.riskTolerance === "Growth-focused"
-    ? "Momentum Builder"
-    : "Balanced Navigator"
+  const persona =
+    data.householdCoverage === "You + family"
+      ? "Family Guardian"
+      : data.householdCoverage === "You + partner"
+        ? "Collaborative Planner"
+        : data.riskComfort >= 4
+          ? "Momentum Builder"
+          : "Balanced Navigator"
 
-  const focusGoal = data.financialGoals?.[0] ?? "strengthen your financial foundation"
+  const focusGoal = data.financialGoals[0] ?? "strengthen your financial foundation"
+  const milestone = data.milestoneFocus?.trim() || focusGoal
 
-  const summary = `${data.preferredName || data.fullName}, you're building a ${
-    data.householdStructure?.toLowerCase() || "resilient"
-  } home base with ${data.employmentType || "your current role"} work and ${
-    data.hasDependents ? `${data.dependentCount} dependents` : "personal goals"
-  }. Your next focus: ${focusGoal.toLowerCase()}.`
+  const householdLine =
+    data.householdCoverage === "You only"
+      ? "your individual coverage"
+      : data.householdCoverage === "You + partner"
+        ? "coverage that supports you and your partner"
+        : `supporting ${data.dependentCount || "your"} dependents`
+
+  const summary = `${data.preferredName || data.fullName}, you're ${householdLine} while setting sights on ${milestone.toLowerCase()}. We'll pace your next actions so they feel manageable.`
 
   const priorities = [
     {
-      title: "Elevate your safety net",
-      description:
-        data.emergencySavingsMonths && data.emergencySavingsMonths < 3
-          ? "Grow your emergency savings toward 3–6 months using automatic transfers into a high-yield account."
-          : "You’re on track—consider directing extra funds toward long-term goals and protection.",
+      title: data.financialGoals.includes("Buy a home") ? "Plan your home stretch" : "Reinforce your safety net",
+      description: data.financialGoals.includes("Buy a home")
+        ? "Tuck away closing costs and compare mortgage options alongside Lincoln’s home-planning worksheets."
+        : "Channel a portion of pay into an automated reserve so unexpected costs don’t derail your momentum.",
     },
     {
-      title: data.hasDependents ? "Protect your household income" : "Optimize your core coverage",
-      description: data.hasDependents
-        ? "Review life and disability options to shield your family’s future."
-        : "Refine your health, disability, and supplemental plans to fit your goals.",
+      title: data.wantsLifeDisabilityInsights ? "Right-size protection" : "Check your coverage essentials",
+      description: data.wantsLifeDisabilityInsights
+        ? "Review life and disability coverage to align with your household and income goals."
+        : "Spot-check health, dental, and supplemental benefits before enrollment season arrives.",
     },
     {
-      title:
-        data.riskTolerance === "Growth-focused"
-          ? "Accelerate long-term growth"
-          : "Build confident retirement habits",
-      description:
-        data.riskTolerance === "Growth-focused"
-          ? "Boost retirement contributions and align investments with your growth strategy."
-          : "Review employer match and set recurring check-ins.",
+      title: data.contributes401k ? "Optimize long-term growth" : "Kickstart retirement habits",
+      description: data.contributes401k
+        ? "Nudge contributions toward the full employer match and revisit investments quarterly."
+        : "Schedule a match check-in and start small—1-2% increases make a big impact over time.",
     },
   ]
 
   const tips = [
     {
       title: "Automate your momentum",
-      description: "Set reminders for savings, payments, and checkups to stay consistent.",
+      description: "Set recurring reminders for savings transfers and enrollment deadlines.",
       icon: "⏱️",
     },
     {
-      title: "Leverage Lincoln guidance",
-      description: "Access tailored learning based on your preferred style.",
+      title: "Use Lincoln learning hubs",
+      description: "Pick videos or articles aligned to your preferred pace and priorities.",
       icon: "🎓",
     },
     {
-      title: "Celebrate micro wins",
-      description: "Recognize small financial victories to sustain motivation.",
+      title: "Track micro-wins",
+      description: "Celebrate contributions, debt payments, or coverage updates to stay motivated.",
       icon: "🎉",
     },
   ]
@@ -216,22 +244,130 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
   const timeline = [
     {
       period: "This Week",
-      title: "Review your benefits snapshot",
-      description: "Ensure your coverage reflects your current household and needs.",
+      title: "Refresh your benefits snapshot",
+      description: `Confirm dependents, beneficiaries, and coverage details for ${householdLine}.`,
     },
     {
       period: "Next 30 Days",
-      title: "Dial in spending and savings",
-      description: data.hasBudget
-        ? `Refine your budget to fund ${focusGoal.toLowerCase()}.`
-        : `Create a simple 50/30/20 budget to support ${focusGoal.toLowerCase()}.`,
+      title: "Dial in your cash flow",
+      description: `Align your ${data.monthlySavingsRate}% savings rhythm with ${focusGoal.toLowerCase()}.`,
     },
     {
-      period: "90 Days",
-      title: "Revisit your milestones",
-      description: "Meet with a LifeLens coach to adjust plans as life evolves.",
+      period: "This Year",
+      title: "Schedule a LifeLens check-in",
+      description: "Revisit priorities with a coach before open enrollment to adjust your plan.",
     },
   ]
 
-  return { persona, statement: summary, priorities, tips, timeline, aiPrompt: focusGoal }
+  const goalTheme = data.financialGoals.includes("Plan for retirement")
+    ? "retirement"
+    : data.financialGoals.includes("Protect my family")
+      ? "protection"
+      : data.financialGoals.includes("Buy a home")
+        ? "home"
+        : data.financialGoals.includes("Increase savings")
+          ? "savings"
+          : "foundation"
+
+  const resourceLibrary: Record<string, { title: string; description: string; url: string }[]> = {
+    retirement: [
+      {
+        title: "Retirement income estimator",
+        description: "Model how increasing your 401(k) contribution changes future income.",
+        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/retirement-plans",
+      },
+      {
+        title: "Quarterly market outlook",
+        description: "Stay current on guidance from Lincoln’s retirement strategists.",
+        url: "https://newsroom.lfg.com/",
+      },
+    ],
+    protection: [
+      {
+        title: "Benefits protection checklist",
+        description: "Review life, disability, and supplemental coverage options available through work.",
+        url: "https://www.lincolnfinancial.com/public/individuals/protect-my-income",
+      },
+      {
+        title: "Family security playbook",
+        description: "Understand how to align dependents, beneficiaries, and emergency contacts.",
+        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
+      },
+    ],
+    home: [
+      {
+        title: "Home buying roadmap",
+        description: "Plan down payments, insurance, and emergency reserves side-by-side.",
+        url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+      },
+      {
+        title: "Protection for new homeowners",
+        description: "See how life, disability, and accident coverage can secure a mortgage.",
+        url: "https://www.lincolnfinancial.com/public/individuals/protect-my-income",
+      },
+    ],
+    savings: [
+      {
+        title: "Budget & savings hub",
+        description: "Use calculators and articles to balance debt payoff with savings goals.",
+        url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+      },
+      {
+        title: "Emergency savings toolkit",
+        description: "Step-by-step guidance to automate 3–6 months of essential expenses.",
+        url: "https://www.lincolnfinancial.com/public/individuals/financial-wellness",
+      },
+    ],
+    foundation: [
+      {
+        title: "LifeLens learning studio",
+        description: "Short lessons on budgeting, benefits enrollment, and debt confidence.",
+        url: "https://www.lincolnfinancial.com/public/individuals/financial-wellness",
+      },
+      {
+        title: "Lincoln Financial resource center",
+        description: "Find HR contacts, FAQs, and on-demand webinars tailored to your workplace.",
+        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits",
+      },
+    ],
+  }
+
+  const resources = resourceLibrary[goalTheme]
+
+  const conversation = [
+    data.milestoneFocus
+      ? {
+          speaker: "You" as const,
+          message: `I'm gearing up for ${data.milestoneFocus.toLowerCase()}.`,
+        }
+      : null,
+    {
+      speaker: "LifeLens" as const,
+      message: `We’ll connect your benefits and savings moves so ${milestone.toLowerCase()} stays on track without losing protection.`,
+    },
+    data.accountTypes.length
+      ? {
+          speaker: "You" as const,
+          message: `I’m currently using ${data.accountTypes.join(" and ")} for health spending.`,
+        }
+      : null,
+    {
+      speaker: "LifeLens" as const,
+      message: `Great—expect reminders tailored to your ${data.monthlySavingsRate}% savings rhythm and ${
+        data.contributes401k ? "401(k) contributions" : "next retirement steps"
+      }.`,
+    },
+  ].filter(Boolean) as { speaker: "LifeLens" | "You"; message: string }[]
+
+  return {
+    ownerName: data.preferredName || data.fullName,
+    persona,
+    statement: summary,
+    priorities,
+    tips,
+    timeline,
+    focusGoal: milestone,
+    resources,
+    conversation,
+  }
 }
