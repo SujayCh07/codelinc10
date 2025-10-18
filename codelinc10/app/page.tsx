@@ -16,6 +16,9 @@ const INSIGHTS_STORAGE_KEY = "lifelens-insights-cache"
 
 type Screen = "landing" | "quiz" | "insights"
 
+const PROFILE_STORAGE_KEY = "lifelens-profile-v2"
+const INSIGHTS_STORAGE_KEY = "lifelens-insights-v2"
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("landing")
   const [formData, setFormData] = useState<EnrollmentFormData | null>(null)
@@ -43,6 +46,16 @@ export default function Home() {
       setIsHydrated(true)
     }
   }, [])
+
+  const initialEnrollmentData = useMemo(() => {
+    if (profile) {
+      return profile
+    }
+
+    return {
+      isGuest: startMode === "guest",
+    } satisfies Partial<EnrollmentFormData>
+  }, [profile, startMode])
 
   const handleStart = (asGuest: boolean) => {
     const nextForm = {

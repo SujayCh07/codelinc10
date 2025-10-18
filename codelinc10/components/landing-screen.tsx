@@ -8,6 +8,41 @@ interface LandingScreenProps {
   onStart: (isGuest: boolean) => void
 }
 
+interface Slide {
+  eyebrow: string
+  title: string
+  description: string
+  stat: string
+  accent: string
+}
+
+const SLIDES: Slide[] = [
+  {
+    eyebrow: "Smart onboarding",
+    title: "Confident benefits decisions in minutes",
+    description:
+      "LifeLens blends human warmth with AI guidance so you can choose the right coverage, savings, and protections for every life moment.",
+    stat: "92% feel more prepared after one session",
+    accent: "from-[#A41E34] via-[#C32F42] to-[#FF4F00]",
+  },
+  {
+    eyebrow: "Built for real life",
+    title: "See how each milestone shapes your financial wellness",
+    description:
+      "From new jobs to growing families, LifeLens connects Lincoln Financial benefits with actionable next steps personalized just for you.",
+    stat: "12+ curated playbooks for work, family, and retirement",
+    accent: "from-[#FF4F00] via-[#FF7231] to-[#A41E34]",
+  },
+  {
+    eyebrow: "AI with heart",
+    title: "Your story powers a personalized insight stream",
+    description:
+      "Answer a conversational questionnaire and watch LifeLens craft a plan that balances protection, growth, and peace of mind.",
+    stat: "Powered by secure AWS Bedrock + Claude",
+    accent: "from-[#311016] via-[#A41E34] to-[#FF4F00]",
+  },
+]
+
 export function LandingScreen({ onStart }: LandingScreenProps) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-[#2A1A1A]">
