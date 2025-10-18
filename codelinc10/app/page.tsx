@@ -1,288 +1,238 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { LandingScreen } from "@/components/landing-screen"
+import { useEffect, useMemo, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+
+import { Home } from "@/components/home"
 import { EnrollmentForm } from "@/components/enrollment-form"
-import { PersonalizedDashboard } from "@/components/personalized-dashboard"
-import { TimelineView } from "@/components/timeline-view"
-import { LearningHub } from "@/components/learning-hub"
-import { ProfileSettings } from "@/components/profile-settings"
-import { AboutFaq } from "@/components/about-faq"
-import { BottomNav } from "@/components/bottom-nav"
+import { InsightsDashboard, type LifeLensInsights } from "@/components/insights-dashboard"
+import { DEFAULT_FORM_DATA, type LifeLensFormData } from "@/types/form"
 
-type Screen = "landing" | "enrollment" | "dashboard" | "timeline" | "learning" | "profile" | "about"
+const FORM_STORAGE_KEY = "lifelens-rds-form"
+const INSIGHTS_STORAGE_KEY = "lifelens-rds-insights"
 
-interface UserProfile {
-  name: string
-  ageRange: string
-  employmentType: string
-  householdSize: number
-  dependents: number
-  financialConfidence: number
-  stressLevel: number
-  lifeEvents: string[]
-  lifeDescription: string
-  aiPersona: string
-  goals: string[]
-  isGuest: boolean
-  createdAt: string
-}
+type Screen = "home" | "quiz" | "insights"
 
-interface InsightData {
-  priorities: Array<{
-    title: string
-    description: string
-    priority: "high" | "medium" | "low"
-    action: string
-    category: string
-  }>
-  aiInsight: string
-  timestamp: string
-}
-
-export default function Home() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>("landing")
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
-  const [insights, setInsights] = useState<InsightData | null>(null)
-  const [history, setHistory] = useState<Array<{ profile: UserProfile; insights: InsightData }>>([])
+export default function HomePage() {
+  const [screen, setScreen] = useState<Screen>("home")
+  const [formData, setFormData] = useState<LifeLensFormData | null>(null)
+  const [insights, setInsights] = useState<LifeLensInsights | null>(null)
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
-    const savedProfile = localStorage.getItem("lifelens-profile")
-    const savedInsights = localStorage.getItem("lifelens-insights")
-    const savedHistory = localStorage.getItem("lifelens-history")
+    if (typeof window === "undefined") return
 
-    if (savedProfile) {
-      setUserProfile(JSON.parse(savedProfile))
-      setCurrentScreen("dashboard")
-    }
-    if (savedInsights) {
-      setInsights(JSON.parse(savedInsights))
-    }
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory))
+    try {
+      const storedForm = window.localStorage.getItem(FORM_STORAGE_KEY)
+      const storedInsights = window.localStorage.getItem(INSIGHTS_STORAGE_KEY)
+
+      if (storedForm) {
+        const parsed = JSON.parse(storedForm) as LifeLensFormData
+        setFormData(parsed)
+      }
+
+      if (storedInsights) {
+        const parsedInsights = JSON.parse(storedInsights) as LifeLensInsights
+        setInsights(parsedInsights)
+        setScreen("insights")
+      }
+    } catch (error) {
+      console.error("Unable to restore LifeLens data", error)
+    } finally {
+      setHydrated(true)
     }
   }, [])
 
   const handleStart = (asGuest: boolean) => {
-    setCurrentScreen("enrollment")
+    const base = formData ? { ...formData, isGuest: asGuest } : { ...DEFAULT_FORM_DATA, isGuest: asGuest }
+    setFormData(base)
+    setScreen("quiz")
   }
 
-  const handleEnrollmentComplete = async (profile: UserProfile) => {
-    await new Promise((resolve) => setTimeout(resolve, 2500))
-
-    const generatedInsights = generateInsights(profile)
-
-    setUserProfile(profile)
-    setInsights(generatedInsights)
-
-    localStorage.setItem("lifelens-profile", JSON.stringify(profile))
-    localStorage.setItem("lifelens-insights", JSON.stringify(generatedInsights))
-
-    const newHistory = [...history, { profile, insights: generatedInsights }]
-    setHistory(newHistory)
-    localStorage.setItem("lifelens-history", JSON.stringify(newHistory))
-
-    setCurrentScreen("dashboard")
+  const handleUpdate = (data: LifeLensFormData) => {
+    setFormData(data)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data))
+    }
   }
 
-  const handleReassess = () => {
-    setCurrentScreen("enrollment")
+  const handleBackToHome = () => {
+    setScreen("home")
   }
 
-  const handleClearData = () => {
-    localStorage.removeItem("lifelens-profile")
-    localStorage.removeItem("lifelens-insights")
-    localStorage.removeItem("lifelens-history")
-    setUserProfile(null)
-    setInsights(null)
-    setHistory([])
-    setCurrentScreen("landing")
+  const handleRestartQuiz = () => {
+    const guest = formData?.isGuest ?? false
+    const reset = { ...DEFAULT_FORM_DATA, isGuest: guest }
+    setFormData(reset)
+    setScreen("quiz")
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(reset))
+    }
+  }
+
+  const handleComplete = (data: LifeLensFormData) => {
+    const generated = buildInsights(data)
+    setFormData(data)
+    setInsights(generated)
+    setScreen("insights")
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data))
+      window.localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(generated))
+    }
+  }
+
+  const handleRegenerate = () => {
+    if (!formData) return
+    const regenerated = buildInsights(formData)
+    setInsights(regenerated)
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(regenerated))
+    }
+  }
+
+  const initialFormData = useMemo(() => formData ?? undefined, [formData])
+
+  if (!hydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white text-[#A41E34]">
+        Preparing LifeLens…
+      </div>
+    )
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#A41E34]/5 via-background to-[#FF4F00]/5">
-      {currentScreen === "landing" && <LandingScreen onStart={handleStart} />}
-
-      {currentScreen === "enrollment" && (
-        <EnrollmentForm onComplete={handleEnrollmentComplete} existingProfile={userProfile} />
+    <AnimatePresence mode="wait" initial={false}>
+      {screen === "home" && (
+        <motion.div
+          key="home"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.35 }}
+        >
+          <Home onStart={handleStart} />
+        </motion.div>
       )}
 
-      {currentScreen === "dashboard" && userProfile && insights && (
-        <PersonalizedDashboard profile={userProfile} insights={insights} onReassess={handleReassess} />
+      {screen === "quiz" && (
+        <motion.div
+          key="quiz"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.3 }}
+        >
+          <EnrollmentForm
+            onComplete={handleComplete}
+            onBackToHome={handleBackToHome}
+            initialData={initialFormData}
+            onUpdate={handleUpdate}
+          />
+        </motion.div>
       )}
 
-      {currentScreen === "timeline" && <TimelineView history={history} />}
-
-      {currentScreen === "learning" && userProfile && <LearningHub persona={userProfile.aiPersona} />}
-
-      {currentScreen === "profile" && userProfile && (
-        <ProfileSettings profile={userProfile} onClearData={handleClearData} onReassess={handleReassess} />
+      {screen === "insights" && insights && (
+        <motion.div
+          key="insights"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.3 }}
+        >
+          <InsightsDashboard
+            insights={insights}
+            onBackToHome={handleBackToHome}
+            onRegenerate={handleRegenerate}
+            onRestartQuiz={handleRestartQuiz}
+          />
+        </motion.div>
       )}
-
-      {currentScreen === "about" && <AboutFaq />}
-
-      {currentScreen !== "landing" && currentScreen !== "enrollment" && (
-        <BottomNav currentScreen={currentScreen} onNavigate={setCurrentScreen} />
-      )}
-    </main>
+    </AnimatePresence>
   )
 }
 
-function generateInsights(profile: UserProfile): InsightData {
-  const priorities: InsightData["priorities"] = []
+function buildInsights(data: LifeLensFormData): LifeLensInsights {
+  const persona = buildPersona(data)
+  const statement = `LifeLens aligned your benefits for a ${data.householdStructure.toLowerCase()} household in ${data.workLocationState}, ` +
+    `keeping pace with your ${data.riskAversion.toLowerCase()} risk preferences and ${data.incomeRange} income.`
 
-  if (profile.lifeEvents.includes("New job")) {
-    priorities.push({
-      title: "Enroll in employer health benefits",
+  const priorities = [
+    {
+      title: "Stabilize your safety net",
       description:
-        "You mentioned starting a new job. Choosing benefits early avoids coverage gaps and maximizes your employer contributions.",
-      priority: "high",
-      action: "Review Benefits",
-      category: "health",
-    })
-    priorities.push({
-      title: "Maximize 401(k) employer match",
-      description: "Don't leave free money on the table. Contribute at least enough to get the full employer match.",
-      priority: "high",
-      action: "Set Up 401(k)",
-      category: "retirement",
-    })
-  }
-
-  if (profile.lifeEvents.includes("Marriage") || profile.lifeEvents.includes("Baby")) {
-    priorities.push({
-      title: "Update life insurance coverage",
+        data.emergencySavingsMonths !== null && data.emergencySavingsMonths < 3
+          ? "Increase automatic transfers toward an emergency fund until you reach three months of expenses."
+          : "Maintain contributions to your reserve fund and consider directing surplus toward targeted benefits upgrades.",
+    },
+    {
+      title: data.householdStructure === "With Dependents" ? "Strengthen family protection" : "Optimize core coverage",
       description:
-        "Your growing family needs adequate protection. Consider increasing your coverage to 10x your annual income.",
-      priority: "high",
-      action: "Get Quote",
-      category: "insurance",
-    })
-    priorities.push({
-      title: "Update beneficiaries on all accounts",
+        data.householdStructure === "With Dependents"
+          ? "Review life and disability benefits to cover household income and long-term education goals."
+          : "Fine-tune health and supplemental plans so they match your usage and budget expectations.",
+    },
+    {
+      title: data.contributesTo401k === "Yes" ? "Maximize retirement momentum" : "Jump-start retirement savings",
       description:
-        "Ensure your retirement accounts, insurance policies, and bank accounts reflect your current family structure.",
-      priority: "high",
-      action: "Update Now",
-      category: "planning",
-    })
-  }
+        data.contributesTo401k === "Yes"
+          ? "Confirm that contribution percentages capture the full employer match and revisit beneficiaries annually."
+          : "Enroll in the company plan with an initial contribution and schedule a mid-year review to reassess increases.",
+    },
+  ]
 
-  if (profile.lifeEvents.includes("Baby")) {
-    priorities.push({
-      title: "Open a Dependent Care FSA",
-      description: "Save on childcare costs with pre-tax dollars. You can contribute up to $5,000 per year.",
-      priority: "high",
-      action: "Enroll Now",
-      category: "savings",
-    })
-    priorities.push({
-      title: "Start a 529 college savings plan",
-      description: "The earlier you start, the more time your money has to grow tax-free for education expenses.",
-      priority: "medium",
-      action: "Open Account",
-      category: "education",
-    })
-  }
+  const tips = [
+    {
+      title: "Automate contribution checkpoints",
+      description: "Set quarterly reminders to review savings and debt paydown alongside benefit enrollment windows.",
+      icon: "calendar" as const,
+    },
+    {
+      title: "Document coverage confirmations",
+      description: "Store plan summaries, beneficiary confirmations, and policy contacts in a single secure workspace.",
+      icon: "shield" as const,
+    },
+    {
+      title: "Grow financial literacy moments",
+      description: "Bookmark learning modules on income protection, retirement investing, and care planning for seasonal refreshers.",
+      icon: "book" as const,
+    },
+  ]
 
-  if (profile.lifeEvents.includes("Relocation")) {
-    priorities.push({
-      title: "Review homeowners/renters insurance",
-      description:
-        "Moving to a new area? Your insurance needs may have changed based on local risks and property values.",
-      priority: "high",
-      action: "Get Quote",
-      category: "insurance",
-    })
-  }
+  const timeline = [
+    {
+      period: "Next 30 days",
+      title: "Confirm core coverage",
+      description: "Validate medical and disability elections, and update dependents in your HR portal if anything has changed.",
+    },
+    {
+      period: "60–90 days",
+      title: "Align savings goals",
+      description: "Review emergency fund progress, pay down high-interest debt, and adjust contributions to stay on target.",
+    },
+    {
+      period: "Quarterly",
+      title: "Review retirement posture",
+      description: "Revisit allocation mix, beneficiary designations, and Roth vs. Traditional strategy before open enrollment.",
+    },
+  ]
 
-  if (profile.lifeEvents.includes("Retirement")) {
-    priorities.push({
-      title: "Review Medicare enrollment timeline",
-      description: "Missing your enrollment window can result in penalties. Plan ahead for Parts A, B, and D.",
-      priority: "high",
-      action: "Learn More",
-      category: "health",
-    })
-    priorities.push({
-      title: "Create a retirement income strategy",
-      description: "Determine the optimal order to withdraw from different accounts to minimize taxes.",
-      priority: "high",
-      action: "Get Help",
-      category: "retirement",
-    })
-  }
+  const aiPrompt = `Create a Lincoln Financial benefits summary for ${data.fullName}, highlighting priorities, tips, and timeline based on ` +
+    `${data.householdStructure} household status, ${data.employmentType} employment, risk tolerance ${data.riskAversion}, and ${data.retirementState} retirement plans.`
 
-  if (profile.lifeEvents.includes("Illness")) {
-    priorities.push({
-      title: "Review disability insurance coverage",
-      description: "Protect your income if you're unable to work. Most people need 60-70% income replacement.",
-      priority: "high",
-      action: "Check Coverage",
-      category: "insurance",
-    })
-    priorities.push({
-      title: "Maximize HSA contributions",
-      description: "Health Savings Accounts offer triple tax advantages and can help cover medical expenses.",
-      priority: "medium",
-      action: "Contribute More",
-      category: "health",
-    })
-  }
-
-  if (profile.goals.includes("Lower monthly expenses")) {
-    priorities.push({
-      title: "Build an emergency fund",
-      description: "Start with $1,000, then work toward 3-6 months of expenses to avoid high-interest debt.",
-      priority: "medium",
-      action: "Start Saving",
-      category: "savings",
-    })
-  }
-
-  if (profile.goals.includes("Maximize employer benefits")) {
-    priorities.push({
-      title: "Review all available benefits",
-      description:
-        "Many employees miss out on valuable perks like tuition reimbursement, wellness programs, and commuter benefits.",
-      priority: "medium",
-      action: "Explore Benefits",
-      category: "benefits",
-    })
-  }
-
-  if (priorities.length < 3) {
-    priorities.push({
-      title: "Create a comprehensive financial plan",
-      description: "A holistic view of your finances helps you make better decisions and reach your goals faster.",
-      priority: "medium",
-      action: "Get Started",
-      category: "planning",
-    })
-  }
-
-  const aiInsight = generateAIInsight(profile)
-
-  return {
-    priorities: priorities.slice(0, 5),
-    aiInsight,
-    timestamp: new Date().toISOString(),
-  }
+  return { persona, statement, priorities, tips, timeline, aiPrompt }
 }
 
-function generateAIInsight(profile: UserProfile): string {
-  const insights = {
-    "New Professional":
-      "You're in a growth phase. Most people in your profile prioritize building emergency savings and maximizing employer benefits. Focus on establishing strong financial habits now.",
-    "Family Builder":
-      "Your family is growing, and so are your financial responsibilities. Prioritize protection (insurance) and tax-advantaged savings (FSA, 529) to secure your family's future.",
-    "Transitioning Retiree":
-      "You're entering a new chapter. Focus on healthcare planning, income strategies, and ensuring your assets are protected and properly allocated.",
-    "Career Advancer":
-      "You're making progress in your career. Now is the time to increase retirement contributions and consider additional insurance coverage as your income grows.",
-    "Financial Stabilizer":
-      "You're working to build stability. Focus on reducing high-interest debt, building emergency savings, and taking full advantage of employer benefits.",
+function buildPersona(data: LifeLensFormData): string {
+  if (data.householdStructure === "With Dependents") {
+    return data.riskAversion === "Aggressive" || data.riskAversion === "Growth"
+      ? "Family Growth Architect"
+      : "Household Guardian"
   }
 
-  return insights[profile.aiPersona as keyof typeof insights] || insights["New Professional"]
+  if (data.householdStructure === "With Partner") {
+    return data.riskAversion === "Conservative" ? "Stability Strategist" : "Career Momentum Planner"
+  }
+
+  return data.riskAversion === "Aggressive" ? "Solo Builder" : "Financial Foundations Navigator"
 }
