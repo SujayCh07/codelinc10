@@ -1,9 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Sparkles, ArrowRight } from "lucide-react"
+import { ArrowRight, Sparkles } from "lucide-react"
 
 interface LandingScreenProps {
   onStart: (isGuest: boolean) => void
@@ -45,142 +44,119 @@ const SLIDES: Slide[] = [
 ]
 
 export function LandingScreen({ onStart }: LandingScreenProps) {
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIndex((current) => (current + 1) % SLIDES.length)
-    }, 6000)
-
-    return () => clearInterval(timer)
-  }, [])
-
-  const activeSlide = useMemo(() => SLIDES[index], [index])
-
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#1F0609] via-[#2D0B11] to-[#120203] text-white">
-      <div className="absolute inset-0">
+    <div className="relative min-h-screen overflow-hidden bg-white text-[#2A1A1A]">
+      <div className="absolute inset-0 pointer-events-none">
         <motion.div
-          key={activeSlide.title}
-          className="absolute inset-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.2, ease: "easeInOut" }}
-        >
-          <div className={`absolute inset-0 bg-gradient-to-br ${activeSlide.accent} opacity-40`} />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_55%)]" />
-        </motion.div>
+          className="absolute -right-40 top-20 h-72 w-72 rounded-full bg-gradient-to-br from-[#A41E34]/40 via-[#FF4F00]/30 to-transparent blur-3xl"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.2 }}
+        />
+        <motion.div
+          className="absolute -left-20 bottom-10 h-80 w-80 rounded-full bg-gradient-to-br from-[#FF4F00]/30 via-[#A41E34]/30 to-transparent blur-3xl"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.4, delay: 0.2 }}
+        />
+        <motion.div
+          className="absolute left-1/2 top-1/3 h-96 w-96 -translate-x-1/2 rounded-[3rem] bg-white/50 shadow-[0_0_120px_rgba(164,30,52,0.15)] backdrop-blur"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.4 }}
+        />
       </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-between px-6 py-10 sm:px-10">
-        <div className="flex w-full max-w-6xl items-center justify-between">
-          <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur">
-            <Sparkles className="h-5 w-5" />
-            <span className="text-sm font-medium tracking-wide uppercase">LifeLens by Lincoln Financial</span>
-          </div>
-          <div className="hidden text-sm font-medium text-white/60 md:block">
-            Human-centered benefits guidance powered by AI
-          </div>
-        </div>
-
-        <div className="flex w-full max-w-6xl flex-1 flex-col justify-center gap-10 py-12">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-            <div className="space-y-8">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeSlide.title}
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -24 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="space-y-6"
-                >
-                  <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/70">
-                    {activeSlide.eyebrow}
-                  </span>
-                  <h1 className="text-4xl font-bold leading-tight sm:text-5xl md:text-6xl">
-                    {activeSlide.title}
-                  </h1>
-                  <p className="max-w-xl text-base text-white/80 sm:text-lg">
-                    {activeSlide.description}
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <Button
-                  size="lg"
-                  onClick={() => onStart(false)}
-                  className="group flex-1 rounded-2xl bg-white text-[#A41E34] shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:bg-white"
-                >
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => onStart(true)}
-                  className="flex-1 rounded-2xl border-white/40 bg-white/10 text-white shadow-inner shadow-white/10 backdrop-blur transition hover:bg-white/20"
-                >
-                  Try as Guest
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-4 text-sm text-white/70">
-                {SLIDES.map((slide, slideIndex) => (
-                  <button
-                    key={slide.title}
-                    aria-label={`Go to slide ${slideIndex + 1}`}
-                    onClick={() => setIndex(slideIndex)}
-                    className={`h-1.5 flex-1 rounded-full transition ${
-                      slideIndex === index ? "bg-white" : "bg-white/30 hover:bg-white/50"
-                    }`}
-                  />
-                ))}
-              </div>
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-between px-6 pb-20 pt-12 sm:px-10">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#A41E34] to-[#FF4F00] text-white shadow-lg">
+              <Sparkles className="h-6 w-6" />
             </div>
-
-            <div className="glassmorphic relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-8 backdrop-blur-lg">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeSlide.stat}
-                  initial={{ opacity: 0, y: 32 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -32 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="space-y-6"
-                >
-                  <p className="text-sm uppercase tracking-[0.2em] text-white/60">
-                    Why teams choose LifeLens
-                  </p>
-                  <p className="text-2xl font-semibold text-white sm:text-3xl">
-                    {activeSlide.stat}
-                  </p>
-                  <div className="grid gap-3 text-sm text-white/70">
-                    <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-[#FF4F00]" /> Guided onboarding
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-white/70" /> Personalized action timeline
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-[#A41E34]" /> Shareable insights for leaders
-                    </span>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-
-              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#FF4F00]/20 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-[#A41E34]/30 blur-3xl" />
+            <div>
+              <motion.p
+                className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A41E34]"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                LifeLens
+              </motion.p>
+              <motion.h1
+                className="text-3xl font-bold text-[#2A1A1A] sm:text-4xl"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                Human-centered benefits guidance powered by AI
+              </motion.h1>
             </div>
           </div>
-        </div>
+        </header>
 
-        <div className="flex w-full max-w-6xl flex-col gap-3 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} LifeLens • Lincoln Financial CodeLinc 10</p>
-          <p>Designed with accessibility in mind • Optimized for mobile and desktop</p>
-        </div>
+        <main className="flex flex-1 flex-col justify-center gap-10 py-12">
+          <div className="space-y-6">
+            <motion.h2
+              className="text-4xl font-semibold leading-tight text-[#2A1A1A] sm:text-5xl"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.7 }}
+            >
+              See your life and benefits through a smarter lens.
+            </motion.h2>
+            <motion.p
+              className="max-w-2xl text-lg text-[#4D3B3B] sm:text-xl"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.7 }}
+            >
+              We pair Lincoln Financial expertise with conversational AI to help you uncover the protections, plans, and moments that matter most.
+            </motion.p>
+          </div>
+
+          <motion.div
+            className="flex flex-col gap-4 sm:flex-row"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55, duration: 0.6 }}
+          >
+            <Button
+              size="lg"
+              className="group flex-1 rounded-2xl bg-gradient-to-r from-[#A41E34] to-[#FF4F00] text-lg font-semibold text-white shadow-xl shadow-[#A41E34]/20"
+              onClick={() => onStart(false)}
+            >
+              Get Started
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="flex-1 rounded-2xl border-[#A41E34]/40 bg-white/70 text-lg font-semibold text-[#A41E34] transition hover:bg-[#A41E34]/10"
+              onClick={() => onStart(true)}
+            >
+              Try as Guest
+            </Button>
+          </motion.div>
+
+          <motion.div
+            className="mt-6 w-full max-w-md rounded-3xl border border-[#A41E34]/10 bg-white/80 p-6 shadow-xl backdrop-blur"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.65, duration: 0.6 }}
+          >
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#A41E34]">Insight Preview</p>
+            <h3 className="mt-2 text-xl font-semibold text-[#2A1A1A]">
+              "See your benefits, priorities, and timeline personalized just for you."
+            </h3>
+            <p className="mt-3 text-sm text-[#5B4444]">
+              LifeLens surfaces the three actions that matter now, coaching tips to build momentum, and an easy timeline to stay on track.
+            </p>
+          </motion.div>
+        </main>
+
+        <footer className="text-xs uppercase tracking-[0.35em] text-[#A41E34]/70">
+          Trusted by Lincoln Financial · Built for every life moment
+        </footer>
       </div>
     </div>
   )
