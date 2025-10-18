@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { MessageCircle, X } from "lucide-react"
 
@@ -15,6 +15,15 @@ interface SupportDockProps {
 
 export function SupportDock({ persona, focusGoal, screen, onBackToLanding }: SupportDockProps) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const listener: EventListener = () => setOpen(true)
+    window.addEventListener("lifelens-open-chat", listener)
+    return () => {
+      window.removeEventListener("lifelens-open-chat", listener)
+    }
+  }, [])
 
   if (screen === "landing") {
     return null
