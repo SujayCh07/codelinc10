@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { askLifeLens } from "@/lib/chat"
 import { Loader2, X } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 type Role = "user" | "assistant" | "error" | "system"
 type Msg = { id: string; role: Role; content: string; ts: number; provider?: "bedrock" | "claude-fallback" }
@@ -92,7 +93,9 @@ export function ChatModal({
                 m.role === "user" ? "rounded-br-sm bg-[#A41E34] text-white" :
                 m.role === "error" ? "border border-red-200 bg-red-50 text-red-800" :
                 "rounded-bl-sm bg-[#F7F2F3] text-[#3B2D2D]"}`}>
-                {m.content}
+                <ReactMarkdown className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+                  {m.content}
+                </ReactMarkdown>
                 {m.role === "assistant" && m.provider &&
                   <div className="mt-1 text-[10px] text-[#7F1527]/70">{m.provider === "bedrock" ? "Bedrock" : "Claude fallback"}</div>}
               </div>
