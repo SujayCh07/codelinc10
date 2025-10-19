@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     const plan = insights.plans.find((entry) => entry.planId === planId) ?? insights.plans[0]
     const topPriority = insights.priorityBenefits[0]?.title ?? "Review guidance"
-    const reportContent = `LifeLens Report\nUser: ${profile.fullName}\nFocus area: ${insights.focusGoal}\nTop priority: ${topPriority}\nPlan: ${plan.planName}\nReasoning: ${plan.reasoning}\nTimeline: ${insights.timeline
+    const reportContent = `FinMate Report\nUser: ${profile.fullName}\nFocus area: ${insights.focusGoal}\nTop priority: ${topPriority}\nPlan: ${plan.planName}\nReasoning: ${plan.reasoning}\nTimeline: ${insights.timeline
       .map((item) => `- ${item.period}: ${item.title}`)
       .join("\n")}\n`
 

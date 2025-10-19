@@ -1,8 +1,8 @@
 import type {
   ChatEntry,
   EnrollmentFormData,
-  LifeLensInsights,
-  LifeLensPlan,
+  FinMateInsights,
+  FinMatePlan,
   PlanResource,
   PriorityBenefit,
 } from "./types"
@@ -101,7 +101,7 @@ function describePlanVariant(
   baseName: string,
   data: EnrollmentFormData,
   variant: "conservative" | "balanced" | "bold"
-): LifeLensPlan {
+): FinMatePlan {
   const monthlyBase = Math.max(80, 110 + (data.dependents || 0) * 45)
   const coverageLift = data.coveragePreference !== "self" ? 25 : 0
   const offset = variant === "bold" ? 60 : variant === "balanced" ? 30 : 0
@@ -130,7 +130,7 @@ function describePlanVariant(
 
   const resources: PlanResource[] = [
     {
-      title: "LifeLens benefits hub",
+      title: "FinMate benefits hub",
       description: "Review health, wealth, and protection benefits tailored to your profile.",
       url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
     },
@@ -170,7 +170,7 @@ function describePlanVariant(
     shortDescription: descriptions[variant],
     reasoning:
       variant === "bold"
-        ? "You’re comfortable with calculated risk, so LifeLens prioritizes investment growth while reinforcing safety nets."
+        ? "You’re comfortable with calculated risk, so FinMate prioritizes investment growth while reinforcing safety nets."
         : variant === "balanced"
           ? "Grounded saving habits and coverage reviews keep you agile across milestones."
           : "This path minimizes surprises and keeps your loved ones covered first.",
@@ -181,8 +181,8 @@ function describePlanVariant(
   }
 }
 
-export function buildPlans(data: EnrollmentFormData): LifeLensPlan[] {
-  const baseName = "LifeLens Guidance"
+export function buildPlans(data: EnrollmentFormData): FinMatePlan[] {
+  const baseName = "FinMate Guidance"
   return [
     describePlanVariant(`plan-${data.userId ?? "guest"}-1`, baseName, data, "conservative"),
     describePlanVariant(`plan-${data.userId ?? "guest"}-2`, baseName, data, "balanced"),
@@ -224,7 +224,7 @@ export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit
       "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
     ),
     planningSession: createResource(
-      "Schedule a LifeLens coach session",
+      "Schedule a FinMate coach session",
       "Book a 20-minute check-in to keep your benefits on track.",
       "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
     ),
@@ -324,7 +324,7 @@ export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit
     const urgency = hasContributions ? "This quarter" : "Next 30 days"
     const title = hasContributions ? "Boost retirement contributions" : "Kickstart retirement contributions"
     const contributionDetail = hasContributions
-      ? `You're contributing ${data.retirementContributionRate}% today—LifeLens will show how to capture full employer match.`
+      ? `You're contributing ${data.retirementContributionRate}% today—FinMate will show how to capture full employer match.`
       : "Starting contributions unlocks employer match dollars and long-term tax advantages."
 
     return {
@@ -353,7 +353,7 @@ export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit
   } else {
     items.push({
       id: "priority-planning",
-      title: "Schedule a LifeLens benefits check-in",
+      title: "Schedule a FinMate benefits check-in",
       category: "planning",
       description: "Reserve a quick session to make sure savings, coverage, and paperwork stay aligned with your goals.",
       whyItMatters: "A guided review keeps your information fresh and captures any changes before open enrollment.",
@@ -365,7 +365,7 @@ export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit
   return items
 }
 
-export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights {
+export function buildInsights(enrollment: EnrollmentFormData): FinMateInsights {
   const data = withDerivedMetrics(enrollment)
   const theme = pickTheme(data)
   const plans = buildPlans(data)
@@ -379,8 +379,8 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
 
   if (timeline.length < 3) {
     timeline.push(
-      { period: "Now", title: "Finalize your LifeLens profile", description: "Confirm your answers so guidance stays accurate." },
-      { period: "Next 30 days", title: "Meet with a benefits coach", description: "Schedule a LifeLens session to keep your plan aligned." },
+      { period: "Now", title: "Finalize your FinMate profile", description: "Confirm your answers so guidance stays accurate." },
+      { period: "Next 30 days", title: "Meet with a benefits coach", description: "Schedule a FinMate session to keep your plan aligned." },
       { period: "This quarter", title: "Automate contributions", description: "Lock in savings transfers and enrollment reminders." },
     )
   }
@@ -390,13 +390,13 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
   const topPriority = priorityBenefits[0]
   const secondaryPriority = priorityBenefits[1]
 
-  const conversation: LifeLensInsights["conversation"] = [
+  const conversation: FinMateInsights["conversation"] = [
     {
-      speaker: "LifeLens",
+      speaker: "FinMate",
       message: `Hi ${data.preferredName || data.fullName}, let’s prioritize ${topPriority ? topPriority.title.toLowerCase() : "your benefits"} together.`,
     },
     {
-      speaker: "LifeLens",
+      speaker: "FinMate",
       message:
         secondaryPriority
           ? `After that, we’ll line up ${secondaryPriority.title.toLowerCase()} so nothing slips through the cracks.`
@@ -423,8 +423,8 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
     ownerName: data.preferredName || data.fullName,
     focusGoal: theme.focus,
     statement: topPriority
-      ? `LifeLens mapped your answers to highlight ${topPriority.title.toLowerCase()} first, based on a risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`
-      : `LifeLens analyzed your profile and mapped benefits around your risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`,
+      ? `FinMate mapped your answers to highlight ${topPriority.title.toLowerCase()} first, based on a risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`
+      : `FinMate analyzed your profile and mapped benefits around your risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`,
     timeline: trimmedTimeline,
     conversation,
     prompts,
@@ -437,9 +437,9 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
   }
 }
 
-export function buildChatReply(message: string, insights: LifeLensInsights | null): string {
+export function buildChatReply(message: string, insights: FinMateInsights | null): string {
   if (!insights) {
-    return "I’m ready whenever you want to restart the LifeLens quiz."
+    return "I’m ready whenever you want to restart the FinMate quiz."
   }
 
   const normalized = message.toLowerCase()

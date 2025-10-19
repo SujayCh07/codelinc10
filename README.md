@@ -1,6 +1,6 @@
-# LifeLens - AI-Assisted Financial Planning Platform
+# FinMate - AI-Assisted Financial Planning Platform
 
-LifeLens is a modern Next.js 15 application that delivers an AI-assisted financial planning experience. The platform features an interactive enrollment journey, personalized insights, a learning hub, timeline tracking, and an always-on support system to help users navigate their financial future.
+FinMate is a modern Next.js 15 application that delivers an AI-assisted financial planning experience. The platform features an interactive enrollment journey, personalized insights, a learning hub, timeline tracking, and an always-on support system to help users navigate their financial future.
 
 ## 🌟 Features
 

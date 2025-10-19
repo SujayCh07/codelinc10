@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ userId })
   } catch (error) {
-    console.error("Failed to persist LifeLens user", error)
+    console.error("Failed to persist FinMate user", error)
     return NextResponse.json({ error: "Unable to save user" }, { status: 500 })
   }
 }

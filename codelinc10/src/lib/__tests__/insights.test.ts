@@ -27,10 +27,10 @@ describe("insights generation", () => {
 
   it("avoids duplicate chat history entries", () => {
     const existing: ChatEntry[] = [
-      { speaker: "LifeLens", message: "Hello", timestamp: "2024-01-01T00:00:00.000Z", status: "final" },
+      { speaker: "FinMate", message: "Hello", timestamp: "2024-01-01T00:00:00.000Z", status: "final" },
     ]
     const additions: ChatEntry[] = [
-      { speaker: "LifeLens", message: "Hello", timestamp: "2024-01-02T00:00:00.000Z", status: "final" },
+      { speaker: "FinMate", message: "Hello", timestamp: "2024-01-02T00:00:00.000Z", status: "final" },
       { speaker: "You", message: "Thanks", timestamp: "2024-01-02T00:00:01.000Z", status: "final" },
     ]
 

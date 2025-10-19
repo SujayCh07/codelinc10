@@ -30,7 +30,7 @@ import {
 } from "@/lib/storage"
 import type {
   EnrollmentFormData,
-  LifeLensInsights,
+  FinMateInsights,
   ProfileSnapshot,
   SavedMoment,
   ScreenKey,
@@ -49,7 +49,7 @@ export default function Home() {
   const { user, isLoading: userLoading, login, logout } = useUser()
   const [currentScreen, setCurrentScreen] = useState<ScreenKey>(() => "quiz")
   const [formData, setFormData] = useState<EnrollmentFormData | null>(() => createFreshForm())
-  const [insights, setInsights] = useState<LifeLensInsights | null>(null)
+  const [insights, setInsights] = useState<FinMateInsights | null>(null)
   const [savedMoments, setSavedMoments] = useState<SavedMoment[]>([])
   const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
   const [isGenerating, setIsGenerating] = useState(false)
@@ -75,7 +75,7 @@ export default function Home() {
       setFormData(createFreshForm())
     }
 
-    const storedInsights = readStorage<LifeLensInsights | null>(INSIGHTS_STORAGE_KEY, null)
+    const storedInsights = readStorage<FinMateInsights | null>(INSIGHTS_STORAGE_KEY, null)
     if (storedInsights) {
       setInsights(storedInsights)
       setHasCompletedQuiz(true)
@@ -144,7 +144,7 @@ export default function Home() {
     setFormData(data)
   }
 
-  const appendMomentForInsights = (nextInsights: LifeLensInsights) => {
+  const appendMomentForInsights = (nextInsights: FinMateInsights) => {
     const timestamp = new Date().toISOString()
     const momentId = `${nextInsights.themeKey ?? "plan"}-${Date.now()}`
     const newMoment: SavedMoment = {
@@ -217,7 +217,7 @@ export default function Home() {
     }
   }
 
-  const handleSelectMoment = (selectedInsight: LifeLensInsights) => {
+  const handleSelectMoment = (selectedInsight: FinMateInsights) => {
     setInsights(selectedInsight)
     setCurrentScreen("insights")
   }
@@ -314,7 +314,7 @@ export default function Home() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F4F2] text-[#A41E34]">
         <div className="text-center">
-          <div className="mb-4 text-2xl font-semibold">LifeLens</div>
+          <div className="mb-4 text-2xl font-semibold">FinMate</div>
           <div className="text-sm">Preparing your financial guidance...</div>
         </div>
       </div>
@@ -432,7 +432,7 @@ export default function Home() {
 
       </main>
       <ChatModal
-        baseContext={{ app: "LifeLens" }}
+        baseContext={{ app: "FinMate" }}
         focusGoal={insights?.focusGoal}
         persona={insights?.goalTheme}
         userId={formData?.userId ?? undefined}
