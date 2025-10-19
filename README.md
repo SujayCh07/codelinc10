@@ -154,7 +154,11 @@ This project is private and proprietary.
 
 ## 👥 Authors
 
-- SujayCh07
+- Sujay Chava
+- Pranay Kakkar
+- Aditya Jha
+- Akshaj Nadimpalli
+- Bhuvan Gabbita
 
 ## 🙏 Acknowledgments
 
