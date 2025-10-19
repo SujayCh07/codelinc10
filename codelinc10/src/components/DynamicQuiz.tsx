@@ -17,7 +17,6 @@ import {
   EDUCATION_OPTIONS,
   HEALTH_OPTIONS,
   INCOME_OPTIONS,
-  EDUCATION_OPTIONS,
   ACCOUNT_PREFERENCE_OPTIONS,
   BENEFIT_USAGE_OPTIONS,
   DENTAL_VISION_OPTIONS,
@@ -73,7 +72,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
   const [index, setIndex] = useState(0)
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
+useEffect(() => {
   const prepared = initializeQuizState(initialData)
   setAnswers(prepared)
   setPhase("hr")
@@ -135,17 +134,10 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
 
   const goNext = () => {
     if (phase === "hr") {
-  // Ensure there's always at least one question before switching
-  if (!flow || flow.length === 0) {
-    console.warn("No questions found in flow, skipping to summary.")
-    setPhase("summary")
-  } else {
-    setPhase("steps")
-    setIndex(0)
-  }
-  return
-}
-
+      setPhase("steps")
+      setIndex(0)
+      return
+    }
     if (phase === "steps") {
       if (index < flow.length - 1) {
         setIndex((previous) => previous + 1)
