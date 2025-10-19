@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { KeyboardEvent as ReactKeyboardEvent } from "react"
 import { ArrowLeft, MessageCircle, Send } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -164,7 +165,9 @@ export function ChatScreen({
                           <span className="h-2 w-2 animate-bounce delay-300 rounded-full bg-current" />
                         </span>
                       ) : (
-                        entry.message
+                        <ReactMarkdown className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+                          {entry.message}
+                        </ReactMarkdown>
                       )}
                     </div>
                     <span className="mt-1 text-[10px] uppercase tracking-[0.25em] text-[#9B8587]">
