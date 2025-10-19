@@ -58,22 +58,39 @@ export function InsightsDashboard({
       <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-6">
         <Card className="overflow-hidden rounded-3xl border border-[#E2D5D7] bg-white p-6 shadow-lg">
           <div className="space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#7F1527]">Your focus</p>
-            <h2 className="text-2xl font-semibold text-[#2A1A1A]">{insights.focusGoal}</h2>
-            <p className="text-sm leading-relaxed text-[#4D3B3B]">{insights.statement}</p>
-            {topPriority && (
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#F9EDEA] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#A41E34]">
-                Top priority: {topPriority.title}
-              </div>
-            )}
-            <Button
-              className="w-full rounded-full bg-[#A41E34] py-3 text-sm font-semibold text-white hover:bg-[#7F1527] sm:w-auto sm:px-8"
-              onClick={() => openFinMateChat({ prompt: topPriority ? `How do I start ${topPriority.title.toLowerCase()}?` : "What should I do first?" })}
-            >
-              Chat about my priorities
-              <MessageCircle className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#7F1527]">
+    Your focus
+  </p>
+  <h2 className="text-2xl font-semibold text-[#2A1A1A]">
+    {insights.focusGoal}
+  </h2>
+  <p className="text-sm leading-relaxed text-[#4D3B3B]">
+    {insights.statement}
+  </p>
+
+  {topPriority && (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="inline-flex items-center gap-2 rounded-full bg-[#F9EDEA] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#A41E34]">
+        Top priority: {topPriority.title}
+      </div>
+
+      <Button
+        className="ml-2 rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527]"
+        onClick={() =>
+          openFinMateChat({
+            prompt: topPriority
+              ? `How do I start ${topPriority.title.toLowerCase()}?`
+              : "What should I do first?",
+          })
+        }
+      >
+        Chat about my priorities
+        <MessageCircle className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
+  )}
+</div>
+
         </Card>
 
         <section className="space-y-4">
