@@ -9,7 +9,7 @@ import { X, Mail, Lock } from "lucide-react"
 
 interface AuthModalProps {
   onClose: () => void
-  onAuth: (userId: string, email: string, fullName?: string) => void
+  onAuth: (userId: string, email: string, fullName?: string, profileData?: Record<string, unknown>) => void
   onGuestContinue: () => void
 }
 
@@ -39,8 +39,8 @@ export function AuthModal({ onClose, onAuth, onGuestContinue }: AuthModalProps) 
         return
       }
 
-      // Successful login
-      onAuth(data.user.userId, data.user.email, data.user.fullName)
+      // Successful login - pass profile data for prefilling
+      onAuth(data.user.userId, data.user.email, data.user.fullName, data.user.profileData)
     } catch (err) {
       setError("An error occurred during login")
       console.error("Login error:", err)

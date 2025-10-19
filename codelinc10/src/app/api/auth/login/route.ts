@@ -20,12 +20,12 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid credentials. Please check your email and user ID." },
+        { error: "Invalid credentials" },
         { status: 401 }
       )
     }
 
-    // Return user information (excluding sensitive data)
+    // Return user information including profile data for prefilling the form
     return NextResponse.json({
       success: true,
       user: {
@@ -33,6 +33,7 @@ export async function POST(request: Request) {
         email: user.user_email,
         fullName: user.full_name,
         isActive: user.is_active,
+        profileData: user.profile_data || null,
       },
     })
   } catch (error) {

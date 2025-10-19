@@ -129,22 +129,33 @@ export default function Home() {
   const assignUserId = () =>
     (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `user-${Date.now()}`)
 
-  const handleAuth = (userId: string, email: string, fullName?: string) => {
+  const handleAuth = (userId: string, email: string, fullName?: string, profileData?: Record<string, unknown>) => {
     // Set the user session with the authenticated user
     login({ name: fullName || email, createdAt: profileCreatedAt })
     
-    // Update form data with the authenticated user's ID
-    setFormData((current) => {
-      const updated = current ? { ...current, userId, fullName: fullName || current.fullName } : createFreshForm()
-      return withDerivedMetrics({ ...updated, userId })
-    })
-    
-    // Check if user has existing insights, if yes navigate there
-    if (hasCompletedQuiz && insights) {
-      setCurrentScreen("insights")
+    // If profile data exists, merge it with existing form data
+    let updatedFormData: EnrollmentFormData
+    if (profileData && Object.keys(profileData).length > 0) {
+      // User has existing profile data - use it to prefill the form
+      // Cast to unknown first, then to EnrollmentFormData
+      const existingProfile = profileData as unknown as EnrollmentFormData
+      updatedFormData = withDerivedMetrics({
+        ...existingProfile,
+        userId,
+        email,
+        fullName: fullName || existingProfile.fullName || "",
+      })
     } else {
-      setCurrentScreen("quiz")
+      // New user or no profile data - use current form or create fresh
+      updatedFormData = formData 
+        ? withDerivedMetrics({ ...formData, userId, email, fullName: fullName || formData.fullName })
+        : withDerivedMetrics({ ...createFreshForm(), userId, email, fullName: fullName || "" })
     }
+    
+    setFormData(updatedFormData)
+    
+    // Always navigate to quiz for existing users to review/update their profile
+    setCurrentScreen("quiz")
   }
 
   const handleStart = () => {
@@ -392,7 +403,6 @@ export default function Home() {
           >
             <LandingScreen
               onStart={handleStart}
-              hasExistingInsights={!!insights}
               onViewInsights={() => setCurrentScreen("insights")}
               quizCompleted={hasCompletedQuiz}
               onAuth={handleAuth}

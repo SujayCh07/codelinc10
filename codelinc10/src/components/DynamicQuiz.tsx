@@ -99,10 +99,14 @@ useEffect(() => {
     }
   }, [flow.length, index, phase])
 
-  const valueForQuestion = (question: QuizQuestion) => {
+  const valueForQuestion = (question: QuizQuestion): string | number | boolean | string[] | null => {
     const value = answers[question.id as keyof EnrollmentFormData]
     if (question.id === "activityLevel") {
       return answers.activityLevel
+    }
+    // Handle the derived object which shouldn't be a question field
+    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+      return null
     }
     return value ?? null
   }
@@ -158,7 +162,6 @@ useEffect(() => {
       case "number":
       case "slider":
         return typeof value === "number" && !Number.isNaN(value)
-      case "date":
       case "select":
         return Boolean(value)
       case "boolean":
