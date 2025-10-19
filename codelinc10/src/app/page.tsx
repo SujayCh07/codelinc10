@@ -36,6 +36,7 @@ import type {
 import { useUser } from "@/lib/user-context"
 
 export default function Home() {
+  // 🧠 State & context
   const { user, isLoading: userLoading, login, logout } = useUser()
   const [currentScreen, setCurrentScreen] = useState<ScreenKey>("landing")
   const [formData, setFormData] = useState<EnrollmentFormData | null>(null)
@@ -45,6 +46,43 @@ export default function Home() {
   const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
   const isHydrated = useHydrated()
 
+  // 🧩 Stable profile snapshot computation (must stay before conditionals)
+  const profileSnapshot: ProfileSnapshot = useMemo(() => {
+    if (!formData) {
+      return {
+        name: user?.name ?? "Guest",
+        aiPersona: insights?.persona ?? "Balanced Navigator",
+        ageRange: "—",
+        employmentType: "—",
+        householdSize: 1,
+        dependents: 0,
+        lifeEvents: [],
+        goals: [],
+        createdAt: user?.createdAt ?? profileCreatedAt,
+      }
+    }
+
+    const householdSize =
+      formData.householdCoverage === "You only"
+        ? 1
+        : formData.householdCoverage === "You + partner"
+          ? 2
+          : Math.max(2, 1 + formData.dependentCount)
+
+    return {
+      name: formData.preferredName || formData.fullName,
+      aiPersona: insights?.persona ?? "Balanced Navigator",
+      ageRange: `${formData.age}`,
+      employmentType: `Since ${formData.employmentStart}`,
+      householdSize,
+      dependents: formData.dependentCount,
+      lifeEvents: formData.milestoneFocus ? [formData.milestoneFocus] : [],
+      goals: formData.financialGoals,
+      createdAt: user?.createdAt ?? profileCreatedAt,
+    }
+  }, [formData, insights?.persona, profileCreatedAt, user])
+
+  // 💾 Restore localStorage state on hydration
   useEffect(() => {
     if (!isHydrated) return
 
@@ -58,42 +96,27 @@ export default function Home() {
     }
 
     const storedForm = readStorage<EnrollmentFormData | null>(FORM_STORAGE_KEY, null)
-    if (storedForm) {
-      setFormData({ ...DEFAULT_ENROLLMENT_FORM, ...storedForm })
-    }
+    if (storedForm) setFormData({ ...DEFAULT_ENROLLMENT_FORM, ...storedForm })
 
     const storedInsights = readStorage<LifeLensInsights | null>(INSIGHTS_STORAGE_KEY, null)
-    if (storedInsights) {
-      setInsights(storedInsights)
-    }
+    if (storedInsights) setInsights(storedInsights)
 
     const storedMoments = readStorage<SavedMoment[]>(MOMENTS_STORAGE_KEY, [])
-    if (storedMoments.length) {
-      setSavedMoments(storedMoments)
-    }
+    if (storedMoments.length) setSavedMoments(storedMoments)
 
     const storedChat = readStorage<ChatEntry[]>(CHAT_STORAGE_KEY, [])
-    if (storedChat.length) {
-      setChatHistory(storedChat)
-    }
+    if (storedChat.length) setChatHistory(storedChat)
   }, [isHydrated])
 
+  // 💾 Persist changes to localStorage
   useEffect(() => {
     if (!isHydrated) return
-    if (formData) {
-      writeStorage(FORM_STORAGE_KEY, formData)
-    } else {
-      removeStorage(FORM_STORAGE_KEY)
-    }
+    formData ? writeStorage(FORM_STORAGE_KEY, formData) : removeStorage(FORM_STORAGE_KEY)
   }, [formData, isHydrated])
 
   useEffect(() => {
     if (!isHydrated) return
-    if (insights) {
-      writeStorage(INSIGHTS_STORAGE_KEY, insights)
-    } else {
-      removeStorage(INSIGHTS_STORAGE_KEY)
-    }
+    insights ? writeStorage(INSIGHTS_STORAGE_KEY, insights) : removeStorage(INSIGHTS_STORAGE_KEY)
   }, [insights, isHydrated])
 
   useEffect(() => {
@@ -106,23 +129,17 @@ export default function Home() {
     writeStorage(CHAT_STORAGE_KEY, chatHistory)
   }, [chatHistory, isHydrated])
 
+  // 🚀 Interaction handlers
   const handleStart = (asGuest: boolean) => {
-    // Create user session when starting
     if (!user) {
-      login({
-        name: asGuest ? "Guest User" : "New User",
-        isGuest: asGuest,
-      })
+      login({ name: asGuest ? "Guest User" : "New User", isGuest: asGuest })
     }
-    
     const template = asGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
     setFormData({ ...template, isGuest: asGuest })
     setCurrentScreen("enrollment")
   }
 
-  const handleEnrollmentUpdate = (data: EnrollmentFormData) => {
-    setFormData(data)
-  }
+  const handleEnrollmentUpdate = (data: EnrollmentFormData) => setFormData(data)
 
   const handleEnrollmentComplete = (data: EnrollmentFormData) => {
     const generated = buildInsights(data)
@@ -144,8 +161,7 @@ export default function Home() {
 
     setSavedMoments((previous) => {
       const filtered = previous.filter((entry) => entry.summary !== newMoment.summary)
-      const updated = [...filtered, newMoment].slice(-8)
-      return updated
+      return [...filtered, newMoment].slice(-8)
     })
 
     if (generated.conversation.length > 0) {
@@ -166,8 +182,7 @@ export default function Home() {
     setSavedMoments((previous) => {
       if (!previous.length) return previous
       const latest = previous[previous.length - 1]
-      const updatedLatest: SavedMoment = { ...latest, timeline: regenerated.timeline, insight: regenerated }
-      return [...previous.slice(0, -1), updatedLatest]
+      return [...previous.slice(0, -1), { ...latest, timeline: regenerated.timeline, insight: regenerated }]
     })
   }
 
@@ -231,30 +246,29 @@ export default function Home() {
     const finalizeReply = () => {
       setChatHistory((previous) => {
         const next = [...previous]
-        const pendingIndex = next.findIndex((entry) => entry.status === "pending" && entry.speaker === "LifeLens")
+        const pendingIndex = next.findIndex(
+          (entry) => entry.status === "pending" && entry.speaker === "LifeLens"
+        )
         const finalEntry: ChatEntry = {
           speaker: "LifeLens",
           message: replyMessage,
           timestamp: new Date().toISOString(),
           status: "final",
         }
-        if (pendingIndex === -1) {
-          next.push(finalEntry)
-          return next
-        }
-        next[pendingIndex] = finalEntry
+        if (pendingIndex === -1) next.push(finalEntry)
+        else next[pendingIndex] = finalEntry
         return next
       })
     }
 
     if (typeof window === "undefined") {
       finalizeReply()
-      return
+    } else {
+      window.setTimeout(finalizeReply, 450)
     }
-
-    window.setTimeout(finalizeReply, 450)
   }
 
+  // ⏳ Loading state (no hook calls below)
   if (!isHydrated || userLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F4F2] text-[#A41E34]">
@@ -266,41 +280,7 @@ export default function Home() {
     )
   }
 
-  const profileSnapshot: ProfileSnapshot = useMemo(() => {
-    if (!formData) {
-      return {
-        name: user?.name ?? "Guest",
-        aiPersona: insights?.persona ?? "Balanced Navigator",
-        ageRange: "—",
-        employmentType: "—",
-        householdSize: 1,
-        dependents: 0,
-        lifeEvents: [],
-        goals: [],
-        createdAt: user?.createdAt ?? profileCreatedAt,
-      }
-    }
-
-    const householdSize =
-      formData.householdCoverage === "You only"
-        ? 1
-        : formData.householdCoverage === "You + partner"
-          ? 2
-          : Math.max(2, 1 + formData.dependentCount)
-
-    return {
-      name: formData.preferredName || formData.fullName,
-      aiPersona: insights?.persona ?? "Balanced Navigator",
-      ageRange: `${formData.age}`,
-      employmentType: `Since ${formData.employmentStart}`,
-      householdSize,
-      dependents: formData.dependentCount,
-      lifeEvents: formData.milestoneFocus ? [formData.milestoneFocus] : [],
-      goals: formData.financialGoals,
-      createdAt: user?.createdAt ?? profileCreatedAt,
-    }
-  }, [formData, insights?.persona, profileCreatedAt, user])
-
+  // 🖼️ Main render
   return (
     <main className="min-h-screen bg-[#F7F4F2] pb-24">
       <AnimatePresence mode="wait" initial={false}>
@@ -312,8 +292,8 @@ export default function Home() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35 }}
           >
-            <LandingScreen 
-              onStart={handleStart} 
+            <LandingScreen
+              onStart={handleStart}
               hasExistingInsights={!!insights}
               onViewInsights={() => setCurrentScreen("insights")}
             />
