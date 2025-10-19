@@ -2,6 +2,7 @@
 
 import { ExternalLink, MessageCircle, RefreshCw, Send } from "lucide-react"
 
+import { openLifeLensChat } from "@/components/chat-bus"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import type { LifeLensInsights } from "@/lib/types"
@@ -21,11 +22,6 @@ export function InsightsDashboard({
   onSendReport,
   loading,
 }: InsightsDashboardProps) {
-  const openChat = (prompt?: string) => {
-    if (typeof window === "undefined") return
-    window.dispatchEvent(new CustomEvent("lifelens-open-chat", { detail: { prompt } }))
-  }
-
   const topPriority = insights.priorityBenefits[0]
 
   return (
@@ -72,7 +68,7 @@ export function InsightsDashboard({
             )}
             <Button
               className="w-full rounded-full bg-[#A41E34] py-3 text-sm font-semibold text-white hover:bg-[#7F1527] sm:w-auto sm:px-8"
-              onClick={() => openChat(topPriority ? `How do I start ${topPriority.title.toLowerCase()}?` : "What should I do first?")}
+              onClick={() => openLifeLensChat({ prompt: topPriority ? `How do I start ${topPriority.title.toLowerCase()}?` : "What should I do first?" })}
             >
               Chat about my priorities
               <MessageCircle className="ml-2 h-4 w-4" />
@@ -128,7 +124,7 @@ export function InsightsDashboard({
                       size="sm"
                       variant="outline"
                       className="rounded-full border-[#A41E34]/30 text-xs font-semibold text-[#A41E34] hover:border-[#A41E34]"
-                      onClick={() => openChat(`Help me with ${benefit.title.toLowerCase()}`)}
+                      onClick={() => openLifeLensChat({ prompt: `Help me with ${benefit.title.toLowerCase()}` })}
                     >
                       Ask LifeLens about this
                     </Button>
@@ -170,7 +166,7 @@ export function InsightsDashboard({
             </div>
             <Button
               className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527]"
-              onClick={() => openChat()}
+              onClick={() => openLifeLensChat({ prompt: "What should I tackle next based on my plan?" })}
             >
               Chat with LifeLens
               <MessageCircle className="ml-2 h-4 w-4" />
