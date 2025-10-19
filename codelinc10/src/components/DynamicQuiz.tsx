@@ -182,12 +182,12 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
       aria-busy={submitting}
     >
       <header className="sticky top-0 z-30 border-b border-[#E3D8D5] bg-[#F7F4F2]/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-4 py-4 sm:px-6">
           <button
             type="button"
             onClick={goBack}
             disabled={submitting}
-            className="flex items-center gap-2 rounded-full border border-[#E3D8D5] bg-white px-4 py-2 text-sm font-semibold text-[#7F1527] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full border border-[#E3D8D5] bg-white px-3 py-2 text-xs font-semibold text-[#7F1527] shadow-sm transition sm:px-4 sm:text-sm disabled:opacity-50"
           >
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
@@ -204,7 +204,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 px-5 pb-2">
+        <div className="flex items-center gap-3 px-4 pb-2 sm:px-6">
           <div
             className="h-1 flex-1 bg-[#EBDDD8]"
             role="progressbar"
@@ -221,7 +221,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col overflow-y-auto px-4 pb-20 pt-6">
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col overflow-y-auto px-4 pb-24 pt-6 sm:px-6">
         <AnimatePresence mode="wait">
           {phase === "hr" && (
             <motion.section
@@ -230,13 +230,13 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="min-h-[calc(100vh-100px)] scroll-mt-[84px] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+              className="min-h-[calc(100vh-120px)] scroll-mt-[84px] rounded-[28px] border border-[#E2D5D7] bg-white p-6 shadow-xl sm:min-h-[calc(100vh-100px)] sm:rounded-[32px] sm:p-8"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Synced from HR</p>
-                  <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">Welcome back, {answers.preferredName || answers.fullName}</h1>
-                  <p className="mt-3 text-sm text-[#4D3B3B]">
+                  <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">Welcome back, {answers.preferredName || answers.fullName}</h1>
+                  <p className="mt-3 text-sm leading-relaxed text-[#4D3B3B]">
                     We pulled your basics from the HR system. Review and continue to personalize your LifeLens guidance.
                   </p>
                 </div>
@@ -244,7 +244,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
               </div>
 
               <div className="mt-8 space-y-4">
-                <div className="rounded-3xl border border-[#E2D5D7] bg-white p-5 shadow-sm text-sm text-[#4D3B3B]">
+                <div className="rounded-3xl border border-[#E2D5D7] bg-white p-5 shadow-sm text-sm leading-relaxed text-[#4D3B3B]">
                   <p>
                     <strong>Employee:</strong> {answers.fullName}
                   </p>
@@ -275,13 +275,13 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="min-h-[calc(100vh-100px)] scroll-mt-[84px] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+              className="min-h-[calc(100vh-120px)] scroll-mt-[84px] rounded-[28px] border border-[#E2D5D7] bg-white p-6 shadow-xl sm:min-h-[calc(100vh-100px)] sm:rounded-[32px] sm:p-8"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Question {index + 1}</p>
-                  <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">{current.title}</h1>
-                  <p className="mt-3 text-sm text-[#4D3B3B]">{current.prompt}</p>
+                  <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">{current.title}</h1>
+                  <p className="mt-3 text-sm leading-relaxed text-[#4D3B3B]">{current.prompt}</p>
                 </div>
                 <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
               </div>
@@ -299,13 +299,13 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="min-h-[calc(100vh-100px)] scroll-mt-[84px] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+              className="min-h-[calc(100vh-120px)] scroll-mt-[84px] rounded-[28px] border border-[#E2D5D7] bg-white p-6 shadow-xl sm:min-h-[calc(100vh-100px)] sm:rounded-[32px] sm:p-8"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Summary</p>
-                  <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">Here’s your LifeLens profile</h1>
-                  <p className="mt-3 text-sm text-[#4D3B3B]">
+                  <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">Here’s your LifeLens profile</h1>
+                  <p className="mt-3 text-sm leading-relaxed text-[#4D3B3B]">
                     Confirm your answers and share consent so LifeLens can generate your personalized benefits plans.
                   </p>
                 </div>
@@ -335,6 +335,12 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
                 <SummaryRow label="Home" value={getLabelForOption(HOME_OPTIONS, answers.homeOwnership)} />
                 <SummaryRow label="Household income" value={getLabelForOption(INCOME_OPTIONS, answers.incomeRange)} />
                 <SummaryRow label="Health coverage" value={getLabelForOption(HEALTH_OPTIONS, answers.healthCoverage)} />
+                {answers.tobaccoUse !== null && (
+                  <SummaryRow
+                    label="Tobacco use"
+                    value={answers.tobaccoUse ? "Someone in household uses tobacco" : "No tobacco use reported"}
+                  />
+                )}
                 <SummaryRow label="Savings rate" value={`${answers.savingsRate}% of income`} />
                 {answers.wantsSavingsSupport !== null && (
                   <SummaryRow
@@ -389,7 +395,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
             variant="outline"
             onClick={goBack}
             disabled={submitting}
-            className="rounded-full border-[#E3D8D5] px-6 py-3 text-sm font-semibold text-[#7F1527] disabled:opacity-50"
+            className="rounded-full border-[#E3D8D5] px-5 py-3 text-sm font-semibold text-[#7F1527] shadow-sm transition disabled:opacity-50"
           >
             Back
           </Button>
@@ -398,7 +404,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
             <Button
               onClick={handleSubmit}
               disabled={!consentChecked || submitting}
-              className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527] disabled:opacity-40"
+              className="inline-flex items-center justify-center rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7F1527] disabled:opacity-40"
             >
               {submitting ? "Analyzing…" : "Generate my insights"}
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -407,7 +413,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
             <Button
               onClick={goNext}
               disabled={submitting || (phase === "steps" && !currentIsValid)}
-              className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527] disabled:opacity-40"
+              className="inline-flex items-center justify-center rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7F1527] disabled:opacity-40"
             >
               {phase === "hr" ? "Start personalizing" : "Continue"}
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -448,11 +454,12 @@ function renderField(
               type="button"
               onClick={() => onChange(option.value)}
               className={cn(
-                "flex items-center justify-between rounded-2xl border px-4 py-4 text-left text-sm transition",
+                "flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A41E34]/30",
                 value === option.value
                   ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
                   : "border-[#E3D8D5] bg-[#FBF7F6] text-[#2A1A1A] hover:border-[#A41E34]/40",
               )}
+              aria-pressed={value === option.value}
             >
               <span>
                 <span className="block font-semibold">{option.label}</span>
@@ -475,6 +482,7 @@ function renderField(
             step={question.step ?? 1}
             value={[numericValue]}
             onValueChange={(numbers) => onChange(numbers[0])}
+            aria-label={question.title}
           />
           <p className="text-sm font-semibold text-[#7F1527]">
             {question.id === "riskComfort"
@@ -495,11 +503,12 @@ function renderField(
               type="button"
               onClick={() => onChange(choice.value)}
               className={cn(
-                "rounded-full border px-5 py-3 text-sm font-semibold transition",
+                "w-full rounded-full border px-5 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A41E34]/30 sm:w-auto",
                 value === choice.value
                   ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
                   : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40",
               )}
+              aria-pressed={value === choice.value}
             >
               {choice.label}
             </button>
@@ -525,11 +534,12 @@ function renderField(
                   onChange(next)
                 }}
                 className={cn(
-                  "rounded-full border px-4 py-2 text-sm font-semibold transition",
+                  "rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A41E34]/30",
                   active
                     ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
                     : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40",
                 )}
+                aria-pressed={active}
               >
                 {option.label}
               </button>

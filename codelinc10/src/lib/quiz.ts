@@ -105,6 +105,10 @@ export function initializeQuizState(template: EnrollmentFormData): EnrollmentFor
     hydrated.dependents = 0
   }
 
+  if (hydrated.coveragePreference === "self") {
+    hydrated.tobaccoUse = null
+  }
+
   if (!(["married", "partnered"] as EnrollmentFormData["maritalStatus"][]).includes(hydrated.maritalStatus)) {
     hydrated.spouseHasSeparateInsurance = null
   }
@@ -180,6 +184,13 @@ export function questionsFor(data: EnrollmentFormData): QuizQuestion[] {
       options: HEALTH_OPTIONS,
     },
     {
+      id: "tobaccoUse",
+      title: "Does anyone you cover use tobacco?",
+      prompt: "Helps us surface the right life and disability coverage reminders.",
+      type: "boolean-choice",
+      condition: (answers) => answers.coveragePreference !== "self",
+    },
+    {
       id: "savingsRate",
       title: "How much do you save each month?",
       prompt: "Estimate the percent of income you set aside.",
@@ -250,6 +261,9 @@ export function updateFormValue(
       next.coveragePreference = value as EnrollmentFormData["coveragePreference"]
       if (next.coveragePreference !== "self-plus-family") {
         next.dependents = 0
+      }
+      if (next.coveragePreference === "self") {
+        next.tobaccoUse = null
       }
       break
     case "dependents":
