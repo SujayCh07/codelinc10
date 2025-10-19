@@ -189,14 +189,14 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
             <div className="rounded-3xl border border-[#F0E6E7] bg-white p-4 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]">Prefilled from HR</p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Legal name</Label>
-                  <Input
-                    id="fullName"
-                    value={data.fullName}
-                    onChange={(event) => update({ fullName: event.target.value })}
-                  />
-                </div>
+                <Label htmlFor="fullName">Legal name (from HR)</Label>
+<Input
+  id="fullName"
+  value={data.fullName || "Sujay Chava"}
+  disabled
+  className="bg-[#F7F4F2] cursor-not-allowed"
+/>
+
                 <div className="space-y-2">
                   <Label htmlFor="preferredName">Preferred name</Label>
                   <Input
