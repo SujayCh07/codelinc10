@@ -4,6 +4,7 @@ import type {
   LifeLensInsights,
   LifeLensPlan,
   PlanResource,
+  PriorityBenefit,
 } from "./types"
 
 export function mergeChatHistory(existing: ChatEntry[], additions: ChatEntry[]) {
@@ -61,29 +62,24 @@ export function withDerivedMetrics(data: EnrollmentFormData): EnrollmentFormData
   }
 }
 
-const planThemes: Record<string, { persona: string; focus: string; themeKey: string }> = {
+const planThemes: Record<string, { focus: string; themeKey: string }> = {
   home: {
-    persona: "Home Stretch Strategist",
     focus: "Build a down payment runway",
     themeKey: "home",
   },
   retirement: {
-    persona: "Momentum Builder",
     focus: "Grow retirement confidence",
     themeKey: "retirement",
   },
   protection: {
-    persona: "Family Guardian",
     focus: "Protect your household",
     themeKey: "protection",
   },
   savings: {
-    persona: "Cashflow Navigator",
     focus: "Elevate savings discipline",
     themeKey: "savings",
   },
   resilience: {
-    persona: "Resilience Architect",
     focus: "Build a safety-first plan",
     themeKey: "foundation",
   },
@@ -185,59 +181,235 @@ export function buildPlans(data: EnrollmentFormData): LifeLensPlan[] {
   ]
 }
 
+const createResource = (title: string, description: string, url: string): PlanResource => ({
+  title,
+  description,
+  url,
+})
+
+export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit[] {
+  const resources = {
+    enrollmentCenter: createResource(
+      "Benefits enrollment center",
+      "Review Lincoln Financial benefits and submit elections in one place.",
+      "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
+    ),
+    coverageChecklist: createResource(
+      "Life & disability checklist",
+      "Walk through the steps to size coverage and verify beneficiaries.",
+      "https://www.lincolnfinancial.com/public/individuals/emergency-preparedness",
+    ),
+    savingsAutomation: createResource(
+      "Savings automation setup",
+      "Turn on payroll deductions and direct deposits for your savings goals.",
+      "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+    ),
+    retirementPlaybook: createResource(
+      "Retirement contribution playbook",
+      "Compare contribution scenarios that fit your risk comfort.",
+      "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+    ),
+    wellnessHub: createResource(
+      "Wellness & activity perks",
+      "Unlock reimbursements and perks tied to your favorite activities.",
+      "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
+    ),
+    planningSession: createResource(
+      "Schedule a LifeLens coach session",
+      "Book a 20-minute check-in to keep your benefits on track.",
+      "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
+    ),
+  }
+
+  const items: PriorityBenefit[] = []
+
+  const dependentsNote =
+    data.coveragePreference === "self-plus-family"
+      ? `${data.dependents} dependent${data.dependents === 1 ? "" : "s"} rely on your benefits`
+      : data.coveragePreference === "self-plus-partner"
+        ? "Your partner looks to your coverage for stability"
+        : "Your paycheck keeps your lifestyle protected"
+
+  const partnerNote =
+    data.spouseHasSeparateInsurance === false
+      ? " Coordinate your elections together so nothing falls through the cracks."
+      : ""
+
+  const tobaccoNote = data.tobaccoUse ? " Complete the tobacco attestation so rates stay accurate." : ""
+
+  const coverageTitle =
+    data.coveragePreference === "self-plus-family"
+      ? "Protect your household income"
+      : data.coveragePreference === "self-plus-partner"
+        ? "Coordinate coverage with your partner"
+        : "Lock in your income protection"
+
+  const coverageDescription =
+    data.coveragePreference === "self"
+      ? "Review disability coverage and update beneficiaries so your income is protected if the unexpected happens."
+      : "Elect or increase life and disability coverage sized for the people who count on you."
+
+  items.push({
+    id: "priority-coverage",
+    title: coverageTitle,
+    category: "coverage",
+    description: coverageDescription,
+    whyItMatters: `${dependentsNote}.${partnerNote}${tobaccoNote}`.trim(),
+    urgency: "Now",
+    actions: [resources.enrollmentCenter, resources.coverageChecklist],
+  })
+
+  const healthBenefit: PriorityBenefit = (() => {
+    if (data.healthCoverage === "none") {
+      return {
+        id: "priority-health",
+        title: "Enroll in medical coverage",
+        category: "health",
+        description: "Choose a Lincoln medical plan so day-one care and preventive visits are covered.",
+        whyItMatters: "You reported no current coverage, so enrolling now avoids gaps and late enrollment penalties.",
+        urgency: "Now",
+        actions: [resources.enrollmentCenter],
+      }
+    }
+
+    if (data.healthCoverage === "partner") {
+      return {
+        id: "priority-health",
+        title: "Coordinate medical plans with your partner",
+        category: "health",
+        description: "Compare your employer options with your partner's plan to minimize duplicate costs.",
+        whyItMatters:
+          "Sharing coverage requires a quick check to confirm networks, premiums, and who pays for dependents.",
+        urgency: "Next 30 days",
+        actions: [resources.enrollmentCenter],
+      }
+    }
+
+    return {
+      id: "priority-health",
+      title: "Complete your annual coverage check",
+      category: "health",
+      description: "Verify beneficiaries, dependents, and open enrollment reminders so you're ready to renew.",
+      whyItMatters: "Staying current keeps claims smooth and ensures your household is always listed correctly.",
+      urgency: "Next 30 days",
+      actions: [resources.enrollmentCenter],
+    }
+  })()
+
+  items.push(healthBenefit)
+
+  const savingsBenefit: PriorityBenefit = (() => {
+    if ((data.savingsRate ?? 0) < 10 || data.wantsSavingsSupport) {
+      return {
+        id: "priority-savings",
+        title: "Automate savings and emergency cash",
+        category: "savings",
+        description: "Route a set percent of each paycheck into savings and emergency accounts with payroll automation.",
+        whyItMatters: `You currently set aside ${data.savingsRate}% of income, and automation keeps momentum without manual transfers.`,
+        urgency: "Next 30 days",
+        actions: [resources.savingsAutomation],
+      }
+    }
+
+    return {
+      id: "priority-retirement",
+      title: "Boost retirement contributions",
+      category: "savings",
+      description: "Use your comfort with risk to increase retirement contributions or allocate to growth accounts.",
+      whyItMatters: `A risk comfort of ${data.riskComfort}/5 means you can capture more employer match and long-term growth.`,
+      urgency: "This quarter",
+      actions: [resources.retirementPlaybook],
+    }
+  })()
+
+  items.push(savingsBenefit)
+
+  if (data.activityLevel === "active" || data.physicalActivities) {
+    items.push({
+      id: "priority-wellness",
+      title: "Use wellness reimbursements",
+      category: "wellness",
+      description: "Log your favorite activities to unlock reimbursement dollars and health incentives.",
+      whyItMatters: "Active lifestyles qualify for wellness perks—submitting receipts keeps money in your pocket.",
+      urgency: "This quarter",
+      actions: [resources.wellnessHub],
+    })
+  } else {
+    items.push({
+      id: "priority-planning",
+      title: "Schedule a LifeLens benefits check-in",
+      category: "planning",
+      description: "Reserve a quick session to make sure savings, coverage, and paperwork stay aligned with your goals.",
+      whyItMatters: "A guided review keeps your information fresh and captures any changes before open enrollment.",
+      urgency: "This quarter",
+      actions: [resources.planningSession],
+    })
+  }
+
+  return items
+}
+
 export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights {
   const data = withDerivedMetrics(enrollment)
   const theme = pickTheme(data)
   const plans = buildPlans(data)
+  const priorityBenefits = buildPriorityBenefits(data)
 
-  const timeline = [
-    {
-      period: "Today",
-      title: "Finalize your LifeLens profile",
-      description: "Confirm family, coverage, and residency details before enrolling in new plans.",
-    },
-    {
-      period: "Next 30 days",
-      title: "Meet your advisor",
-      description: "Schedule a LifeLens micro-session to align benefits with your latest goals.",
-    },
-    {
-      period: "This quarter",
-      title: "Automate contributions",
-      description: "Lock in savings transfers and enrollment reminders across your benefit lineup.",
-    },
-  ]
+  const timeline = priorityBenefits.slice(0, 3).map((benefit) => ({
+    period: benefit.urgency,
+    title: benefit.title,
+    description: benefit.description,
+  }))
+
+  if (timeline.length < 3) {
+    timeline.push(
+      { period: "Now", title: "Finalize your LifeLens profile", description: "Confirm your answers so guidance stays accurate." },
+      { period: "Next 30 days", title: "Meet with a benefits coach", description: "Schedule a LifeLens session to keep your plan aligned." },
+      { period: "This quarter", title: "Automate contributions", description: "Lock in savings transfers and enrollment reminders." },
+    )
+  }
+
+  const trimmedTimeline = timeline.slice(0, 3)
+
+  const topPriority = priorityBenefits[0]
+  const secondaryPriority = priorityBenefits[1]
 
   const conversation: LifeLensInsights["conversation"] = [
     {
       speaker: "LifeLens",
-      message: `Hi ${data.preferredName || data.fullName}, I’m ready to walk you through your three tailored benefit paths.`,
+      message: `Hi ${data.preferredName || data.fullName}, let’s prioritize ${topPriority ? topPriority.title.toLowerCase() : "your benefits"} together.`,
     },
     {
       speaker: "LifeLens",
-      message: `We’ll focus on ${theme.focus.toLowerCase()} while maintaining safeguards for your family.`,
+      message:
+        secondaryPriority
+          ? `After that, we’ll line up ${secondaryPriority.title.toLowerCase()} so nothing slips through the cracks.`
+          : `We’ll keep building around ${theme.focus.toLowerCase()} every step of the way.`,
     },
   ]
 
   const prompts = [
-    "How different are the three plans?",
-    "What should I do in the next 30 days?",
-    "Can you summarize the costs for my partner?",
+    topPriority ? `How do I get started with ${topPriority.title.toLowerCase()}?` : "What should I do first?",
+    secondaryPriority
+      ? `What paperwork do I need for ${secondaryPriority.title.toLowerCase()}?`
+      : "Can you remind me about upcoming deadlines?",
+    "Can you summarize my next enrollment dates?",
   ]
 
-  const recommendedPlans = plans.map((plan) => ({
-    id: plan.planId,
-    name: plan.planName,
-    reason: plan.reasoning,
-    resources: plan.resources,
+  const recommendedPlans = priorityBenefits.map((benefit) => ({
+    id: benefit.id,
+    name: benefit.title,
+    reason: benefit.whyItMatters,
+    resources: benefit.actions,
   }))
 
   return {
     ownerName: data.preferredName || data.fullName,
-    persona: theme.persona,
     focusGoal: theme.focus,
-    statement: `LifeLens analyzed your profile and mapped benefits around your risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`,
-    timeline,
+    statement: topPriority
+      ? `LifeLens mapped your answers to highlight ${topPriority.title.toLowerCase()} first, based on a risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`
+      : `LifeLens analyzed your profile and mapped benefits around your risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`,
+    timeline: trimmedTimeline,
     conversation,
     prompts,
     plans,
@@ -245,6 +417,7 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
     selectedPlanId: plans[1]?.planId ?? plans[0]?.planId ?? null,
     goalTheme: theme.focus,
     themeKey: theme.themeKey,
+    priorityBenefits,
   }
 }
 
@@ -255,16 +428,18 @@ export function buildChatReply(message: string, insights: LifeLensInsights | nul
 
   const normalized = message.toLowerCase()
 
-  if (normalized.includes("plan")) {
-    const plan = insights.plans.find((entry) => entry.planId === insights.selectedPlanId) ?? insights.plans[0]
-    if (plan) {
-      return `Here’s the highlight reel for ${plan.planName}: ${plan.highlights.join(" · ")}.`
+  if (normalized.includes("plan") || normalized.includes("priority")) {
+    const titles = insights.priorityBenefits.map((benefit) => benefit.title)
+    if (titles.length > 0) {
+      return `Your priority path is ${titles.join(" → ")}. Start with ${titles[0]} and I’ll cue up the next step when you’re ready.`
     }
   }
 
   if (normalized.includes("cost")) {
-    const costs = insights.plans.map((plan) => `${plan.planName.split(" (")[0]} ~${plan.monthlyCostEstimate}`).join(", ")
-    return `Your monthly outlook: ${costs}. Pick the mix that matches your comfort level.`
+    const plan = insights.plans.find((entry) => entry.planId === insights.selectedPlanId) ?? insights.plans[0]
+    if (plan) {
+      return `The current estimate for ${plan.planName.split(" (")[0]} is ${plan.monthlyCostEstimate}. Adjusting coverage within your priorities will update that number.`
+    }
   }
 
   if (normalized.includes("timeline") || normalized.includes("when")) {
@@ -274,22 +449,21 @@ export function buildChatReply(message: string, insights: LifeLensInsights | nul
       : "We’ll add a new milestone once you refresh your plan."
   }
 
-  if (normalized.includes("resource")) {
-    const plan = insights.plans.find((entry) => entry.planId === insights.selectedPlanId) ?? insights.plans[0]
-    const resource = plan?.resources[0]
+  if (normalized.includes("resource") || normalized.includes("link")) {
+    const resource = insights.priorityBenefits[0]?.actions[0]
     return resource
       ? `Open “${resource.title}” for a quick walkthrough. I’ll stay here while you explore.`
       : "I’ll add more resources after your next plan refresh."
   }
 
   if (normalized.includes("thanks")) {
-    return "You’re welcome! Ping me anytime you want to compare plans or send the report to HR."
+    return "You’re welcome! Ping me anytime you want to check off the next benefit priority or send the report to HR."
   }
 
   const prompt = insights.prompts[0]
   if (prompt) {
-    return `Try asking “${prompt}” next — it unlocks a deeper breakdown of your three plans.`
+    return `Try asking “${prompt}” next — it unlocks a deeper breakdown of your priority checklist.`
   }
 
-  return "Ask about the plan lineup, costs, or what to tackle this week and I’ll guide you."
+  return "Ask about your priority list, any paperwork you need, or what to tackle this week and I’ll guide you."
 }

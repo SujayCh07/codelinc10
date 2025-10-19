@@ -83,6 +83,16 @@ export interface PlanResource {
   url: string
 }
 
+export interface PriorityBenefit {
+  id: string
+  title: string
+  category: "coverage" | "savings" | "health" | "wellness" | "planning"
+  description: string
+  whyItMatters: string
+  urgency: "Now" | "Next 30 days" | "This quarter"
+  actions: PlanResource[]
+}
+
 export interface LifeLensPlan {
   planId: string
   planName: string
@@ -96,7 +106,6 @@ export interface LifeLensPlan {
 
 export interface LifeLensInsights {
   ownerName: string
-  persona: string
   focusGoal: string
   statement: string
   timeline: { period: string; title: string; description: string }[]
@@ -107,6 +116,7 @@ export interface LifeLensInsights {
   selectedPlanId: string | null
   goalTheme?: string
   themeKey?: string
+  priorityBenefits: PriorityBenefit[]
 }
 
 export interface SavedMoment {
@@ -127,7 +137,7 @@ export interface ChatEntry {
 
 export interface ProfileSnapshot {
   name: string
-  aiPersona: string
+  focusArea: string
   age: string
   employmentStartDate: string
   dependents: number
