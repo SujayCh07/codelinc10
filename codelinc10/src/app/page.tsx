@@ -12,7 +12,7 @@ import LandingScreen from "@/components/landing-screen"
 import { LearningHub } from "@/components/learning-hub"
 import { ProfileSettings } from "@/components/profile-settings"
 import { TimelineScreen } from "@/components/timeline-screen"
-import { requestPlans, sendPlanReport, upsertUser } from "@/lib/api"
+import { requestPlans, sendPlanReport, upsertUser, fetchInsights } from "@/lib/api"
 import {
   DEFAULT_ENROLLMENT_FORM,
   FORM_STORAGE_KEY,
@@ -55,6 +55,7 @@ export default function Home() {
   const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
   const [isGenerating, setIsGenerating] = useState(false)
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false)
+  const [usingPlaceholder, setUsingPlaceholder] = useState(false)
   const isHydrated = useHydrated()
 
   useEffect(() => {
@@ -180,14 +181,29 @@ export default function Home() {
       if (userId !== prepared.userId) {
         setFormData((existing) => (existing ? { ...existing, userId } : existing))
       }
-      const planResult = await requestPlans(userId)
-      if (planResult.data?.insights) {
-        const remoteInsights = planResult.data.insights
+      
+      // Try to fetch insights from database first
+      const insightsResult = await fetchInsights(userId)
+      if (insightsResult.data?.insights) {
+        const remoteInsights = insightsResult.data.insights
         const normalized = remoteInsights.priorityBenefits?.length
           ? remoteInsights
           : { ...remoteInsights, priorityBenefits: buildPriorityBenefits(prepared) }
         setInsights(normalized)
+        setUsingPlaceholder(insightsResult.data.usingPlaceholder)
         appendMomentForInsights(normalized)
+      } else {
+        // Fallback to generating plans
+        const planResult = await requestPlans(userId)
+        if (planResult.data?.insights) {
+          const remoteInsights = planResult.data.insights
+          const normalized = remoteInsights.priorityBenefits?.length
+            ? remoteInsights
+            : { ...remoteInsights, priorityBenefits: buildPriorityBenefits(prepared) }
+          setInsights(normalized)
+          setUsingPlaceholder(false)
+          appendMomentForInsights(normalized)
+        }
       }
     } finally {
       setIsGenerating(false)
@@ -200,18 +216,34 @@ export default function Home() {
     setIsGenerating(true)
     try {
       const userId = formData.userId ?? assignUserId()
-      const planResult = await requestPlans(userId)
-      if (planResult.data?.insights) {
-        const updated = planResult.data.insights
+      
+      // Try to fetch insights from database first
+      const insightsResult = await fetchInsights(userId)
+      if (insightsResult.data?.insights) {
+        const updated = insightsResult.data.insights
         const normalized = updated.priorityBenefits?.length
           ? updated
           : { ...updated, priorityBenefits: buildPriorityBenefits(formData) }
         setInsights(normalized)
+        setUsingPlaceholder(insightsResult.data.usingPlaceholder)
         appendMomentForInsights(normalized)
       } else {
-        const fallback = buildInsights(formData)
-        setInsights(fallback)
-        appendMomentForInsights(fallback)
+        // Fallback to generating plans
+        const planResult = await requestPlans(userId)
+        if (planResult.data?.insights) {
+          const updated = planResult.data.insights
+          const normalized = updated.priorityBenefits?.length
+            ? updated
+            : { ...updated, priorityBenefits: buildPriorityBenefits(formData) }
+          setInsights(normalized)
+          setUsingPlaceholder(false)
+          appendMomentForInsights(normalized)
+        } else {
+          const fallback = buildInsights(formData)
+          setInsights(fallback)
+          setUsingPlaceholder(true)
+          appendMomentForInsights(fallback)
+        }
       }
     } finally {
       setIsGenerating(false)
@@ -375,6 +407,7 @@ export default function Home() {
               onRegenerate={handleRegenerate}
               onSendReport={handleSendReport}
               loading={isGenerating}
+              usingPlaceholder={usingPlaceholder}
             />
           </motion.div>
         )}
