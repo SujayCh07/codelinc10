@@ -2,13 +2,13 @@
 
 import { ExternalLink, MessageCircle, RefreshCw, Send } from "lucide-react"
 
-import { openLifeLensChat } from "@/components/chat-bus"
+import { openFinMateChat } from "@/components/chat-bus"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import type { LifeLensInsights } from "@/lib/types"
+import type { FinMateInsights } from "@/lib/types"
 
 interface InsightsDashboardProps {
-  insights: LifeLensInsights
+  insights: FinMateInsights
   onBackToLanding: () => void
   onRegenerate: () => void
   onSendReport: () => void
@@ -68,7 +68,7 @@ export function InsightsDashboard({
             )}
             <Button
               className="w-full rounded-full bg-[#A41E34] py-3 text-sm font-semibold text-white hover:bg-[#7F1527] sm:w-auto sm:px-8"
-              onClick={() => openLifeLensChat({ prompt: topPriority ? `How do I start ${topPriority.title.toLowerCase()}?` : "What should I do first?" })}
+              onClick={() => openFinMateChat({ prompt: topPriority ? `How do I start ${topPriority.title.toLowerCase()}?` : "What should I do first?" })}
             >
               Chat about my priorities
               <MessageCircle className="ml-2 h-4 w-4" />
@@ -124,9 +124,9 @@ export function InsightsDashboard({
                       size="sm"
                       variant="outline"
                       className="rounded-full border-[#A41E34]/30 text-xs font-semibold text-[#A41E34] hover:border-[#A41E34]"
-                      onClick={() => openLifeLensChat({ prompt: `Help me with ${benefit.title.toLowerCase()}` })}
+                      onClick={() => openFinMateChat({ prompt: `Help me with ${benefit.title.toLowerCase()}` })}
                     >
-                      Ask LifeLens about this
+                      Ask FinMate about this
                     </Button>
                   </div>
                 </div>
@@ -161,14 +161,14 @@ export function InsightsDashboard({
         <Card className="rounded-3xl border border-[#E2D5D7] bg-white p-6 shadow-md">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-[#2A1A1A]">Keep exploring with LifeLens</h2>
+              <h2 className="text-lg font-semibold text-[#2A1A1A]">Keep exploring with FinMate</h2>
               <p className="text-sm text-[#4D3B3B]">Jump back into chat for follow-up questions or share your plan.</p>
             </div>
             <Button
               className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527]"
-              onClick={() => openLifeLensChat({ prompt: "What should I tackle next based on my plan?" })}
+              onClick={() => openFinMateChat({ prompt: "What should I tackle next based on my plan?" })}
             >
-              Chat with LifeLens
+              Chat with FinMate
               <MessageCircle className="ml-2 h-4 w-4" />
             </Button>
           </div>

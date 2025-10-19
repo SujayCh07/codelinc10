@@ -101,7 +101,7 @@ export function PersonalizedDashboard({ profile, insights, onReassess }: Persona
           <Button onClick={onReassess} variant="outline" className="flex-1 bg-transparent">
             Reassess My Situation
           </Button>
-          <Button className="flex-1 bg-primary">Chat with LifeLens AI</Button>
+          <Button className="flex-1 bg-primary">Chat with FinMate AI</Button>
         </div>
       </div>
     </div>

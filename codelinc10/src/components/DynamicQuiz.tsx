@@ -211,7 +211,7 @@ useEffect(() => {
           </button>
           <div className="text-right">
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#7F1527] sm:text-xs">
-              {phase === "steps" && current ? current.section : "LifeLens quiz"}
+              {phase === "steps" && current ? current.section : "FinMate quiz"}
             </p>
             <p className="text-[10px] text-[#7F1527]/70 sm:text-xs">
               {phase === "steps" && current
@@ -248,14 +248,14 @@ useEffect(() => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="min-h-[calc(100vh-120px)] scroll-mt-[84px] rounded-[24px] border border-[#E2D5D7] bg-white p-5 shadow-sm sm:min-h-[calc(100vh-100px)] sm:rounded-[28px] sm:p-8"
+className="scroll-mt-[84px] rounded-[24px] border border-[#E2D5D7] bg-white p-5 shadow-sm sm:rounded-[28px] sm:p-8 sm:py-10 sm:px-8"
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Synced from HR</p>
                   <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">Welcome back, {answers.preferredName || answers.fullName}</h1>
                   <p className="mt-3 text-sm leading-relaxed text-[#4D3B3B]">
-                    We pulled your basics from the HR system. Review and continue to personalize your LifeLens guidance.
+                    We pulled your basics from the HR system. Review and continue to personalize your FinMate guidance.
                   </p>
                 </div>
                 <div className="hidden h-8 w-8 rounded-full border border-[#E3D8D5] sm:block" aria-hidden="true" />
@@ -293,7 +293,7 @@ useEffect(() => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="min-h-[calc(100vh-120px)] scroll-mt-[84px] rounded-[24px] border border-[#E2D5D7] bg-white p-5 shadow-sm sm:min-h-[calc(100vh-100px)] sm:rounded-[28px] sm:p-8"
+className="scroll-mt-[84px] rounded-[24px] border border-[#E2D5D7] bg-white p-5 shadow-sm sm:rounded-[28px] sm:p-8 sm:py-10 sm:px-8"
             >
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-3">
@@ -336,9 +336,9 @@ useEffect(() => {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Summary</p>
-                  <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">Here’s your LifeLens profile</h1>
+                  <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">Here’s your FinMate profile</h1>
                   <p className="mt-3 text-sm leading-relaxed text-[#4D3B3B]">
-                    Confirm your answers and share consent so LifeLens can generate your personalized benefits plans.
+                    Confirm your answers and share consent so FinMate can generate your personalized benefits plans.
                   </p>
                 </div>
                 <div className="hidden h-8 w-8 rounded-full border border-[#E3D8D5] sm:block" aria-hidden="true" />
@@ -473,7 +473,7 @@ useEffect(() => {
               <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-[#E2D5D7] bg-[#FBF7F6] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#2A1A1A]">I agree to share this profile for plan generation</p>
-                  <p className="text-xs text-[#7F1527]">Required so LifeLens can generate recommendations and chat summaries.</p>
+                  <p className="text-xs text-[#7F1527]">Required so FinMate can generate recommendations and chat summaries.</p>
                 </div>
                 <Switch
                   checked={consentChecked}
@@ -489,7 +489,7 @@ useEffect(() => {
                   animate={{ opacity: 1 }}
                   className="mt-4 text-sm font-semibold text-[#7F1527]"
                 >
-                  Analyzing your LifeLens profile…
+                  Analyzing your FinMate profile…
                 </motion.p>
               )}
             </motion.section>

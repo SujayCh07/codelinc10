@@ -41,15 +41,14 @@ export default function LandingScreen({
   onSignup,
   onDemo,
 }: LandingScreenProps) {
-  // keep state if you want to toggle mock tabs later
   const [activeTab] = useState<"plans" | "costs" | "checklist">("plans")
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-[#1E0D0E]">
-      {/* soft ambient gradient top */}
+      {/* Background gradient */}
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[380px] bg-gradient-to-b from-[#FDF4EF] via-[#F8E3DC] to-transparent" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-28 pt-6 sm:px-8">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-20 pt-6 sm:px-8">
         {/* Header */}
         <header className="flex items-center justify-between">
           <motion.div
@@ -95,10 +94,10 @@ export default function LandingScreen({
           </motion.nav>
         </header>
 
-        {/* Hero */}
-        <main className="grid flex-1 grid-cols-1 items-center gap-10 py-10 md:grid-cols-2">
-          {/* Left copy */}
-          <div className="order-2 max-w-xl md:order-1 md:justify-self-start">
+        {/* Hero Section */}
+        <main className="flex flex-col items-center gap-10 py-8 md:grid md:grid-cols-2 md:gap-12 md:py-14">
+          {/* Left: Hero text */}
+          <div className="w-full max-w-xl md:order-1 md:justify-self-start">
             <motion.p
               className="text-xs font-semibold uppercase tracking-[0.5em] text-[#A41E34]/80"
               initial={{ opacity: 0, y: 12 }}
@@ -108,16 +107,16 @@ export default function LandingScreen({
               AI-Powered Financial Guidance
             </motion.p>
             <motion.h1
-              className="mt-3 text-4xl font-semibold leading-tight text-[#1E0D0E] sm:text-5xl"
-              initial={{ opacity: 0, y: 16 }}
+              className="mt-2 text-4xl font-semibold leading-tight text-[#1E0D0E] sm:text-5xl"
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
               Your personalized financial roadmap starts here.
             </motion.h1>
             <motion.p
-              className="mt-4 max-w-lg text-base text-[#4D3B3B] sm:text-lg"
-              initial={{ opacity: 0, y: 16 }}
+              className="mt-3 max-w-lg text-base text-[#4D3B3B] sm:text-lg"
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.6 }}
             >
@@ -125,15 +124,16 @@ export default function LandingScreen({
               goals.
             </motion.p>
 
+            {/* CTAs */}
             <motion.div
               className="mt-6 flex flex-col gap-3 sm:flex-row"
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
               <Button
                 size="lg"
-                className="w-full rounded-full bg-[#A41E34] py-6 text-base font-semibold text-white shadow-lg shadow-[#A41E34]/25 transition hover:bg-[#7F1527] sm:w-auto sm:px-10"
+                className="w-full rounded-full bg-[#A41E34] py-6 text-base font-semibold text-white shadow-lg shadow-[#A41E34]/25 hover:bg-[#7F1527] sm:w-auto sm:px-10"
                 onClick={quizCompleted ? onViewInsights ?? onStart : onStart}
               >
                 {quizCompleted ? "Open insights" : "Start now"}
@@ -149,7 +149,7 @@ export default function LandingScreen({
               </Button>
             </motion.div>
 
-            {/* Social proof on mobile */}
+            {/* Mobile stats */}
             <div className="mt-6 grid grid-cols-3 gap-3 md:hidden">
               {SPOTLIGHTS.map(({ stat, label, Icon }) => (
                 <div key={stat} className="rounded-2xl border border-[#E7DADA] bg-white p-3 text-left shadow-sm">
@@ -163,15 +163,15 @@ export default function LandingScreen({
             </div>
           </div>
 
-          {/* Right: Static, elegant preview panel (no carousel) */}
+          {/* Right: Preview */}
           <motion.div
-            className="order-1 md:order-2 md:justify-self-end"
+            className="w-full md:order-2 md:justify-self-end mt-2 md:mt-0"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="relative mx-auto w-full max-w-[560px] overflow-hidden rounded-[28px] border border-[#E7DADA] bg-white shadow-2xl">
-              {/* Top bar */}
+            <div className="relative mx-auto w-full max-w-[540px] overflow-hidden rounded-[28px] border border-[#E7DADA] bg-white shadow-xl">
+              {/* Browser header */}
               <div className="flex items-center justify-between border-b border-[#F0E6E7] px-5 py-3">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#F56565]" />
@@ -182,9 +182,8 @@ export default function LandingScreen({
                 <div className="h-4 w-8 rounded bg-[#F5EFEF]" />
               </div>
 
-              {/* Content */}
               <div className="grid gap-4 p-5 sm:p-6">
-                {/* Highlights row */}
+                {/* Highlights */}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {[
                     { title: "Smarter choices", body: "AI compares plans & costs" },
@@ -201,64 +200,52 @@ export default function LandingScreen({
                   ))}
                 </div>
 
-                {/* Mock “Plans vs Costs vs Checklist” panel */}
+                {/* Plans mock */}
                 <div className="rounded-2xl border border-[#E7DADA] bg-[#FBF7F6] p-4 sm:p-5">
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {[
-                      { key: "plans", label: "Plans" },
-                      { key: "costs", label: "Costs" },
-                      { key: "checklist", label: "Checklist" },
-                    ].map((t) => (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {["Plans", "Costs", "Checklist"].map((t) => (
                       <span
-                        key={t.key}
-                        className={
-                          "inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold " +
-                          (activeTab === t.key
-                            ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
-                            : "border-[#E3D8D5] bg-white text-[#7F1527]")
-                        }
+                        key={t}
+                        className="inline-flex items-center rounded-full border border-[#E3D8D5] bg-white px-3 py-1.5 text-xs font-semibold text-[#7F1527]"
                       >
-                        {t.label}
+                        {t}
                       </span>
                     ))}
                   </div>
 
-                  {/* Preview rows */}
-                  <div className="space-y-3">
-                    {[
-                      {
-                        title: "HSA-eligible PPO vs HDHP",
-                        meta: "Side-by-side premiums, deductibles, OOP max",
-                      },
-                      {
-                        title: "Projected annual spend",
-                        meta: "Includes employer HSA match & tax savings",
-                      },
-                      {
-                        title: "Your next steps",
-                        meta: "Verify dependents • Tobacco attestation • Beneficiaries",
-                      },
-                    ].map((row) => (
-                      <div
-                        key={row.title}
-                        className="flex items-start justify-between rounded-xl border border-[#F0E6E7] bg-white px-4 py-3"
-                      >
-                        <div>
-                          <p className="text-sm font-semibold text-[#1E0D0E]">{row.title}</p>
-                          <p className="text-xs text-[#7F1527]">{row.meta}</p>
-                        </div>
-                        <CheckCircle2 className="mt-1 h-4 w-4 flex-none text-[#A41E34]" />
+                  {[
+                    {
+                      title: "HSA-eligible PPO vs HDHP",
+                      meta: "Side-by-side premiums, deductibles, OOP max",
+                    },
+                    {
+                      title: "Projected annual spend",
+                      meta: "Includes employer HSA match & tax savings",
+                    },
+                    {
+                      title: "Your next steps",
+                      meta: "Verify dependents • Tobacco attestation • Beneficiaries",
+                    },
+                  ].map((row) => (
+                    <div
+                      key={row.title}
+                      className="flex items-start justify-between rounded-xl border border-[#F0E6E7] bg-white px-4 py-3 mb-2"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-[#1E0D0E]">{row.title}</p>
+                        <p className="text-xs text-[#7F1527]">{row.meta}</p>
                       </div>
-                    ))}
-                  </div>
+                      <CheckCircle2 className="mt-1 h-4 w-4 flex-none text-[#A41E34]" />
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </motion.div>
         </main>
 
-        {/* Trust / metrics (desktop) */}
-        <section className="mt-4 hidden md:block">
+        {/* Desktop stats */}
+        <section className="mt-6 hidden md:block">
           <div className="grid grid-cols-3 gap-4">
             {SPOTLIGHTS.map(({ stat, label, Icon }) => (
               <motion.div
@@ -279,45 +266,8 @@ export default function LandingScreen({
           </div>
         </section>
 
-        {/* Feature bullets */}
-        <section className="mt-12">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {[
-              { title: "Smarter choices", body: "AI compares plans, costs & risk so you don't have to." },
-              { title: "Built for privacy", body: "Your data stays encrypted. You choose what to share." },
-              { title: "Mobile-first", body: "Fast, thumb-friendly UI with offline-safe states." },
-            ].map((f) => (
-              <div key={f.title} className="rounded-2xl border border-[#E7DADA] bg-white p-5 shadow-sm">
-                <p className="text-base font-semibold text-[#1E0D0E]">{f.title}</p>
-                <p className="mt-1 text-sm text-[#4D3B3B]">{f.body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Sticky mobile CTA */}
-        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto block max-w-6xl p-4 md:hidden">
-          <div className="rounded-2xl border border-[#E7DADA] bg-white/90 p-3 backdrop-blur">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={quizCompleted ? onViewInsights ?? onStart : onStart}
-                className="flex-1 rounded-full bg-[#A41E34] py-6 text-base font-semibold text-white shadow-lg shadow-[#A41E34]/25 hover:bg-[#7F1527]"
-              >
-                {quizCompleted ? "Open insights" : "Start now"}
-              </Button>
-              <Button
-                onClick={onDemo ?? onStart}
-                variant="outline"
-                className="rounded-full border-[#E7DADA] bg-white px-4 py-6 text-[#7F1527] hover:bg-[#F9EDEA]"
-              >
-                <Play className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
         {/* Footer */}
-        <footer className="mt-16 border-t border-[#E7DADA] pt-6 text-xs text-[#7F1527]">
+        <footer className="mt-14 border-t border-[#E7DADA] pt-6 text-xs text-[#7F1527]">
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
             <p>© {new Date().getFullYear()} LifeLens • All rights reserved</p>
             <div className="flex items-center gap-4">

@@ -37,8 +37,8 @@ export function ChatPanel({ history, onSend }: ChatPanelProps) {
       }
     }
 
-    window.addEventListener("lifelens:chat:open", handler)
-    return () => window.removeEventListener("lifelens:chat:open", handler)
+    window.addEventListener("FinMate:chat:open", handler)
+    return () => window.removeEventListener("FinMate:chat:open", handler)
   }, [])
 
   useEffect(() => {
@@ -101,11 +101,11 @@ export function ChatPanel({ history, onSend }: ChatPanelProps) {
           whileTap={{ scale: 0.95 }}
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          aria-controls="lifelens-chat-panel"
+          aria-controls="FinMate-chat-panel"
           className="pointer-events-auto flex items-center gap-2 rounded-full border border-[#E2D5D7] bg-white px-4 py-2 text-sm font-semibold text-[#7F1527] shadow-lg shadow-[#A41E34]/15 hover:border-[#A41E34]/30"
         >
           <MessageCircle className="h-4 w-4" />
-          {open ? "Hide chat" : "Ask LifeLens"}
+          {open ? "Hide chat" : "Ask FinMate"}
         </motion.button>
       </div>
 
@@ -130,16 +130,16 @@ export function ChatPanel({ history, onSend }: ChatPanelProps) {
               className="fixed inset-x-0 bottom-0 z-[60]"
               role="dialog"
               aria-modal="true"
-              aria-labelledby="lifelens-chat-heading"
+              aria-labelledby="FinMate-chat-heading"
             >
               <div
-                id="lifelens-chat-panel"
+                id="FinMate-chat-panel"
                 className="mx-auto w-full max-w-xl overflow-hidden rounded-t-[32px] border border-[#E2D5D7] bg-white shadow-2xl"
               >
                 <header className="flex items-center justify-between border-b border-[#F0E6E7] px-5 py-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">LifeLens chat</p>
-                    <h2 id="lifelens-chat-heading" className="text-sm font-semibold text-[#2A1A1A]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">FinMate chat</p>
+                    <h2 id="FinMate-chat-heading" className="text-sm font-semibold text-[#2A1A1A]">
                       Ask anything about your benefits
                     </h2>
                   </div>
@@ -172,7 +172,7 @@ export function ChatPanel({ history, onSend }: ChatPanelProps) {
                 <div ref={bodyRef} className="flex max-h-[56vh] flex-col gap-3 overflow-y-auto px-5 pb-4 pt-3">
                   {history.length === 0 && (
                     <p className="text-sm text-[#6F4D51]">
-                      LifeLens remembers your questionnaire and insight history. Ask a question to see it in action.
+                      FinMate remembers your questionnaire and insight history. Ask a question to see it in action.
                     </p>
                   )}
                   {history.map((entry, index) => {
@@ -228,7 +228,7 @@ export function ChatPanel({ history, onSend }: ChatPanelProps) {
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={handleTextareaKeyDown}
-                    placeholder="Ask LifeLens about benefits, timelines, or financial moves…"
+                    placeholder="Ask FinMate about benefits, timelines, or financial moves…"
                     className="h-24 resize-none border-[#E2D5D7]"
                   />
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

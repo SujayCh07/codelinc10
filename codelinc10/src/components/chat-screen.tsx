@@ -36,14 +36,14 @@ export function ChatScreen({
   onBack,
   pendingPrompt = null,
   onPromptConsumed,
-  eyebrow = "LifeLens assistant",
+  eyebrow = "FinMate assistant",
   title = "Ask about your benefits",
   subtitle,
   quickPrompts = DEFAULT_QUICK_PROMPTS,
   quickPromptHeading = "Quick prompts",
-  emptyStateMessage = "LifeLens remembers your questionnaire. Ask anything about coverage, savings, or timelines and we’ll guide you.",
+  emptyStateMessage = "FinMate remembers your questionnaire. Ask anything about coverage, savings, or timelines and we’ll guide you.",
   headerBadge = "Saved answers loaded",
-  placeholder = "Ask LifeLens about your benefits, monthly budget, or next steps…",
+  placeholder = "Ask FinMate about your benefits, monthly budget, or next steps…",
 }: ChatScreenProps) {
   const [draft, setDraft] = useState("")
   const bodyRef = useRef<HTMLDivElement>(null)

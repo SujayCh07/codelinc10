@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { askLifeLens } from "@/lib/chat"
+import { askFinMate } from "@/lib/chat"
 import { Loader2, X } from "lucide-react"
 
 type Role = "user" | "assistant" | "error" | "system"
@@ -18,7 +18,7 @@ export function ChatModal({
   const sid = useMemo(() => {
     if (sessionId) return sessionId
     if (typeof window !== "undefined") {
-      const key = "__lifelens_session"; const ex = (window as any)[key]
+      const key = "__FinMate_session"; const ex = (window as any)[key]
       if (ex) return ex as string; const v = crypto.randomUUID(); (window as any)[key] = v; return v
     } return "server-session"
   }, [sessionId])
@@ -33,8 +33,8 @@ export function ChatModal({
         void send(text, d.context)
       }
     }
-    window.addEventListener("lifelens:chat:open", onOpen as any)
-    return () => window.removeEventListener("lifelens:chat:open", onOpen as any)
+    window.addEventListener("FinMate:chat:open", onOpen as any)
+    return () => window.removeEventListener("FinMate:chat:open", onOpen as any)
   }, [])
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export function ChatModal({
     if (!textParam) { setMessages(m => [...m, { id: crypto.randomUUID(), role:"user", ts: Date.now(), content: text }]); setInput("") }
     setSending(true)
     try {
-      const payload = await askLifeLens({ prompt: text, userId, sessionId: sid, context: { ...(baseContext||{}), ...(extraContext||{}) } })
+      const payload = await askFinMate({ prompt: text, userId, sessionId: sid, context: { ...(baseContext||{}), ...(extraContext||{}) } })
       if ("error" in payload) setMessages(m => [...m, { id: crypto.randomUUID(), role:"error", ts: Date.now(), content: `Error: ${payload.error}` }])
       else setMessages(m => [...m, { id: crypto.randomUUID(), role:"assistant", ts: Date.now(), content: payload.message || "(no content)", provider: payload.provider }])
     } catch (e:any) {
@@ -73,7 +73,7 @@ export function ChatModal({
       <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b px-5 py-4">
           <div>
-            <div className="text-[12px] font-semibold tracking-[0.18em] text-[#7F1527]">LIFELENS CHAT</div>
+            <div className="text-[12px] font-semibold tracking-[0.18em] text-[#7F1527]">FinMate CHAT</div>
             <div className="text-sm text-[#7F1527]/70">Ask anything about your benefits</div>
           </div>
           <button onClick={close} aria-label="Close" className="rounded-full p-1 text-[#7F1527] hover:bg-[#F0E6E7]"><X className="h-4 w-4" /></button>

@@ -6,12 +6,12 @@ import { Calendar, CheckCircle2, Circle, Clock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import type { LifeLensInsights, SavedMoment } from "@/lib/types"
+import type { FinMateInsights, SavedMoment } from "@/lib/types"
 
 interface TimelineScreenProps {
   savedInsights: SavedMoment[]
   onBack: () => void
-  onSelectInsight: (insight: LifeLensInsights) => void
+  onSelectInsight: (insight: FinMateInsights) => void
 }
 
 export function TimelineScreen({ savedInsights, onBack, onSelectInsight }: TimelineScreenProps) {
