@@ -5,11 +5,12 @@ import { AnimatePresence, motion } from "framer-motion"
 import { MessageCircle, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import type { ScreenKey } from "@/lib/types"
 
 interface SupportDockProps {
   persona?: string
   focusGoal?: string
-  screen: string
+  screen: ScreenKey
   onBackToLanding?: () => void
   prompts?: string[]
   conversation?: { speaker: "LifeLens" | "You"; message: string }[]

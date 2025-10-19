@@ -1,24 +1,23 @@
 "use client"
 
+import { useState } from "react"
+import { Calendar, Briefcase, FileDown, RotateCcw, Sparkles, Trash2, User } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { User, FileDown, RotateCcw, Trash2, Sparkles, Calendar, Briefcase } from "lucide-react"
-import { useState } from "react"
+import { Switch } from "@/components/ui/switch"
+import type { ProfileSnapshot } from "@/lib/types"
 
 interface ProfileSettingsProps {
-  profile: any
+  profile: ProfileSnapshot
   onClearData: () => void
   onReassess: () => void
+  onSendReport: () => void
 }
 
-export function ProfileSettings({ profile, onClearData, onReassess }: ProfileSettingsProps) {
+export function ProfileSettings({ profile, onClearData, onReassess, onSendReport }: ProfileSettingsProps) {
   const [showConfirm, setShowConfirm] = useState(false)
-
-  const handleExportPDF = () => {
-    alert("PDF export feature coming soon!")
-  }
 
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
@@ -58,44 +57,46 @@ export function ProfileSettings({ profile, onClearData, onReassess }: ProfileSet
                   <Calendar className="w-4 h-4" />
                   <span>Age Range</span>
                 </div>
-                <p className="font-medium">{profile.ageRange}</p>
+                <p className="font-medium">{profile.age}</p>
               </div>
               <div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                   <Briefcase className="w-4 h-4" />
                   <span>Employment</span>
                 </div>
-                <p className="font-medium">{profile.employmentType}</p>
+                <p className="font-medium">{profile.employmentStartDate}</p>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Household Size</div>
-                <p className="font-medium">{profile.householdSize} people</p>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Dependents</div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <User className="w-4 h-4" />
+                  <span>Dependents</span>
+                </div>
                 <p className="font-medium">{profile.dependents}</p>
               </div>
-            </div>
-
-            <div className="pt-4 border-t">
-              <div className="text-sm text-muted-foreground mb-2">Life Events</div>
-              <div className="flex flex-wrap gap-2">
-                {profile.lifeEvents.map((event: string, index: number) => (
-                  <span key={index} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                    {event}
-                  </span>
-                ))}
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Residency</div>
+                <p className="font-medium">{profile.residencyStatus}</p>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Citizenship</div>
+                <p className="font-medium">{profile.citizenship}</p>
               </div>
             </div>
 
             <div className="pt-4 border-t">
-              <div className="text-sm text-muted-foreground mb-2">Financial Goals</div>
+              <div className="text-sm text-muted-foreground mb-2">Risk factors</div>
               <div className="flex flex-wrap gap-2">
-                {profile.goals.map((goal: string, index: number) => (
-                  <span key={index} className="px-3 py-1 rounded-full bg-accent/10 text-accent text-sm font-medium">
-                    {goal}
+                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                  Score {profile.riskFactorScore}
+                </span>
+                {profile.activitySummary && (
+                  <span className="px-3 py-1 rounded-full bg-accent/10 text-accent text-sm font-medium">
+                    {profile.activitySummary}
                   </span>
-                ))}
+                )}
+                <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm font-medium">
+                  Coverage: {profile.coverageComplexity}
+                </span>
               </div>
             </div>
           </div>
@@ -118,14 +119,14 @@ export function ProfileSettings({ profile, onClearData, onReassess }: ProfileSet
             </Button>
 
             <Button
-              onClick={handleExportPDF}
+              onClick={onSendReport}
               variant="outline"
               className="w-full justify-start gap-3 h-auto py-4 bg-transparent"
             >
               <FileDown className="w-5 h-5" />
               <div className="text-left">
-                <div className="font-semibold">Export My Financial Plan (PDF)</div>
-                <div className="text-xs text-muted-foreground">Download a summary of your priorities</div>
+                <div className="font-semibold">Send report to HR</div>
+                <div className="text-xs text-muted-foreground">Share a PDF snapshot of your selected plan</div>
               </div>
             </Button>
           </div>

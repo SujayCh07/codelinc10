@@ -1,11 +1,13 @@
 "use client"
 
-import { LayoutDashboard, Clock, BookOpen, Info, User } from "lucide-react"
+import { BookOpen, Clock, Info, LayoutDashboard, User } from "lucide-react"
+
+import type { ScreenKey } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface BottomNavProps {
-  currentScreen: string
-  onNavigate: (screen: any) => void
+  currentScreen: ScreenKey
+  onNavigate: (screen: ScreenKey) => void
 }
 
 export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {

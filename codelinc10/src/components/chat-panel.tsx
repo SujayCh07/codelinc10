@@ -6,12 +6,7 @@ import { Send, X, MessageCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-
-export interface ChatEntry {
-  speaker: "LifeLens" | "You"
-  message: string
-  timestamp: string
-}
+import type { ChatEntry } from "@/lib/types"
 
 interface ChatPanelProps {
   history: ChatEntry[]
@@ -105,28 +100,39 @@ export function ChatPanel({ history, onSend }: ChatPanelProps) {
                   LifeLens remembers your questionnaire and insight history. Ask a question to see it in action.
                 </p>
               )}
-              {history.map((entry, index) => (
+              {history.map((entry, index) => {
+                const isYou = entry.speaker === "You"
+                const isPending = entry.status === "pending"
+                return (
                 <div
                   key={`${entry.speaker}-${index}-${entry.timestamp}`}
-                  className={`flex flex-col ${entry.speaker === "You" ? "items-end" : "items-start"}`}
+                  className={`flex flex-col ${isYou ? "items-end" : "items-start"}`}
                 >
                   <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#A41E34]">
                     {entry.speaker}
                   </span>
                   <div
                     className={`mt-1 max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow ${
-                      entry.speaker === "You"
+                      isYou
                         ? "bg-[#A41E34] text-white shadow-[#A41E34]/30"
                         : "bg-[#F9EDEA] text-[#2A1A1A] shadow-[#A41E34]/10"
                     }`}
                   >
-                    {entry.message}
+                    {isPending ? (
+                      <span className="flex items-center gap-1 text-xs font-medium tracking-[0.3em] text-[#7F1527]">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-current" />
+                        <span className="h-2 w-2 animate-bounce delay-150 rounded-full bg-current" />
+                        <span className="h-2 w-2 animate-bounce delay-300 rounded-full bg-current" />
+                      </span>
+                    ) : (
+                      entry.message
+                    )}
                   </div>
                   <span className="mt-1 text-[10px] uppercase tracking-[0.25em] text-[#9B8587]">
                     {new Date(entry.timestamp).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                   </span>
                 </div>
-              ))}
+              )})}
               {pendingPrompt && (
                 <p className="rounded-2xl bg-[#F1E3E5] px-4 py-2 text-xs text-[#7F1527]">
                   Prompt ready: <span className="font-semibold">{pendingPrompt}</span>
