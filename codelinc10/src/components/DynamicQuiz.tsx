@@ -14,9 +14,9 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import {
   COVERAGE_OPTIONS,
+  EDUCATION_OPTIONS,
   HEALTH_OPTIONS,
   INCOME_OPTIONS,
-  EDUCATION_OPTIONS,
   ACCOUNT_PREFERENCE_OPTIONS,
   BENEFIT_USAGE_OPTIONS,
   DENTAL_VISION_OPTIONS,
@@ -28,6 +28,7 @@ import {
   PRESCRIPTION_OPTIONS,
   initializeQuizState,
   questionsFor,
+  RESIDENCY_OPTIONS,
   updateFormValue,
   type QuizOption,
   type QuizQuestion,
@@ -71,12 +72,14 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
   const [index, setIndex] = useState(0)
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    const prepared = initializeQuizState(initialData)
-    setAnswers(prepared)
-    setPhase("hr")
-    setIndex(0)
-  }, [initialData])
+useEffect(() => {
+  const prepared = initializeQuizState(initialData)
+  setAnswers(prepared)
+  setPhase("hr")
+  setIndex(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [])
+
 
   useEffect(() => {
     onUpdate?.(answers)
@@ -344,7 +347,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
               <div className="mt-8 space-y-6 text-sm text-[#4D3B3B]">
                 <SummarySection title="Coverage & Family">
                   <SummaryRow
-                    label="Coverage selection"
+                    label="Coverage focus"
                     value={getLabelForOption(COVERAGE_OPTIONS, answers.coveragePreference)}
                   />
                   <SummaryRow
@@ -386,6 +389,10 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
                   <SummaryRow
                     label="Activity level"
                     value={`${answers.activityLevelScore}/5 (${formatActivityLevel(answers.activityLevelScore)})`}
+                  />
+                  <SummaryRow
+                    label="Household tobacco use"
+                    value={formatYesNo(answers.tobaccoUse)}
                   />
                 </SummarySection>
 

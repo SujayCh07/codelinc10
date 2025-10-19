@@ -215,6 +215,10 @@ export function initializeQuizState(template: EnrollmentFormData): EnrollmentFor
     hydrated.dependents = 0
   }
 
+  if (hydrated.coveragePreference === "self") {
+    hydrated.tobaccoUse = null
+  }
+
   if (!(["married", "partnered"] as EnrollmentFormData["maritalStatus"][]).includes(hydrated.maritalStatus)) {
     hydrated.spouseHasSeparateInsurance = null
     hydrated.partnerCoverageStatus = "not-applicable"
@@ -335,6 +339,12 @@ const SECTION_ORDER: { title: string; description: string; questions: Omit<QuizQ
         step: 1,
         minLabel: "Sedentary",
         maxLabel: "Very active",
+      },
+      {
+        id: "tobaccoUse",
+        title: "Do you or anyone in your household use tobacco products?",
+        prompt: "Impacts life insurance, disability, and wellness recommendations.",
+        type: "boolean-choice",
       },
     ],
   },
@@ -647,6 +657,9 @@ export function updateFormValue(
       break
     case "activityList":
       next.activityList = Array.isArray(value) ? Array.from(new Set(value)) : []
+      break
+    case "tobaccoUse":
+      next.tobaccoUse = typeof value === "boolean" ? value : null
       break
     case "anticipatesLifeChanges":
       next.anticipatesLifeChanges = typeof value === "boolean" ? value : null

@@ -31,7 +31,8 @@ export function computeDerivedMetrics(
           ? 1
           : 0
   const riskFactorScore = Math.round(
-    Number(data.age ?? 30) / 2 + data.creditScore / 18 + data.riskComfort * 8 + budgetLift + contributionLift,
+    (Number(data.age ?? 30) / 2 + data.creditScore / 18 + data.riskComfort * 8 + budgetLift + contributionLift) /
+      (data.tobaccoUse ? 1.12 : 1),
   )
 
   const activityRiskModifier =
@@ -195,13 +196,6 @@ const createResource = (title: string, description: string, url: string): PlanRe
   url,
 })
 
-const formatBenefitList = (titles: string[]) => {
-  if (titles.length === 0) return ""
-  if (titles.length === 1) return titles[0]
-  if (titles.length === 2) return `${titles[0]} and ${titles[1]}`
-  return `${titles.slice(0, -1).join(", ")}, and ${titles[titles.length - 1]}`
-}
-
 export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit[] {
   const resources = {
     enrollmentCenter: createResource(
@@ -241,19 +235,21 @@ export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit
   const dependentsNote =
     data.coveragePreference === "self-plus-family"
       ? `${data.dependents} dependent${data.dependents === 1 ? "" : "s"} rely on your benefits`
-      : data.coveragePreference === "self-plus-spouse"
+      : data.coveragePreference === "self-plus-partner"
         ? "Your partner looks to your coverage for stability"
         : "Your paycheck keeps your lifestyle protected"
 
   const partnerNote =
     data.spouseHasSeparateInsurance === false
-      ? "Coordinate your elections together so nothing falls through the cracks"
+      ? " Coordinate your elections together so nothing falls through the cracks."
       : ""
+
+  const tobaccoNote = data.tobaccoUse ? " Complete the tobacco attestation so rates stay accurate." : ""
 
   const coverageTitle =
     data.coveragePreference === "self-plus-family"
       ? "Protect your household income"
-      : data.coveragePreference === "self-plus-spouse"
+      : data.coveragePreference === "self-plus-partner"
         ? "Coordinate coverage with your partner"
         : "Lock in your income protection"
 
@@ -267,7 +263,7 @@ export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit
     title: coverageTitle,
     category: "coverage",
     description: coverageDescription,
-    whyItMatters: [dependentsNote, partnerNote].filter(Boolean).join(". ") + ".",
+    whyItMatters: `${dependentsNote}.${partnerNote}${tobaccoNote}`.trim(),
     urgency: "Now",
     actions: [resources.enrollmentCenter, resources.coverageChecklist],
   })
@@ -366,7 +362,7 @@ export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit
     })
   }
 
-  return items.slice(0, 3)
+  return items
 }
 
 export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights {
@@ -374,7 +370,6 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
   const theme = pickTheme(data)
   const plans = buildPlans(data)
   const priorityBenefits = buildPriorityBenefits(data)
-  const topBenefitTitles = priorityBenefits.slice(0, 3).map((benefit) => benefit.title)
 
   const timeline = priorityBenefits.slice(0, 3).map((benefit) => ({
     period: benefit.urgency,
@@ -427,9 +422,9 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
   return {
     ownerName: data.preferredName || data.fullName,
     focusGoal: theme.focus,
-    statement: topBenefitTitles.length
-      ? `Based on your answers, LifeLens recommends tackling ${formatBenefitList(topBenefitTitles)} next.`
-      : "LifeLens analyzed your profile and mapped benefit picks that fit your answers.",
+    statement: topPriority
+      ? `LifeLens mapped your answers to highlight ${topPriority.title.toLowerCase()} first, based on a risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`
+      : `LifeLens analyzed your profile and mapped benefits around your risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`,
     timeline: trimmedTimeline,
     conversation,
     prompts,

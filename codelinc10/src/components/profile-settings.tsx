@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react"
 import { useEffect, useMemo, useState } from "react"
-import { FileDown, Trash2, User } from "lucide-react"
+import { FileDown, Sparkles, Trash2, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -95,10 +95,14 @@ export function ProfileSettings({
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-2xl font-bold text-white">
                 {profile.name ? profile.name[0].toUpperCase() : "G"}
               </div>
-            <div>
-              <h3 className="text-lg font-bold">{profile.name || "Guest"}</h3>
+              <div>
+                <h3 className="text-lg font-bold">{profile.name || "Guest"}</h3>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Sparkles className="h-4 w-4" />
+                  <span>{profile.focusArea || "Priority guidance"}</span>
+                </div>
+              </div>
             </div>
-          </div>
             <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground sm:text-right">
               <div>
                 <p className="font-semibold text-foreground">Risk score</p>
@@ -358,6 +362,13 @@ export function ProfileSettings({
                       updateDraft((current) => ({ ...current, hasContinuousCoverage: checked }))
                     }
                   />
+                  <ToggleField
+                    label="Household tobacco use"
+                    checked={draft.tobaccoUse === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({ ...current, tobaccoUse: checked }))
+                    }
+                  />
                 </div>
               </section>
 
@@ -609,49 +620,58 @@ export function ProfileSettings({
               </section>
 
               <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Personalization & guidance</h3>
-                <div className="grid gap-4 lg:grid-cols-3">
-                  <div className="rounded-2xl border border-[#E3D8D5] bg-white/70 p-4 shadow-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-[#2A1A1A]">Retirement contributions</p>
-                        <p className="text-xs text-muted-foreground">Toggle to track payroll savings.</p>
-                      </div>
-                      <Switch
-                        checked={draft.contributesToRetirement === true}
-                        onCheckedChange={(checked) =>
-                          updateDraft((current) => ({
-                            ...current,
-                            contributesToRetirement: checked,
-                            retirementContributionRate: checked ? current.retirementContributionRate : 0,
-                            wantsRetirementGuidance: checked ? current.wantsRetirementGuidance : null,
-                          }))
-                        }
-                        aria-label="Toggle retirement contributions"
-                      />
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-primary/70">Contribution rate</span>
-                      <Slider
-                        min={0}
-                        max={15}
-                        step={1}
-                        value={[draft.retirementContributionRate]}
-                        onValueChange={([value]) =>
-                          updateDraft((current) => ({
-                            ...current,
-                            retirementContributionRate: value,
-                          }))
-                        }
-                        disabled={!draft.contributesToRetirement}
-                      />
-                      <p className="text-xs text-muted-foreground">{draft.retirementContributionRate}% of income</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-[#E3D8D5] bg-white/70 p-4 shadow-sm">
-                    <p className="text-sm font-semibold text-[#2A1A1A]">Guidance style</p>
-                    <p className="text-xs text-muted-foreground">Pick how LifeLens walks you through decisions.</p>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Retirement & guidance</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <ToggleField
+                    label="Contribute to retirement"
+                    checked={draft.contributesToRetirement === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({
+                        ...current,
+                        contributesToRetirement: checked,
+                        retirementContributionRate: checked ? current.retirementContributionRate : 0,
+                        wantsRetirementGuidance: checked ? current.wantsRetirementGuidance : null,
+                      }))
+                    }
+                  />
+                  <Field label={`Contribution rate · ${draft.retirementContributionRate}%`}>
+                    <Slider
+                      min={0}
+                      max={15}
+                      step={1}
+                      value={[draft.retirementContributionRate]}
+                      onValueChange={([value]) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          retirementContributionRate: value,
+                        }))
+                      }
+                      disabled={!draft.contributesToRetirement}
+                    />
+                  </Field>
+                  <ToggleField
+                    label="Want optimized targets"
+                    checked={draft.wantsRetirementGuidance === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({ ...current, wantsRetirementGuidance: checked }))
+                    }
+                    disabled={draft.contributesToRetirement === null}
+                  />
+                  <Field label={`Confidence with insurance terms · ${draft.confidenceInsuranceTerms}/5`}>
+                    <Slider
+                      min={1}
+                      max={5}
+                      step={1}
+                      value={[draft.confidenceInsuranceTerms]}
+                      onValueChange={([value]) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          confidenceInsuranceTerms: value,
+                        }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Guidance preference">
                     <select
                       value={draft.guidancePreference}
                       onChange={(event) =>
@@ -660,7 +680,7 @@ export function ProfileSettings({
                           guidancePreference: event.target.value as EnrollmentFormData["guidancePreference"],
                         }))
                       }
-                      className="mt-3 h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
                     >
                       {GUIDANCE_PREFERENCE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value} className="text-sm">
@@ -668,42 +688,7 @@ export function ProfileSettings({
                         </option>
                       ))}
                     </select>
-                    <div className="mt-4 space-y-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-primary/70">Confidence with terms</span>
-                      <Slider
-                        min={1}
-                        max={5}
-                        step={1}
-                        value={[draft.confidenceInsuranceTerms]}
-                        onValueChange={([value]) =>
-                          updateDraft((current) => ({
-                            ...current,
-                            confidenceInsuranceTerms: value,
-                          }))
-                        }
-                      />
-                      <p className="text-xs text-muted-foreground">{draft.confidenceInsuranceTerms} out of 5</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-[#E3D8D5] bg-white/70 p-4 shadow-sm">
-                    <p className="text-sm font-semibold text-[#2A1A1A]">Follow-up coaching</p>
-                    <p className="text-xs text-muted-foreground">Let LifeLens suggest extra milestones.</p>
-                    <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-[#F0E6E7] bg-[#FBF7F6] px-3 py-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-primary/70">Optimized targets</span>
-                      <Switch
-                        checked={draft.wantsRetirementGuidance === true}
-                        onCheckedChange={(checked) =>
-                          updateDraft((current) => ({ ...current, wantsRetirementGuidance: checked }))
-                        }
-                        disabled={!draft.contributesToRetirement}
-                        aria-label="Toggle optimized targets"
-                      />
-                    </div>
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Turn this on to receive recommended contribution goals when you refresh insights.
-                    </p>
-                  </div>
+                  </Field>
                 </div>
               </section>
 

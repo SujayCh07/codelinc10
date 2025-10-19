@@ -3,10 +3,8 @@ export type ScreenKey =
   | "quiz"
   | "insights"
   | "timeline"
-  | "learn"
   | "faq"
   | "profile"
-  | "chat"
 
 export type ResidencyStatus =
   | "Citizen"
@@ -145,13 +143,7 @@ export interface LifeLensInsights {
   conversation: { speaker: "LifeLens" | "You"; message: string }[]
   prompts: string[]
   plans: LifeLensPlan[]
-  recommendedPlans?: {
-    id: string
-    name: string
-    reason: string
-    resources?: PlanResource[]
-    monthly_cost_estimate?: string
-  }[]
+  recommendedPlans?: { id: string; name: string; reason: string; resources?: PlanResource[] }[]
   selectedPlanId: string | null
   goalTheme?: string
   themeKey?: string
@@ -176,6 +168,7 @@ export interface ChatEntry {
 
 export interface ProfileSnapshot {
   name: string
+  focusArea: string
   age: string
   employmentStartDate: string
   dependents: number
