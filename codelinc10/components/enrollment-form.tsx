@@ -69,6 +69,33 @@ export const DEFAULT_ENROLLMENT_FORM: EnrollmentFormData = {
   isGuest: false,
 }
 
+export const DEMO_ENROLLMENT_FORM: EnrollmentFormData = {
+  ...DEFAULT_ENROLLMENT_FORM,
+  fullName: "Jordan Demo",
+  preferredName: "Jordan",
+  employmentStart: "2021",
+  age: 29,
+  maritalStatus: "Married",
+  householdCoverage: "You + partner",
+  dependentCount: 1,
+  spouseHasSeparateInsurance: false,
+  homeStatus: "Rent",
+  hasTobaccoUsers: false,
+  incomeRange: "$100k-$150k",
+  financialGoals: ["Buy a home", "Plan for retirement"],
+  monthlySavingsRate: 12,
+  milestoneFocus: "Build a down payment fund",
+  healthCoverage: true,
+  accountTypes: ["HSA", "FSA"],
+  wantsLifeDisabilityInsights: true,
+  contributes401k: true,
+  wantsEmployerMatchHelp: true,
+  riskComfort: 4,
+  additionalNotes: "",
+  consentToFollowUp: true,
+  isGuest: true,
+}
+
 interface EnrollmentFormProps {
   onComplete: (data: EnrollmentFormData) => void
   onBackToLanding: () => void
@@ -146,11 +173,11 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      ...initialData,
-      isGuest: initialData?.isGuest ?? prev.isGuest ?? false,
-    }))
+    if (!initialData) return
+    setFormData(() => {
+      const template = initialData.isGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
+      return { ...template, ...initialData }
+    })
   }, [initialData])
 
   useEffect(() => {

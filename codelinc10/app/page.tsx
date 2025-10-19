@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { LandingScreen } from "@/components/landing-screen"
 import {
   DEFAULT_ENROLLMENT_FORM,
+  DEMO_ENROLLMENT_FORM,
   EnrollmentForm,
   type EnrollmentFormData,
 } from "@/components/enrollment-form"
@@ -66,8 +67,10 @@ export default function Home() {
 
   // ✅ Start flow
   const handleStart = (asGuest: boolean) => {
-    const base = formData ? { ...DEFAULT_ENROLLMENT_FORM, ...formData } : DEFAULT_ENROLLMENT_FORM
-    setFormData({ ...base, isGuest: asGuest })
+    const template = asGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
+    const existingMatchesMode = formData && formData.isGuest === asGuest
+    const next = existingMatchesMode ? { ...formData } : { ...template }
+    setFormData({ ...next, isGuest: asGuest })
     setScreen("quiz")
   }
 
@@ -85,8 +88,9 @@ export default function Home() {
   }
 
   const handleRestartQuiz = () => {
-    const reset = { ...DEFAULT_ENROLLMENT_FORM, isGuest: formData?.isGuest ?? true }
-    setFormData(reset)
+    const useGuest = formData?.isGuest ?? true
+    const reset = useGuest ? { ...DEMO_ENROLLMENT_FORM } : { ...DEFAULT_ENROLLMENT_FORM }
+    setFormData({ ...reset, isGuest: useGuest })
     setScreen("quiz")
   }
 
@@ -173,6 +177,8 @@ export default function Home() {
         persona={insights?.persona}
         focusGoal={insights?.focusGoal}
         screen={screen}
+        prompts={insights?.prompts}
+        conversation={insights?.conversation}
         onBackToLanding={screen === "insights" ? handleBackToLanding : undefined}
       />
     </>
@@ -200,43 +206,43 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
         ? "coverage that supports you and your partner"
         : `supporting ${data.dependentCount || "your"} dependents`
 
-  const summary = `${data.preferredName || data.fullName}, you're ${householdLine} while setting sights on ${milestone.toLowerCase()}. We'll pace your next actions so they feel manageable.`
+  const summary = `${data.preferredName || data.fullName}, we centered your plan on ${milestone.toLowerCase()} while keeping ${householdLine} steady.`
 
   const priorities = [
     {
       title: data.financialGoals.includes("Buy a home") ? "Plan your home stretch" : "Reinforce your safety net",
       description: data.financialGoals.includes("Buy a home")
-        ? "Tuck away closing costs and compare mortgage options alongside Lincoln’s home-planning worksheets."
-        : "Channel a portion of pay into an automated reserve so unexpected costs don’t derail your momentum.",
+        ? "Line up closing costs and use Lincoln worksheets to compare loan paths."
+        : "Automate a weekly reserve so surprises don’t slow your safety net.",
     },
     {
       title: data.wantsLifeDisabilityInsights ? "Right-size protection" : "Check your coverage essentials",
       description: data.wantsLifeDisabilityInsights
-        ? "Review life and disability coverage to align with your household and income goals."
-        : "Spot-check health, dental, and supplemental benefits before enrollment season arrives.",
+        ? "Right-size life and disability coverage against today’s income."
+        : "Glance through health, dental, and supplemental coverage ahead of enrollment.",
     },
     {
       title: data.contributes401k ? "Optimize long-term growth" : "Kickstart retirement habits",
       description: data.contributes401k
-        ? "Nudge contributions toward the full employer match and revisit investments quarterly."
-        : "Schedule a match check-in and start small—1-2% increases make a big impact over time.",
+        ? "Boost contributions to capture the full match and set a quarterly check-in."
+        : "Schedule a match check and start a 1-2% bump to build momentum.",
     },
   ]
 
   const tips = [
     {
-      title: "Automate your momentum",
-      description: "Set recurring reminders for savings transfers and enrollment deadlines.",
+      title: "Auto reminders",
+      description: "Set nudges for savings moves and enrollment dates.",
       icon: "⏱️",
     },
     {
-      title: "Use Lincoln learning hubs",
-      description: "Pick videos or articles aligned to your preferred pace and priorities.",
+      title: "Learning hub",
+      description: "Skim short videos tied to today’s priorities.",
       icon: "🎓",
     },
     {
       title: "Track micro-wins",
-      description: "Celebrate contributions, debt payments, or coverage updates to stay motivated.",
+      description: "Capture each payment or coverage tweak to stay motivated.",
       icon: "🎉",
     },
   ]
@@ -255,7 +261,7 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
     {
       period: "This Year",
       title: "Schedule a LifeLens check-in",
-      description: "Revisit priorities with a coach before open enrollment to adjust your plan.",
+      description: "Meet with LifeLens before open enrollment to update the plan.",
     },
   ]
 
@@ -343,7 +349,7 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
       : null,
     {
       speaker: "LifeLens" as const,
-      message: `We’ll connect your benefits and savings moves so ${milestone.toLowerCase()} stays on track without losing protection.`,
+      message: `We linked your benefits and savings moves so ${milestone.toLowerCase()} stays on track without losing protection.`,
     },
     data.accountTypes.length
       ? {
@@ -353,11 +359,18 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
       : null,
     {
       speaker: "LifeLens" as const,
-      message: `Great—expect reminders tailored to your ${data.monthlySavingsRate}% savings rhythm and ${
-        data.contributes401k ? "401(k) contributions" : "next retirement steps"
+      message: `Expect reminders tuned to your ${data.monthlySavingsRate}% savings rhythm and ${
+        data.contributes401k ? "401(k) contributions" : "upcoming retirement moves"
       }.`,
     },
   ].filter(Boolean) as { speaker: "LifeLens" | "You"; message: string }[]
+
+  const prompts = [
+    "How do I hit my next milestone?",
+    data.contributes401k ? "Can you review my 401(k) match?" : "What’s the best way to start my 401(k)?",
+    data.financialGoals.includes("Buy a home") ? "What should I save for closing costs?" : "Which benefits should I adjust next?",
+  ]
+
 
   return {
     ownerName: data.preferredName || data.fullName,
@@ -369,5 +382,6 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
     focusGoal: milestone,
     resources,
     conversation,
+    prompts,
   }
 }

@@ -21,6 +21,7 @@ export interface LifeLensInsights {
   focusGoal: string
   resources: { title: string; description: string; url: string }[]
   conversation: { speaker: "LifeLens" | "You"; message: string }[]
+  prompts: string[]
 }
 
 interface InsightsDashboardProps {
@@ -33,6 +34,11 @@ interface InsightsDashboardProps {
 const PRIORITY_ICONS = ["🛡️", "💡", "📈"]
 
 export function InsightsDashboard({ insights, onBackToLanding, onRegenerate, onRestartQuiz }: InsightsDashboardProps) {
+  const openChat = (prompt?: string) => {
+    if (typeof window === "undefined") return
+    window.dispatchEvent(new CustomEvent("lifelens-open-chat", { detail: { prompt } }))
+  }
+
   return (
     <div className="relative min-h-screen bg-[#F7F4F2] pb-32 text-[#2A1A1A]">
       <header className="sticky top-0 z-40 border-b border-[#E2D5D7] bg-[#F7F4F2]/95 backdrop-blur">
@@ -75,6 +81,21 @@ export function InsightsDashboard({ insights, onBackToLanding, onRegenerate, onR
               <Sparkles className="mr-2 inline h-4 w-4" /> LifeLens spotlight
             </div>
           </div>
+          <div className="mt-6 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">Quick nudges</p>
+            <div className="flex flex-wrap gap-2">
+              {insights.tips.map((tip) => (
+                <span
+                  key={tip.title}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#FCEBE6] px-4 py-2 text-xs font-semibold text-[#7F1527]"
+                  title={tip.description}
+                >
+                  <span className="text-base">{tip.icon}</span>
+                  {tip.title}
+                </span>
+              ))}
+            </div>
+          </div>
         </Card>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -95,18 +116,6 @@ export function InsightsDashboard({ insights, onBackToLanding, onRegenerate, onR
               >
                 Adjust answers <ArrowRight className="h-4 w-4" />
               </Button>
-            </Card>
-          ))}
-        </section>
-
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {insights.tips.map((tip) => (
-            <Card key={tip.title} className="rounded-3xl border border-[#E2D5D7] bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{tip.icon}</span>
-                <h3 className="text-base font-semibold text-[#2A1A1A]">{tip.title}</h3>
-              </div>
-              <p className="mt-2 text-sm text-[#4D3B3B]">{tip.description}</p>
             </Card>
           ))}
         </section>
@@ -157,42 +166,57 @@ export function InsightsDashboard({ insights, onBackToLanding, onRegenerate, onR
             </div>
           </Card>
 
-          <Card className="rounded-3xl border border-[#E2D5D7] bg-white p-6 shadow-md">
+          <Card className="flex flex-col gap-5 rounded-3xl border border-[#E2D5D7] bg-white p-6 shadow-md">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FCEBE6] text-[#A41E34]">
                 <MessageCircle className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-[#2A1A1A]">Conversation recap</h2>
-                <p className="text-sm text-[#4D3B3B]">What you shared and how LifeLens responded.</p>
+                <h2 className="text-lg font-semibold text-[#2A1A1A]">Chat-ready recap</h2>
+                <p className="text-sm text-[#4D3B3B]">Scroll the last exchange and jump back in.</p>
               </div>
             </div>
-            <div className="mt-5 space-y-3">
+            <div className="space-y-3">
               {insights.conversation.map((entry, index) => (
-                <div key={`${entry.speaker}-${index}`} className="rounded-2xl border border-[#F0E6E7] bg-[#FBF7F6] p-4">
+                <div
+                  key={`${entry.speaker}-${index}`}
+                  className={`rounded-2xl border border-[#F0E6E7] p-4 text-sm shadow-sm ${
+                    entry.speaker === "You"
+                      ? "bg-[#FDF4EF] text-[#2A1A1A]"
+                      : "bg-white text-[#3F2A2C]"
+                  }`}
+                >
                   <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
-                    {entry.speaker === "You" ? "You shared" : "LifeLens replied"}
+                    {entry.speaker === "You" ? "You" : "LifeLens"}
                   </span>
-                  <p className="mt-2 text-sm text-[#3F2A2C]">{entry.message}</p>
+                  <p className="mt-2 leading-relaxed">{entry.message}</p>
                 </div>
               ))}
+            </div>
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">Suggested prompts</p>
+              <div className="flex flex-wrap gap-2">
+                {insights.prompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => openChat(prompt)}
+                    className="rounded-full border border-[#F0E6E7] bg-[#FBF7F6] px-4 py-2 text-xs font-semibold text-[#7F1527] transition hover:border-[#A41E34] hover:bg-[#F9EDEA]"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+              <Button
+                className="w-full rounded-full bg-[#A41E34] py-5 text-sm font-semibold text-white hover:bg-[#7F1527]"
+                onClick={() => openChat()}
+              >
+                <MessageCircle className="mr-2 h-4 w-4" /> Chat with LifeLens
+              </Button>
             </div>
           </Card>
         </section>
       </main>
-
-      <footer className="fixed bottom-6 left-0 right-0 z-40 mx-auto w-full max-w-xs rounded-3xl border border-[#E2D5D7] bg-white/95 p-4 shadow-xl shadow-[#A41E34]/15">
-        <Button
-          className="w-full rounded-full bg-[#A41E34] py-5 text-sm font-semibold text-white hover:bg-[#7F1527]"
-          onClick={() => {
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(new CustomEvent("lifelens-open-chat"))
-            }
-          }}
-        >
-          <MessageCircle className="mr-2 h-4 w-4" /> Chat with LifeLens
-        </Button>
-      </footer>
     </div>
   )
 }
