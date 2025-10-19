@@ -19,32 +19,34 @@ export function mergeChatHistory(existing: ChatEntry[], additions: ChatEntry[]) 
 }
 
 export function computeDerivedMetrics(
-  data: EnrollmentFormData
+  data: EnrollmentFormData,
 ): EnrollmentFormData["derived"] {
-  const savingsLift = data.savingsRate >= 15 ? 8 : data.savingsRate >= 10 ? 4 : -4
-  const investmentLift = data.investsInMarkets ? 6 : 0
+  const budgetLift = data.benefitsBudget >= 15 ? 8 : data.benefitsBudget >= 10 ? 4 : -4
+  const contributionLift =
+    data.retirementContributionRate >= 12
+      ? 6
+      : data.retirementContributionRate >= 6
+        ? 3
+        : data.contributesToRetirement
+          ? 1
+          : 0
   const riskFactorScore = Math.round(
-    (Number(data.age ?? 30) / 2 + data.creditScore / 18 + data.riskComfort * 8 + savingsLift + investmentLift) /
-      (data.tobaccoUse ? 1.12 : 1)
+    (Number(data.age ?? 30) / 2 + data.creditScore / 18 + data.riskComfort * 8 + budgetLift + contributionLift) /
+      (data.tobaccoUse ? 1.12 : 1),
   )
 
   const activityRiskModifier =
     data.activityLevel === "active"
-      ? Math.min(10, data.activityList.length * 2 + (data.veteran ? 3 : 0))
+      ? Math.min(10, data.activityLevelScore * 2)
       : data.activityLevel === "balanced"
-        ? data.veteran
-          ? 3
-          : 1
-        : data.veteran
-          ? 2
-          : 0
+        ? 2
+        : 0
 
   const complexityScore =
     (data.dependents > 2 ? 2 : data.dependents > 0 ? 1 : 0) +
     (data.coveragePreference !== "self" ? 1 : 0) +
-    (data.homeOwnership === "own" ? 1 : 0) +
-    (data.residencyStatus === "Citizen" ? 0 : 1) +
-    (data.creditScore < 650 ? 1 : 0)
+    (data.expectedBenefitUsage === "frequently" ? 1 : 0) +
+    (data.needsInternationalCoverage ? 1 : 0)
 
   const coverageComplexity = complexityScore >= 3 ? "high" : complexityScore === 2 ? "medium" : "low"
 
@@ -87,10 +89,10 @@ const planThemes: Record<string, { focus: string; themeKey: string }> = {
 
 function pickTheme(data: EnrollmentFormData) {
   if (data.coveragePreference === "self-plus-family" || data.dependents > 0) return planThemes.protection
-  if (data.homeOwnership === "own" || data.homeOwnership === "with-family") return planThemes.home
-  if (data.riskComfort >= 4 && (data.investsInMarkets || data.savingsRate >= 15)) return planThemes.retirement
-  if (data.savingsRate < 10 || data.wantsSavingsSupport) return planThemes.savings
-  if (data.creditScore < 640) return planThemes.resilience
+  if (data.planPreference === "lower-premiums" || data.benefitsBudget <= 8) return planThemes.savings
+  if (data.needsInternationalCoverage || data.travelsOutOfState) return planThemes.resilience
+  if (data.contributesToRetirement || data.retirementContributionRate >= 8) return planThemes.retirement
+  if (data.anticipatesLifeChanges) return planThemes.home
   return planThemes.retirement
 }
 
@@ -104,19 +106,26 @@ function describePlanVariant(
   const coverageLift = data.coveragePreference !== "self" ? 25 : 0
   const offset = variant === "bold" ? 60 : variant === "balanced" ? 30 : 0
   const monthly = monthlyBase + coverageLift + offset
-  const riskScoreBase = data.riskComfort * 18 + data.derived.activityRiskModifier + (data.wantsSavingsSupport ? -6 : 0)
+  const riskScoreBase =
+    data.riskComfort * 18 +
+    data.derived.activityRiskModifier +
+    (data.planPreference === "lower-premiums" || data.benefitsBudget <= 8 ? -6 : 0)
   const riskMatchScore = Math.min(100, riskScoreBase + (variant === "conservative" ? -12 : variant === "bold" ? 10 : 0))
 
   const highlightBase = [
     data.coveragePreference === "self-plus-family"
       ? "Household protection audit"
-      : data.coveragePreference === "self-plus-partner"
+      : data.coveragePreference === "self-plus-spouse"
         ? "Partner coverage coordination"
         : "Solo coverage refresh",
-    data.activityLevel === "active" ? "Wellness perks matched to your activities" : "Lifestyle-friendly wellness tips",
-    data.savingsRate < 10 || data.wantsSavingsSupport
-      ? "Savings automation starter kit"
-      : "Investment optimization checklist",
+    data.activityLevelScore >= 4
+      ? "Wellness perks matched to your routine"
+      : "Lifestyle-friendly wellness tips",
+    data.planPreference === "lower-premiums"
+      ? "Strategies to trim monthly premiums"
+      : data.planPreference === "lower-deductible"
+        ? "Reduce surprise bills with lower deductibles"
+        : "Balanced recommendations for cost and care",
   ]
 
   const resources: PlanResource[] = [
@@ -299,32 +308,39 @@ export function buildPriorityBenefits(data: EnrollmentFormData): PriorityBenefit
   items.push(healthBenefit)
 
   const savingsBenefit: PriorityBenefit = (() => {
-    if ((data.savingsRate ?? 0) < 10 || data.wantsSavingsSupport) {
+    if (data.benefitsBudget <= 8 || data.planPreference === "lower-premiums") {
       return {
-        id: "priority-savings",
-        title: "Automate savings and emergency cash",
+        id: "priority-budget",
+        title: "Dial in your benefits budget",
         category: "savings",
-        description: "Route a set percent of each paycheck into savings and emergency accounts with payroll automation.",
-        whyItMatters: `You currently set aside ${data.savingsRate}% of income, and automation keeps momentum without manual transfers.`,
+        description: "Align health, protection, and supplemental benefits with the monthly spend you’re comfortable with.",
+        whyItMatters: `You set a ${data.benefitsBudget}% benefits budget, so calibrating plan choices now keeps costs predictable.`,
         urgency: "Next 30 days",
         actions: [resources.savingsAutomation],
       }
     }
 
+    const hasContributions = data.contributesToRetirement
+    const urgency = hasContributions ? "This quarter" : "Next 30 days"
+    const title = hasContributions ? "Boost retirement contributions" : "Kickstart retirement contributions"
+    const contributionDetail = hasContributions
+      ? `You're contributing ${data.retirementContributionRate}% today—LifeLens will show how to capture full employer match.`
+      : "Starting contributions unlocks employer match dollars and long-term tax advantages."
+
     return {
       id: "priority-retirement",
-      title: "Boost retirement contributions",
+      title,
       category: "savings",
-      description: "Use your comfort with risk to increase retirement contributions or allocate to growth accounts.",
-      whyItMatters: `A risk comfort of ${data.riskComfort}/5 means you can capture more employer match and long-term growth.`,
-      urgency: "This quarter",
+      description: "Use Lincoln Financial tools to set automatic retirement contributions and track progress toward your goal.",
+      whyItMatters: contributionDetail,
+      urgency,
       actions: [resources.retirementPlaybook],
     }
   })()
 
   items.push(savingsBenefit)
 
-  if (data.activityLevel === "active" || data.physicalActivities) {
+  if (data.activityLevelScore >= 4) {
     items.push({
       id: "priority-wellness",
       title: "Use wellness reimbursements",

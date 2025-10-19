@@ -21,20 +21,31 @@ export type MaritalStatusOption =
   | "widowed"
   | "other"
 
-export type CoveragePreference = "self" | "self-plus-partner" | "self-plus-family"
+export type CoveragePreference = "self" | "self-plus-spouse" | "self-plus-family"
 
 export type HomeOwnershipStatus = "rent" | "own" | "with-family" | "other"
 
-export type IncomeRange =
-  | "under-50k"
-  | "50-80k"
-  | "80-120k"
-  | "120-160k"
-  | "160k-plus"
+export type IncomeRange = "under-50k" | "50-100k" | "100-200k" | "200k-plus"
 
 export type HealthCoverageOption = "employer" | "partner" | "marketplace" | "none"
 
 export type ActivityLevel = "relaxed" | "balanced" | "active"
+
+export type PartnerCoverageStatus = "yes" | "no" | "not-applicable"
+
+export type PrimaryCareFrequency = "rarely" | "annually" | "several"
+
+export type PrescriptionFrequency = "never" | "occasionally" | "regularly"
+
+export type PlanPreferenceOption = "lower-premiums" | "lower-deductible" | "balanced"
+
+export type AccountPreferenceOption = "hsa" | "fsa" | "both" | "neither"
+
+export type BenefitUsageFrequency = "rarely" | "occasionally" | "frequently"
+
+export type DentalVisionPreference = "yes" | "no" | "covered"
+
+export type GuidancePreference = "summary" | "step" | "chat"
 
 export interface EnrollmentFormData {
   userId: string | null
@@ -54,6 +65,7 @@ export interface EnrollmentFormData {
   incomeRange: IncomeRange
   healthCoverage: HealthCoverageOption
   spouseHasSeparateInsurance: boolean | null
+  partnerCoverageStatus: PartnerCoverageStatus
   savingsRate: number
   wantsSavingsSupport: boolean | null
   riskComfort: number
@@ -67,6 +79,25 @@ export interface EnrollmentFormData {
   creditScore: number
   citizenship: string
   residencyStatus: ResidencyStatus
+  hasContinuousCoverage: boolean | null
+  hasHealthConditions: boolean | null
+  healthConditionSummary: string
+  primaryCareFrequency: PrimaryCareFrequency
+  prescriptionFrequency: PrescriptionFrequency
+  activityLevelScore: number
+  benefitsBudget: number
+  planPreference: PlanPreferenceOption
+  taxPreferredAccount: AccountPreferenceOption
+  anticipatesLifeChanges: boolean | null
+  expectedBenefitUsage: BenefitUsageFrequency
+  travelsOutOfState: boolean | null
+  needsInternationalCoverage: boolean | null
+  dentalVisionPreference: DentalVisionPreference
+  contributesToRetirement: boolean | null
+  retirementContributionRate: number
+  wantsRetirementGuidance: boolean | null
+  confidenceInsuranceTerms: number
+  guidancePreference: GuidancePreference
   createdAt: string
   isGuest: boolean
   consentToFollowUp: boolean
