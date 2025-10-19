@@ -4,13 +4,12 @@ import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { BottomNav } from "@/components/bottom-nav"
-import { ChatPanel } from "@/components/chat-panel"
 import { DynamicQuiz } from "@/components/DynamicQuiz"
 import { FaqScreen } from "@/components/faq-screen"
 import { InsightsDashboard } from "@/components/insights-dashboard"
 import { LandingScreen } from "@/components/landing-screen"
+import { ChatScreen } from "@/components/chat-screen"
 import { ProfileSettings } from "@/components/profile-settings"
-import { SupportDock } from "@/components/support-dock"
 import { TimelineScreen } from "@/components/timeline-screen"
 import { requestPlans, sendChatMessage, sendPlanReport, upsertUser } from "@/lib/api"
 import {
@@ -22,7 +21,7 @@ import {
   PROFILE_CREATED_KEY,
 } from "@/lib/enrollment"
 import { useHydrated } from "@/lib/hooks/useHydrated"
-import { buildInsights, mergeChatHistory, withDerivedMetrics } from "@/lib/insights"
+import { buildInsights, buildPriorityBenefits, mergeChatHistory, withDerivedMetrics } from "@/lib/insights"
 import {
   removeStorage,
   readStorage,
@@ -41,13 +40,21 @@ import type {
 import { useUser } from "@/lib/user-context"
 import { cn } from "@/lib/utils"
 
+function createFreshForm(): EnrollmentFormData {
+  return withDerivedMetrics({
+    ...DEFAULT_ENROLLMENT_FORM,
+    createdAt: new Date().toISOString(),
+  })
+}
+
 export default function Home() {
   const { user, isLoading: userLoading, login, logout } = useUser()
-  const [currentScreen, setCurrentScreen] = useState<ScreenKey>("landing")
-  const [formData, setFormData] = useState<EnrollmentFormData | null>(null)
+  const [currentScreen, setCurrentScreen] = useState<ScreenKey>(() => "quiz")
+  const [formData, setFormData] = useState<EnrollmentFormData | null>(() => createFreshForm())
   const [insights, setInsights] = useState<LifeLensInsights | null>(null)
   const [savedMoments, setSavedMoments] = useState<SavedMoment[]>([])
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
+  const [pendingChatPrompt, setPendingChatPrompt] = useState<string | null>(null)
   const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
   const [isGenerating, setIsGenerating] = useState(false)
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false)
@@ -68,12 +75,18 @@ export default function Home() {
     const storedForm = readStorage<EnrollmentFormData | null>(FORM_STORAGE_KEY, null)
     if (storedForm) {
       setFormData(withDerivedMetrics(storedForm))
+    } else {
+      setFormData(createFreshForm())
     }
 
     const storedInsights = readStorage<LifeLensInsights | null>(INSIGHTS_STORAGE_KEY, null)
     if (storedInsights) {
       setInsights(storedInsights)
       setHasCompletedQuiz(true)
+      setCurrentScreen("insights")
+    } else {
+      setHasCompletedQuiz(false)
+      setCurrentScreen("quiz")
     }
 
     const storedMoments = readStorage<SavedMoment[]>(MOMENTS_STORAGE_KEY, [])
@@ -123,19 +136,20 @@ export default function Home() {
     (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `user-${Date.now()}`)
 
   const handleStart = () => {
-    if (hasCompletedQuiz && insights) {
-      setCurrentScreen("insights")
-      return
-    }
-
-    const template = {
-      ...DEFAULT_ENROLLMENT_FORM,
-      userId: assignUserId(),
-      createdAt: new Date().toISOString(),
-    }
-    const prepared = withDerivedMetrics(template)
+    const base = formData
+      ? {
+          ...formData,
+          userId: formData.userId ?? assignUserId(),
+          createdAt: new Date().toISOString(),
+        }
+      : {
+          ...createFreshForm(),
+          userId: assignUserId(),
+        }
+    const prepared = withDerivedMetrics(base)
     ensureUserSession(prepared.preferredName || prepared.fullName || "Guest")
     setFormData(prepared)
+    setHasCompletedQuiz(false)
     setCurrentScreen("quiz")
   }
 
@@ -146,10 +160,11 @@ export default function Home() {
   const appendMomentForInsights = (nextInsights: LifeLensInsights) => {
     const timestamp = new Date().toISOString()
     const momentId = `${nextInsights.themeKey ?? "plan"}-${Date.now()}`
+    const summaryTitle = nextInsights.priorityBenefits[0]?.title ?? "Benefit update"
     const newMoment: SavedMoment = {
       id: momentId,
       category: nextInsights.themeKey ?? "foundation",
-      summary: nextInsights.focusGoal,
+      summary: summaryTitle,
       timeline: nextInsights.timeline,
       timestamp,
       insight: nextInsights,
@@ -163,6 +178,7 @@ export default function Home() {
 
   const handleQuizComplete = async (data: EnrollmentFormData) => {
     const prepared = withDerivedMetrics({ ...data, userId: data.userId ?? assignUserId() })
+    ensureUserSession(prepared.preferredName || prepared.fullName || "Guest")
     setFormData(prepared)
     setIsGenerating(true)
     setHasCompletedQuiz(true)
@@ -190,8 +206,11 @@ export default function Home() {
       const planResult = await requestPlans(userId)
       if (planResult.data?.insights) {
         const remoteInsights = planResult.data.insights
-        setInsights(remoteInsights)
-        appendMomentForInsights(remoteInsights)
+        const normalized = remoteInsights.priorityBenefits?.length
+          ? remoteInsights
+          : { ...remoteInsights, priorityBenefits: buildPriorityBenefits(prepared) }
+        setInsights(normalized)
+        appendMomentForInsights(normalized)
       }
     } finally {
       setIsGenerating(false)
@@ -207,8 +226,11 @@ export default function Home() {
       const planResult = await requestPlans(userId)
       if (planResult.data?.insights) {
         const updated = planResult.data.insights
-        setInsights(updated)
-        appendMomentForInsights(updated)
+        const normalized = updated.priorityBenefits?.length
+          ? updated
+          : { ...updated, priorityBenefits: buildPriorityBenefits(formData) }
+        setInsights(normalized)
+        appendMomentForInsights(normalized)
       } else {
         const fallback = buildInsights(formData)
         setInsights(fallback)
@@ -229,14 +251,18 @@ export default function Home() {
       setCurrentScreen(formData ? "quiz" : "landing")
       return
     }
+    if (target !== "chat") {
+      setPendingChatPrompt(null)
+    }
     setCurrentScreen(target)
   }
 
   const handleClearAllData = () => {
-    setFormData(null)
+    setFormData(createFreshForm())
     setInsights(null)
     setSavedMoments([])
     setChatHistory([])
+    setPendingChatPrompt(null)
     setHasCompletedQuiz(false)
     logout()
     removeStorage(FORM_STORAGE_KEY)
@@ -244,13 +270,16 @@ export default function Home() {
     removeStorage(MOMENTS_STORAGE_KEY)
     removeStorage(CHAT_STORAGE_KEY)
     removeStorage(PROFILE_CREATED_KEY)
-    setProfileCreatedAt(new Date().toISOString())
-    setCurrentScreen("landing")
+    const refreshedCreatedAt = new Date().toISOString()
+    setProfileCreatedAt(refreshedCreatedAt)
+    setCurrentScreen("quiz")
   }
 
   const handleChatSend = async (message: string) => {
     const trimmed = message.trim()
     if (!trimmed) return
+
+    setPendingChatPrompt(null)
 
     const userEntry: ChatEntry = {
       speaker: "You",
@@ -304,7 +333,6 @@ export default function Home() {
     if (!formData) {
       return {
         name: user?.name ?? "Guest",
-        aiPersona: insights?.persona ?? "Balanced Navigator",
         age: "—",
         employmentStartDate: "—",
         dependents: 0,
@@ -325,7 +353,6 @@ export default function Home() {
 
     return {
       name: formData.preferredName || formData.fullName,
-      aiPersona: insights?.persona ?? "Balanced Navigator",
       age: formData.age ? String(formData.age) : "—",
       employmentStartDate: formData.employmentStartDate,
       dependents: formData.dependents,
@@ -336,11 +363,7 @@ export default function Home() {
       coverageComplexity: formData.derived.coverageComplexity,
       createdAt: user?.createdAt ?? profileCreatedAt,
     }
-  }, [formData, insights?.persona, profileCreatedAt, user])
-
-  const handleSelectPlan = (planId: string) => {
-    setInsights((current) => (current ? { ...current, selectedPlanId: planId } : current))
-  }
+  }, [formData, profileCreatedAt, user])
 
   const handleProfileUpdate = async (next: EnrollmentFormData) => {
     const prepared = withDerivedMetrics(next)
@@ -379,7 +402,7 @@ export default function Home() {
     )
   }
 
-  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile"]
+  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile", "chat"]
 
   return (
     <main className={cn("min-h-screen bg-[#F7F4F2] pb-24", isGenerating && "pointer-events-none opacity-95")}> 
@@ -430,8 +453,11 @@ export default function Home() {
               insights={insights}
               onBackToLanding={() => setCurrentScreen("landing")}
               onRegenerate={handleRegenerate}
-              onSelectPlan={handleSelectPlan}
               onSendReport={handleSendReport}
+              onOpenChat={(prompt) => {
+                setPendingChatPrompt(prompt ?? null)
+                setCurrentScreen("chat")
+              }}
               loading={isGenerating}
             />
           </motion.div>
@@ -482,24 +508,29 @@ export default function Home() {
             />
           </motion.div>
         )}
+
+        {currentScreen === "chat" && (
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChatScreen
+              history={chatHistory}
+              pendingPrompt={pendingChatPrompt}
+              onPromptConsumed={() => setPendingChatPrompt(null)}
+              onSend={handleChatSend}
+              onBack={() => setCurrentScreen(insights ? "insights" : "landing")}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {navVisibleScreens.includes(currentScreen) && (
         <BottomNav currentScreen={currentScreen} onNavigate={handleNavigate} />
       )}
-
-      {insights && currentScreen !== "quiz" && (
-        <SupportDock
-          persona={insights.persona}
-          focusGoal={insights.focusGoal}
-          screen={currentScreen}
-          prompts={insights.prompts}
-          conversation={insights.conversation}
-          onBackToLanding={currentScreen === "insights" ? () => setCurrentScreen("landing") : undefined}
-        />
-      )}
-
-      {insights && <ChatPanel history={chatHistory} onSend={handleChatSend} />}
     </main>
   )
 }
