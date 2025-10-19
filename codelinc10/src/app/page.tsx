@@ -9,7 +9,6 @@ import { DynamicQuiz } from "@/components/DynamicQuiz"
 import { FaqScreen } from "@/components/faq-screen"
 import { InsightsDashboard } from "@/components/insights-dashboard"
 import { LandingScreen } from "@/components/landing-screen"
-import { LearningHub } from "@/components/learning-hub"
 import { ProfileSettings } from "@/components/profile-settings"
 import { SupportDock } from "@/components/support-dock"
 import { TimelineScreen } from "@/components/timeline-screen"
@@ -17,7 +16,6 @@ import { requestPlans, sendChatMessage, sendPlanReport, upsertUser } from "@/lib
 import {
   CHAT_STORAGE_KEY,
   DEFAULT_ENROLLMENT_FORM,
-  DEMO_ENROLLMENT_FORM,
   FORM_STORAGE_KEY,
   INSIGHTS_STORAGE_KEY,
   MOMENTS_STORAGE_KEY,
@@ -52,6 +50,7 @@ export default function Home() {
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
   const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
   const [isGenerating, setIsGenerating] = useState(false)
+  const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false)
   const isHydrated = useHydrated()
 
   useEffect(() => {
@@ -74,6 +73,7 @@ export default function Home() {
     const storedInsights = readStorage<LifeLensInsights | null>(INSIGHTS_STORAGE_KEY, null)
     if (storedInsights) {
       setInsights(storedInsights)
+      setHasCompletedQuiz(true)
     }
 
     const storedMoments = readStorage<SavedMoment[]>(MOMENTS_STORAGE_KEY, [])
@@ -115,18 +115,26 @@ export default function Home() {
     writeStorage(CHAT_STORAGE_KEY, chatHistory)
   }, [chatHistory, isHydrated])
 
-  const ensureUserSession = (name: string, isGuest: boolean) => {
-    login({ name, isGuest, createdAt: profileCreatedAt })
+  const ensureUserSession = (name: string) => {
+    login({ name, createdAt: profileCreatedAt })
   }
 
   const assignUserId = () =>
     (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `user-${Date.now()}`)
 
-  const handleStart = (asGuest: boolean) => {
-    const template = asGuest ? { ...DEMO_ENROLLMENT_FORM } : { ...DEFAULT_ENROLLMENT_FORM }
-    const userId = template.userId ?? assignUserId()
-    const prepared = withDerivedMetrics({ ...template, userId, isGuest: asGuest })
-    ensureUserSession(prepared.preferredName || prepared.fullName, asGuest)
+  const handleStart = () => {
+    if (hasCompletedQuiz && insights) {
+      setCurrentScreen("insights")
+      return
+    }
+
+    const template = {
+      ...DEFAULT_ENROLLMENT_FORM,
+      userId: assignUserId(),
+      createdAt: new Date().toISOString(),
+    }
+    const prepared = withDerivedMetrics(template)
+    ensureUserSession(prepared.preferredName || prepared.fullName || "Guest")
     setFormData(prepared)
     setCurrentScreen("quiz")
   }
@@ -157,6 +165,7 @@ export default function Home() {
     const prepared = withDerivedMetrics({ ...data, userId: data.userId ?? assignUserId() })
     setFormData(prepared)
     setIsGenerating(true)
+    setHasCompletedQuiz(true)
 
     const localInsights = buildInsights(prepared)
     setInsights(localInsights)
@@ -210,14 +219,6 @@ export default function Home() {
     }
   }
 
-  const handleRestartQuiz = () => {
-    const isGuest = formData?.isGuest ?? true
-    const template = isGuest ? { ...DEMO_ENROLLMENT_FORM } : { ...DEFAULT_ENROLLMENT_FORM }
-    const prepared = withDerivedMetrics({ ...template, userId: assignUserId(), isGuest })
-    setFormData(prepared)
-    setCurrentScreen("quiz")
-  }
-
   const handleSelectMoment = (selectedInsight: LifeLensInsights) => {
     setInsights(selectedInsight)
     setCurrentScreen("insights")
@@ -236,6 +237,7 @@ export default function Home() {
     setInsights(null)
     setSavedMoments([])
     setChatHistory([])
+    setHasCompletedQuiz(false)
     logout()
     removeStorage(FORM_STORAGE_KEY)
     removeStorage(INSIGHTS_STORAGE_KEY)
@@ -302,6 +304,20 @@ export default function Home() {
     setInsights((current) => (current ? { ...current, selectedPlanId: planId } : current))
   }
 
+  const handleProfileUpdate = async (next: EnrollmentFormData) => {
+    const prepared = withDerivedMetrics(next)
+    setFormData(prepared)
+    setInsights((current) => {
+      if (current || hasCompletedQuiz) {
+        return buildInsights(prepared)
+      }
+      return current
+    })
+    if (prepared.userId) {
+      void upsertUser(prepared)
+    }
+  }
+
   const handleSendReport = async () => {
     if (!formData?.userId || !insights?.selectedPlanId) return
     const result = await sendPlanReport(formData.userId, insights.selectedPlanId)
@@ -363,7 +379,7 @@ export default function Home() {
     }
   }, [formData, insights?.persona, profileCreatedAt, user])
 
-  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "learning", "faq", "profile"]
+  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile"]
 
   return (
     <main className={cn("min-h-screen bg-[#F7F4F2] pb-24", isGenerating && "pointer-events-none opacity-95")}> 
@@ -380,6 +396,7 @@ export default function Home() {
               onStart={handleStart}
               hasExistingInsights={!!insights}
               onViewInsights={() => setCurrentScreen("insights")}
+              quizCompleted={hasCompletedQuiz}
             />
           </motion.div>
         )}
@@ -413,7 +430,6 @@ export default function Home() {
               insights={insights}
               onBackToLanding={() => setCurrentScreen("landing")}
               onRegenerate={handleRegenerate}
-              onRestartQuiz={handleRestartQuiz}
               onSelectPlan={handleSelectPlan}
               onSendReport={handleSendReport}
               loading={isGenerating}
@@ -434,18 +450,6 @@ export default function Home() {
               onBack={() => setCurrentScreen(insights ? "insights" : "quiz")}
               onSelectInsight={handleSelectMoment}
             />
-          </motion.div>
-        )}
-
-        {currentScreen === "learning" && (
-          <motion.div
-            key="learning"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3 }}
-          >
-            <LearningHub persona={insights?.persona ?? "Balanced Navigator"} />
           </motion.div>
         )}
 
@@ -472,8 +476,9 @@ export default function Home() {
             <ProfileSettings
               profile={profileSnapshot}
               onClearData={handleClearAllData}
-              onReassess={() => setCurrentScreen("quiz")}
               onSendReport={handleSendReport}
+              formData={formData}
+              onUpdateProfile={handleProfileUpdate}
             />
           </motion.div>
         )}
@@ -483,16 +488,18 @@ export default function Home() {
         <BottomNav currentScreen={currentScreen} onNavigate={handleNavigate} />
       )}
 
-      <SupportDock
-        persona={insights?.persona}
-        focusGoal={insights?.focusGoal}
-        screen={currentScreen}
-        prompts={insights?.prompts}
-        conversation={insights?.conversation}
-        onBackToLanding={currentScreen === "insights" ? () => setCurrentScreen("landing") : undefined}
-      />
+      {insights && currentScreen !== "quiz" && (
+        <SupportDock
+          persona={insights.persona}
+          focusGoal={insights.focusGoal}
+          screen={currentScreen}
+          prompts={insights.prompts}
+          conversation={insights.conversation}
+          onBackToLanding={currentScreen === "insights" ? () => setCurrentScreen("landing") : undefined}
+        />
+      )}
 
-      <ChatPanel history={chatHistory} onSend={handleChatSend} />
+      {insights && <ChatPanel history={chatHistory} onSend={handleChatSend} />}
     </main>
   )
 }

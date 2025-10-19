@@ -1,178 +1,367 @@
 "use client"
 
-import { useState } from "react"
-import { Calendar, Briefcase, FileDown, RotateCcw, Sparkles, Trash2, User } from "lucide-react"
+import type { ReactNode } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { FileDown, Sparkles, Trash2, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import type { ProfileSnapshot } from "@/lib/types"
+import type { EnrollmentFormData, ProfileSnapshot } from "@/lib/types"
+import { ACTIVITY_OPTIONS, MARITAL_OPTIONS, RESIDENCY_OPTIONS } from "@/lib/quiz"
 
 interface ProfileSettingsProps {
   profile: ProfileSnapshot
   onClearData: () => void
-  onReassess: () => void
   onSendReport: () => void
+  formData: EnrollmentFormData | null
+  onUpdateProfile?: (next: EnrollmentFormData) => void
 }
 
-export function ProfileSettings({ profile, onClearData, onReassess, onSendReport }: ProfileSettingsProps) {
+const EDUCATION_OPTIONS: EnrollmentFormData["educationLevel"][] = [
+  "high-school",
+  "associate",
+  "bachelor",
+  "master",
+  "doctorate",
+  "other",
+]
+
+export function ProfileSettings({
+  profile,
+  onClearData,
+  onSendReport,
+  formData,
+  onUpdateProfile,
+}: ProfileSettingsProps) {
   const [showConfirm, setShowConfirm] = useState(false)
+  const [draft, setDraft] = useState<EnrollmentFormData | null>(formData)
+
+  useEffect(() => {
+    setDraft(formData)
+  }, [formData])
+
+  const updateDraft = (updater: (current: EnrollmentFormData) => EnrollmentFormData) => {
+    setDraft((current) => {
+      if (!current) return current
+      const next = updater(current)
+      onUpdateProfile?.(next)
+      return next
+    })
+  }
+
+  const riskComfortLabel = useMemo(() => {
+    if (!draft) return "—"
+    const scale = ["Very low", "Low", "Moderate", "High", "Very high"]
+    return scale[draft.riskComfort - 1] ?? `${draft.riskComfort}/5`
+  }, [draft])
 
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         <div className="glass-strong rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-6 h-6 text-primary" />
+          <div className="mb-2 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <User className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h1 className="text-3xl font-bold">Profile & Settings</h1>
-              <p className="text-muted-foreground">Manage your account and preferences</p>
+              <p className="text-muted-foreground">Manage your answers and keep your plan in sync</p>
             </div>
           </div>
         </div>
 
-        {/* Profile Summary */}
         <Card className="glass p-6">
-          <h2 className="text-xl font-bold mb-4">Your Profile</h2>
-          <div className="space-y-4">
+          <h2 className="mb-4 text-xl font-bold">Snapshot</h2>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-2xl font-bold">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-2xl font-bold text-white">
                 {profile.name ? profile.name[0].toUpperCase() : "G"}
               </div>
               <div>
-                <h3 className="font-bold text-lg">{profile.name || "Guest User"}</h3>
+                <h3 className="text-lg font-bold">{profile.name || "Guest"}</h3>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="h-4 w-4" />
                   <span>{profile.aiPersona}</span>
                 </div>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground sm:text-right">
               <div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>Age Range</span>
-                </div>
-                <p className="font-medium">{profile.age}</p>
+                <p className="font-semibold text-foreground">Risk score</p>
+                <p>{profile.riskFactorScore}</p>
               </div>
               <div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <Briefcase className="w-4 h-4" />
-                  <span>Employment</span>
-                </div>
-                <p className="font-medium">{profile.employmentStartDate}</p>
+                <p className="font-semibold text-foreground">Activity</p>
+                <p>{profile.activitySummary || "Low impact"}</p>
               </div>
               <div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <User className="w-4 h-4" />
-                  <span>Dependents</span>
-                </div>
-                <p className="font-medium">{profile.dependents}</p>
+                <p className="font-semibold text-foreground">Coverage</p>
+                <p>{profile.coverageComplexity}</p>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Residency</div>
-                <p className="font-medium">{profile.residencyStatus}</p>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Citizenship</div>
-                <p className="font-medium">{profile.citizenship}</p>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t">
-              <div className="text-sm text-muted-foreground mb-2">Risk factors</div>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                  Score {profile.riskFactorScore}
-                </span>
-                {profile.activitySummary && (
-                  <span className="px-3 py-1 rounded-full bg-accent/10 text-accent text-sm font-medium">
-                    {profile.activitySummary}
-                  </span>
-                )}
-                <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm font-medium">
-                  Coverage: {profile.coverageComplexity}
-                </span>
+                <p className="font-semibold text-foreground">Member since</p>
+                <p>{new Date(profile.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Actions */}
         <Card className="glass p-6">
-          <h2 className="text-xl font-bold mb-4">Actions</h2>
-          <div className="space-y-3">
-            <Button
-              onClick={onReassess}
-              variant="outline"
-              className="w-full justify-start gap-3 h-auto py-4 bg-transparent"
-            >
-              <RotateCcw className="w-5 h-5" />
-              <div className="text-left">
-                <div className="font-semibold">Reset AI Recommendations</div>
-                <div className="text-xs text-muted-foreground">Update your profile and get new insights</div>
-              </div>
-            </Button>
+          <h2 className="mb-4 text-xl font-bold">Edit your responses</h2>
+          {!draft ? (
+            <p className="text-sm text-muted-foreground">
+              Complete the LifeLens quiz to unlock your editable profile.
+            </p>
+          ) : (
+            <div className="space-y-6">
+              <section className="space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Personal details</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Full name">
+                    <Input
+                      value={draft.fullName}
+                      onChange={(event) => updateDraft((current) => ({ ...current, fullName: event.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Preferred name">
+                    <Input
+                      value={draft.preferredName}
+                      onChange={(event) => updateDraft((current) => ({ ...current, preferredName: event.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Age">
+                    <Input
+                      type="number"
+                      min={18}
+                      max={90}
+                      value={draft.age ?? ""}
+                      onChange={(event) =>
+                        updateDraft((current) => ({ ...current, age: event.target.value ? Number(event.target.value) : null }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Dependents">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={draft.dependents}
+                      onChange={(event) =>
+                        updateDraft((current) => ({ ...current, dependents: Number(event.target.value || 0) }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Employment start date">
+                    <Input
+                      type="date"
+                      value={draft.employmentStartDate}
+                      onChange={(event) =>
+                        updateDraft((current) => ({ ...current, employmentStartDate: event.target.value }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Marital status">
+                    <select
+                      value={draft.maritalStatus}
+                      onChange={(event) =>
+                        updateDraft((current) => ({ ...current, maritalStatus: event.target.value as EnrollmentFormData["maritalStatus"] }))
+                      }
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                    >
+                      {MARITAL_OPTIONS.map((option) => (
+                        <option key={option} value={option} className="text-sm">
+                          {option.charAt(0).toUpperCase() + option.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              </section>
 
+              <section className="space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Education & work</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Highest education">
+                    <select
+                      value={draft.educationLevel}
+                      onChange={(event) =>
+                        updateDraft((current) => ({ ...current, educationLevel: event.target.value as EnrollmentFormData["educationLevel"] }))
+                      }
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                    >
+                      {EDUCATION_OPTIONS.map((option) => (
+                        <option key={option} value={option} className="text-sm">
+                          {option === "high-school"
+                            ? "High school"
+                            : option.charAt(0).toUpperCase() + option.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Major or focus">
+                    <Input
+                      value={draft.educationMajor}
+                      onChange={(event) => updateDraft((current) => ({ ...current, educationMajor: event.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Work country">
+                    <Input
+                      value={draft.workCountry}
+                      onChange={(event) => updateDraft((current) => ({ ...current, workCountry: event.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Work state">
+                    <Input
+                      value={draft.workState}
+                      onChange={(event) => updateDraft((current) => ({ ...current, workState: event.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Citizenship">
+                    <Input
+                      value={draft.citizenship}
+                      onChange={(event) => updateDraft((current) => ({ ...current, citizenship: event.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Residency status">
+                    <select
+                      value={draft.residencyStatus}
+                      onChange={(event) =>
+                        updateDraft((current) => ({ ...current, residencyStatus: event.target.value as EnrollmentFormData["residencyStatus"] }))
+                      }
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                    >
+                      {RESIDENCY_OPTIONS.map((option) => (
+                        <option key={option} value={option} className="text-sm">
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Preferences</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label={`Risk comfort · ${riskComfortLabel}`}>
+                    <Slider
+                      min={1}
+                      max={5}
+                      step={1}
+                      value={[draft.riskComfort]}
+                      onValueChange={([value]) => updateDraft((current) => ({ ...current, riskComfort: value }))}
+                    />
+                  </Field>
+                  <Field label={`Credit score · ${draft.creditScore}`}>
+                    <Slider
+                      min={300}
+                      max={850}
+                      step={10}
+                      value={[draft.creditScore]}
+                      onValueChange={([value]) => updateDraft((current) => ({ ...current, creditScore: value }))}
+                    />
+                  </Field>
+                  <ToggleField
+                    label="Physically active"
+                    checked={draft.physicalActivities === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({
+                        ...current,
+                        physicalActivities: checked,
+                        activityList: checked ? current.activityList : [],
+                      }))
+                    }
+                  />
+                  <ToggleField
+                    label="Tobacco use"
+                    checked={draft.tobaccoUse === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({ ...current, tobaccoUse: checked }))
+                    }
+                  />
+                  <ToggleField
+                    label="Disability"
+                    checked={draft.disability === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({ ...current, disability: checked }))
+                    }
+                  />
+                  <ToggleField
+                    label="Veteran status"
+                    checked={draft.veteran === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({ ...current, veteran: checked }))
+                    }
+                  />
+                </div>
+
+                {draft.physicalActivities && (
+                  <div>
+                    <p className="mb-2 text-sm font-semibold text-[#7F1527]">Activities you enjoy</p>
+                    <div className="flex flex-wrap gap-2">
+                      {ACTIVITY_OPTIONS.map((option) => {
+                        const active = draft.activityList.includes(option.value)
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() =>
+                              updateDraft((current) => ({
+                                ...current,
+                                activityList: active
+                                  ? current.activityList.filter((item) => item !== option.value)
+                                  : [...current.activityList, option.value],
+                              }))
+                            }
+                            className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                              active
+                                ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
+                                : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </Card>
+
+        <Card className="glass p-6">
+          <h2 className="mb-4 text-xl font-bold">Actions</h2>
+          <div className="space-y-3">
             <Button
               onClick={onSendReport}
               variant="outline"
-              className="w-full justify-start gap-3 h-auto py-4 bg-transparent"
+              className="flex w-full items-center justify-start gap-3 rounded-2xl border-[#E3D8D5] bg-white py-4 text-sm font-semibold text-[#A41E34] hover:bg-[#F9EDEA]"
             >
-              <FileDown className="w-5 h-5" />
-              <div className="text-left">
-                <div className="font-semibold">Send report to HR</div>
-                <div className="text-xs text-muted-foreground">Share a PDF snapshot of your selected plan</div>
-              </div>
+              <FileDown className="h-5 w-5" />
+              Send report to HR
             </Button>
-          </div>
-        </Card>
-
-        {/* Privacy & Data */}
-        <Card className="glass p-6">
-          <h2 className="text-xl font-bold mb-4">Privacy & Data</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="notifications" className="font-medium">
-                  Notifications
-                </Label>
-                <p className="text-sm text-muted-foreground">Receive updates about your financial priorities</p>
-              </div>
-              <Switch id="notifications" />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="analytics" className="font-medium">
-                  Usage Analytics
-                </Label>
-                <p className="text-sm text-muted-foreground">Help us improve LifeLens</p>
-              </div>
-              <Switch id="analytics" defaultChecked />
-            </div>
-
-            <div className="pt-4 border-t">
+            <div className="border-t pt-4">
               {!showConfirm ? (
                 <Button onClick={() => setShowConfirm(true)} variant="destructive" className="w-full gap-2">
-                  <Trash2 className="w-4 h-4" />
-                  Clear All Data
+                  <Trash2 className="h-4 w-4" />
+                  Clear all data
                 </Button>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-center text-muted-foreground">
-                    Are you sure? This will delete all your data and cannot be undone.
+                  <p className="text-center text-sm text-muted-foreground">
+                    Are you sure? This will delete all of your saved answers and insights.
                   </p>
                   <div className="flex gap-2">
                     <Button onClick={() => setShowConfirm(false)} variant="outline" className="flex-1">
                       Cancel
                     </Button>
                     <Button onClick={onClearData} variant="destructive" className="flex-1">
-                      Yes, Delete Everything
+                      Delete everything
                     </Button>
                   </div>
                 </div>
@@ -180,11 +369,33 @@ export function ProfileSettings({ profile, onClearData, onReassess, onSendReport
             </div>
           </div>
         </Card>
-
-        <div className="text-center text-sm text-muted-foreground">
-          <p>Member since {new Date(profile.createdAt).toLocaleDateString()}</p>
-        </div>
       </div>
+    </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-2 text-sm font-medium text-[#7F1527]">
+      {label}
+      {children}
+    </label>
+  )
+}
+
+function ToggleField({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  onChange: (value: boolean) => void
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-[#E3D8D5] bg-white px-4 py-3">
+      <span className="text-sm font-semibold text-[#2A1A1A]">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   )
 }

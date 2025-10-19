@@ -60,14 +60,14 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     title: "Who’s getting guidance?",
     prompt: "Enter your full legal name so LifeLens can personalize the plan and future report.",
     type: "text",
-    placeholder: "Jordan Demo",
+    placeholder: "Your full name",
   },
   {
     id: "preferredName",
     title: "What should LifeLens call you?",
     prompt: "We’ll use this in chats and your personalized plan.",
     type: "text",
-    placeholder: "Jordan",
+    placeholder: "Preferred name",
   },
   {
     id: "age",
@@ -137,7 +137,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     title: "Which state are you based in?",
     prompt: "We’ll align benefits and compliance by region.",
     type: "text",
-    placeholder: "NC",
+    placeholder: "PA",
   },
   {
     id: "riskComfort",

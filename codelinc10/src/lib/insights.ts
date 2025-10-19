@@ -3,6 +3,7 @@ import type {
   EnrollmentFormData,
   LifeLensInsights,
   LifeLensPlan,
+  PlanResource,
 } from "./types"
 
 export function mergeChatHistory(existing: ChatEntry[], additions: ChatEntry[]) {
@@ -104,6 +105,24 @@ function describePlanVariant(
     data.creditScore < 700 ? "Credit rebuild playbook" : "Savings automation template",
   ]
 
+  const resources: PlanResource[] = [
+    {
+      title: "Benefits overview portal",
+      description: "Launch the latest enrollment guide curated for your focus area.",
+      url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
+    },
+    {
+      title: "Action checklist",
+      description:
+        variant === "conservative"
+          ? "Step-by-step protections to review with HR before enrollment closes."
+          : variant === "bold"
+            ? "Investment and savings moves to discuss with your advisor."
+            : "Balanced coverage and savings reminders for this quarter.",
+      url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+    },
+  ]
+
   const descriptions: Record<typeof variant, string> = {
     conservative: `Keep essentials steady with enhanced protection for your household and ${
       data.dependents > 0 ? "dependents" : "income"
@@ -125,6 +144,7 @@ function describePlanVariant(
     monthlyCostEstimate: `$${monthly + offset}/mo`,
     riskMatchScore,
     highlights: highlightBase,
+    resources,
   }
 }
 
@@ -160,24 +180,6 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
     },
   ]
 
-  const resources = [
-    {
-      title: "Benefits orientation playlist",
-      description: "Short videos from Lincoln experts about making the most of open enrollment.",
-      url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
-    },
-    {
-      title: "Claude-powered planning prompts",
-      description: "Keep conversations focused on your household priorities with pre-built prompts.",
-      url: "https://www.lincolnfinancial.com/public/individuals",
-    },
-    {
-      title: "Budget + benefits worksheet",
-      description: "Capture pay-period costs and the value of employer programs in one view.",
-      url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
-    },
-  ]
-
   const conversation: LifeLensInsights["conversation"] = [
     {
       speaker: "LifeLens",
@@ -201,7 +203,6 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
     focusGoal: theme.focus,
     statement: `LifeLens analyzed your profile and mapped benefits around your risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`,
     timeline,
-    resources,
     conversation,
     prompts,
     plans,
@@ -238,10 +239,11 @@ export function buildChatReply(message: string, insights: LifeLensInsights | nul
   }
 
   if (normalized.includes("resource")) {
-    const resource = insights.resources[0]
+    const plan = insights.plans.find((entry) => entry.planId === insights.selectedPlanId) ?? insights.plans[0]
+    const resource = plan?.resources[0]
     return resource
       ? `Open “${resource.title}” for a quick walkthrough. I’ll stay here while you explore.`
-      : "I’ll add more resources after your next quiz refresh."
+      : "I’ll add more resources after your next plan refresh."
   }
 
   if (normalized.includes("thanks")) {

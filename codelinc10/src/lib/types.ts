@@ -3,7 +3,6 @@ export type ScreenKey =
   | "quiz"
   | "insights"
   | "timeline"
-  | "learning"
   | "faq"
   | "profile"
 
@@ -53,6 +52,12 @@ export interface EnrollmentFormData {
   }
 }
 
+export interface PlanResource {
+  title: string
+  description: string
+  url: string
+}
+
 export interface LifeLensPlan {
   planId: string
   planName: string
@@ -61,6 +66,7 @@ export interface LifeLensPlan {
   monthlyCostEstimate: string
   riskMatchScore: number
   highlights: string[]
+  resources: PlanResource[]
 }
 
 export interface LifeLensInsights {
@@ -69,7 +75,6 @@ export interface LifeLensInsights {
   focusGoal: string
   statement: string
   timeline: { period: string; title: string; description: string }[]
-  resources: { title: string; description: string; url: string }[]
   conversation: { speaker: "LifeLens" | "You"; message: string }[]
   prompts: string[]
   plans: LifeLensPlan[]
