@@ -17,7 +17,6 @@ export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
     { id: "learn", icon: BookOpen, label: "Learn" },
     { id: "faq", icon: Info, label: "FAQ" },
     { id: "profile", icon: User, label: "Profile" },
-    { id: "chat", icon: MessageCircle, label: "Chat" },
   ]
 
   return (

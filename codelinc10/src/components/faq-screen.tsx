@@ -80,29 +80,33 @@ export function FaqScreen({ onBack }: FaqScreenProps) {
           </Card>
 
           <div>
-            <h2 className="text-xl font-bold mb-4">Key Features</h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              {features.map((feature, index) => {
-                const Icon = feature.icon
-                return (
-                  <Card key={index} className="glass-strong p-5 border border-border/50 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-3">
-                      <Icon className="w-6 h-6" />
-                    </div>
-                    <h3 className="font-bold mb-1">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-                  </Card>
-                )
-              })}
-            </div>
+  <h2 className="text-xl font-bold mb-6 text-center">Key Features</h2>
+  <div className="grid md:grid-cols-3 gap-6">
+    {features.map((feature, index) => {
+      const Icon = feature.icon
+      return (
+        <Card
+          key={index}
+          className="glass-strong flex flex-col items-center justify-start p-6 border border-border/50 text-center transition hover:shadow-md hover:-translate-y-1"
+        >
+          <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 text-primary ">
+            <Icon className="w-7 h-7" />
           </div>
+          <h3 className="font-semibold text-lg">{feature.title}</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+        </Card>
+      )
+    })}
+  </div>
+</div>
+
 
           <div>
             <h2 className="text-xl font-bold mb-4">Frequently Asked Questions</h2>
             <div className="space-y-3">
               {faqs.map((faq, index) => (
                 <Card key={index} className="glass-strong p-5 border border-border/50">
-                  <h3 className="font-bold mb-2 text-base">{faq.question}</h3>
+                  <h3 className="font-bold text-base">{faq.question}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{faq.answer}</p>
                 </Card>
               ))}
@@ -110,14 +114,14 @@ export function FaqScreen({ onBack }: FaqScreenProps) {
           </div>
 
           <Card className="glass-strong p-6 border border-border/50">
-            <h2 className="text-xl font-bold mb-3">How It Works</h2>
+            <h2 className="text-xl font-bold ">How It Works</h2>
             <div className="space-y-4">
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
                   1
                 </div>
                 <div>
-                  <h3 className="font-bold mb-1">Share Your Situation</h3>
+                  <h3 className="font-bold ">Share Your Situation</h3>
                   <p className="text-sm text-muted-foreground">
                     Tell us what's happening in your life in plain English
                   </p>
@@ -150,14 +154,14 @@ export function FaqScreen({ onBack }: FaqScreenProps) {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Button variant="outline" className="glass flex-1 touch-manipulation bg-transparent" asChild>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/SujayCh07/codelinc10" target="_blank" rel="noopener noreferrer">
                 <Github className="w-4 h-4 mr-2" />
                 View on GitHub
                 <ExternalLink className="w-3 h-3 ml-2" />
               </a>
             </Button>
             <Button variant="outline" className="glass flex-1 touch-manipulation bg-transparent" asChild>
-              <a href="https://devpost.com" target="_blank" rel="noopener noreferrer">
+              <a href="https://devpost.com/software/1088807" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-2" />
                 DevPost Submission
               </a>

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react"
 import { useEffect, useMemo, useState } from "react"
-import { FileDown, Sparkles, Trash2, User } from "lucide-react"
+import { CheckCircle, ChevronDown, ChevronRight, FileDown, Sparkles, Trash2, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -27,6 +27,7 @@ import {
   PRESCRIPTION_OPTIONS,
 } from "@/lib/quiz"
 
+// ---------- Types ----------
 interface ProfileSettingsProps {
   profile: ProfileSnapshot
   onClearData: () => void
@@ -44,6 +45,80 @@ const EDUCATION_OPTIONS: EnrollmentFormData["educationLevel"][] = [
   "other",
 ]
 
+// ---------- Utility ----------
+function shallowEqual<T extends object>(a: T | null, b: T | null) {
+  if (!a && !b) return true
+  if (!a || !b) return false
+  const aKeys = Object.keys(a) as (keyof T)[]
+  const bKeys = Object.keys(b) as (keyof T)[]
+  if (aKeys.length !== bKeys.length) return false
+  for (const k of aKeys) {
+    if (a[k] !== b[k]) return false
+  }
+  return true
+}
+
+// ---------- Collapsible Section ----------
+function CollapsibleSection({
+  title,
+  subtitle,
+  defaultOpen = false,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <section className="rounded-2xl border border-[#E3D8D5] bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-[#7F1527]">{title}</h3>
+          {subtitle && <p className="text-xs text-[#7F1527]/70">{subtitle}</p>}
+        </div>
+        {open ? <ChevronDown className="h-5 w-5 text-[#7F1527]" /> : <ChevronRight className="h-5 w-5 text-[#7F1527]" />}
+      </button>
+      {open && <div className="border-t border-[#E3D8D5] p-4 sm:p-5">{children}</div>}
+    </section>
+  )
+}
+
+// ---------- Small Field helpers ----------
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-2 text-sm font-medium text-[#7F1527]">
+      {label}
+      {children}
+    </label>
+  )
+}
+
+function ToggleField({
+  label,
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  label: string
+  checked: boolean
+  onChange: (value: boolean) => void
+  disabled?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-[#E3D8D5] bg-white px-4 py-3">
+      <span className="text-sm font-semibold text-[#2A1A1A]">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
+    </div>
+  )
+}
+
+// ---------- Main ----------
 export function ProfileSettings({
   profile,
   onClearData,
@@ -52,19 +127,42 @@ export function ProfileSettings({
   onUpdateProfile,
 }: ProfileSettingsProps) {
   const [showConfirm, setShowConfirm] = useState(false)
-  const [draft, setDraft] = useState<EnrollmentFormData | null>(formData)
 
+  // local editable copy (draft)
+  const [draft, setDraft] = useState<EnrollmentFormData | null>(formData)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [dirty, setDirty] = useState(false)
+
+  // sync when formData changes externally
   useEffect(() => {
     setDraft(formData)
+    setDirty(false)
   }, [formData])
 
+  // When user edits any value, mark as dirty
   const updateDraft = (updater: (current: EnrollmentFormData) => EnrollmentFormData) => {
     setDraft((current) => {
       if (!current) return current
       const next = updater(current)
-      onUpdateProfile?.(next)
+      setDirty(true)
       return next
     })
+  }
+
+  const handleSave = async () => {
+    if (!draft) return
+    setSaving(true)
+    try {
+      // simulate/allow async save
+      await Promise.resolve()
+      onUpdateProfile?.(draft)
+      setSaved(true)
+      setDirty(false)
+      setTimeout(() => setSaved(false), 1500)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const riskComfortLabel = useMemo(() => {
@@ -76,18 +174,39 @@ export function ProfileSettings({
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+        {/* Header */}
         <div className="glass-strong rounded-2xl p-6">
           <div className="mb-2 flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <User className="h-6 w-6 text-primary" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold">Profile & Settings</h1>
-              <p className="text-muted-foreground">Manage your answers and keep your plan in sync</p>
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h1 className="text-3xl font-bold">Profile & Settings</h1>
+                  <p className="text-muted-foreground">Manage your answers and keep your plan in sync</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving || !dirty || !draft}
+                    className="rounded-full bg-[#A41E34] px-5 text-white hover:bg-[#7F1527] disabled:opacity-40"
+                  >
+                    {saving ? "Saving…" : "Save Changes"}
+                  </Button>
+                  {saved && (
+                    <span className="inline-flex items-center gap-1 text-green-600 text-sm font-semibold">
+                      <CheckCircle className="h-4 w-4" />
+                      Saved
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Snapshot */}
         <Card className="glass p-6">
           <h2 className="mb-4 text-xl font-bold">Snapshot</h2>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -103,19 +222,7 @@ export function ProfileSettings({
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground sm:text-right">
-              <div>
-                <p className="font-semibold text-foreground">Risk score</p>
-                <p>{profile.riskFactorScore}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Activity</p>
-                <p>{profile.activitySummary || "Low impact"}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-foreground">Coverage</p>
-                <p>{profile.coverageComplexity}</p>
-              </div>
+            <div className="grid text-sm text-muted-foreground sm:text-right">
               <div>
                 <p className="font-semibold text-foreground">Member since</p>
                 <p>{new Date(profile.createdAt).toLocaleDateString()}</p>
@@ -124,16 +231,16 @@ export function ProfileSettings({
           </div>
         </Card>
 
+        {/* Editor */}
         <Card className="glass p-6">
-          <h2 className="mb-4 text-xl font-bold">Edit your responses</h2>
+          <h2 className="text-xl font-bold">Personal Information: </h2>
           {!draft ? (
             <p className="text-sm text-muted-foreground">
               Complete the LifeLens quiz to unlock your editable profile.
             </p>
           ) : (
-            <div className="space-y-6">
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Personal details</h3>
+            <div className="space-y-4">
+              <CollapsibleSection title="Personal details" defaultOpen>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Full name">
                     <Input
@@ -154,7 +261,10 @@ export function ProfileSettings({
                       max={90}
                       value={draft.age ?? ""}
                       onChange={(event) =>
-                        updateDraft((current) => ({ ...current, age: event.target.value ? Number(event.target.value) : null }))
+                        updateDraft((current) => ({
+                          ...current,
+                          age: event.target.value ? Number(event.target.value) : null,
+                        }))
                       }
                     />
                   </Field>
@@ -194,24 +304,24 @@ export function ProfileSettings({
                     </select>
                   </Field>
                 </div>
-              </section>
+              </CollapsibleSection>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Education & work</h3>
+              <CollapsibleSection title="Education & work">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Highest education">
                     <select
                       value={draft.educationLevel}
                       onChange={(event) =>
-                        updateDraft((current) => ({ ...current, educationLevel: event.target.value as EnrollmentFormData["educationLevel"] }))
+                        updateDraft((current) => ({
+                          ...current,
+                          educationLevel: event.target.value as EnrollmentFormData["educationLevel"],
+                        }))
                       }
                       className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
                     >
                       {EDUCATION_OPTIONS.map((option) => (
                         <option key={option} value={option} className="text-sm">
-                          {option === "high-school"
-                            ? "High school"
-                            : option.charAt(0).toUpperCase() + option.slice(1)}
+                          {option === "high-school" ? "High school" : option.charAt(0).toUpperCase() + option.slice(1)}
                         </option>
                       ))}
                     </select>
@@ -250,7 +360,10 @@ export function ProfileSettings({
                     <select
                       value={draft.residencyStatus}
                       onChange={(event) =>
-                        updateDraft((current) => ({ ...current, residencyStatus: event.target.value as EnrollmentFormData["residencyStatus"] }))
+                        updateDraft((current) => ({
+                          ...current,
+                          residencyStatus: event.target.value as EnrollmentFormData["residencyStatus"],
+                        }))
                       }
                       className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
                     >
@@ -262,10 +375,9 @@ export function ProfileSettings({
                     </select>
                   </Field>
                 </div>
-              </section>
+              </CollapsibleSection>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Coverage & household</h3>
+              <CollapsibleSection title="Coverage & household">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Coverage focus">
                     <select
@@ -293,6 +405,7 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
+
                   {draft.coveragePreference === "self-plus-family" && (
                     <Field label="Dependents">
                       <Input
@@ -309,6 +422,7 @@ export function ProfileSettings({
                       />
                     </Field>
                   )}
+
                   {(draft.coveragePreference !== "self" ||
                     (["married", "partnered"] as EnrollmentFormData["maritalStatus"][]).includes(draft.maritalStatus)) && (
                     <Field label="Partner coverage status">
@@ -321,9 +435,7 @@ export function ProfileSettings({
                               ...current,
                               partnerCoverageStatus: nextStatus,
                               spouseHasSeparateInsurance:
-                                nextStatus === "not-applicable"
-                                  ? null
-                                  : nextStatus === "yes",
+                                nextStatus === "not-applicable" ? null : nextStatus === "yes",
                             }
                           })
                         }
@@ -337,6 +449,7 @@ export function ProfileSettings({
                       </select>
                     </Field>
                   )}
+
                   <Field label="Current coverage source">
                     <select
                       value={draft.healthCoverage}
@@ -355,25 +468,16 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
+
                   <ToggleField
                     label="Continuous coverage (12 months)"
                     checked={draft.hasContinuousCoverage === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, hasContinuousCoverage: checked }))
-                    }
-                  />
-                  <ToggleField
-                    label="Household tobacco use"
-                    checked={draft.tobaccoUse === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, tobaccoUse: checked }))
-                    }
+                    onChange={(checked) => updateDraft((current) => ({ ...current, hasContinuousCoverage: checked }))}
                   />
                 </div>
-              </section>
+              </CollapsibleSection>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Health & wellness profile</h3>
+              <CollapsibleSection title="Health & wellness profile">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <ToggleField
                     label="Ongoing health conditions"
@@ -398,6 +502,7 @@ export function ProfileSettings({
                       />
                     </Field>
                   )}
+
                   <Field label="Primary-care visits">
                     <select
                       value={draft.primaryCareFrequency}
@@ -416,6 +521,7 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
+
                   <Field label="Prescription frequency">
                     <select
                       value={draft.prescriptionFrequency}
@@ -434,6 +540,7 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
+
                   <Field label={`Activity level score · ${draft.activityLevelScore}/5`}>
                     <Slider
                       min={1}
@@ -456,10 +563,9 @@ export function ProfileSettings({
                     />
                   </Field>
                 </div>
-              </section>
+              </CollapsibleSection>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Financial & plan preference</h3>
+              <CollapsibleSection title="Financial & plan preference">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Household income">
                     <select
@@ -479,6 +585,7 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
+
                   <Field label={`Benefits budget · ${draft.benefitsBudget}%`}>
                     <Slider
                       min={0}
@@ -494,6 +601,7 @@ export function ProfileSettings({
                       }
                     />
                   </Field>
+
                   <Field label={`Risk comfort · ${riskComfortLabel}`}>
                     <Slider
                       min={1}
@@ -508,6 +616,7 @@ export function ProfileSettings({
                       }
                     />
                   </Field>
+
                   <Field label="Plan priority">
                     <select
                       value={draft.planPreference}
@@ -526,6 +635,7 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
+
                   <Field label="HSA / FSA access">
                     <select
                       value={draft.taxPreferredAccount}
@@ -544,27 +654,27 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
+
                   <Field label={`Credit score · ${draft.creditScore}`}>
                     <Slider
                       min={300}
                       max={850}
                       step={10}
                       value={[draft.creditScore]}
-                      onValueChange={([value]) => updateDraft((current) => ({ ...current, creditScore: value }))}
+                      onValueChange={([value]) =>
+                        updateDraft((current) => ({ ...current, creditScore: value }))
+                      }
                     />
                   </Field>
                 </div>
-              </section>
+              </CollapsibleSection>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Life stage & usage</h3>
+              <CollapsibleSection title="Life stage & usage">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <ToggleField
                     label="Expecting major life changes"
                     checked={draft.anticipatesLifeChanges === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, anticipatesLifeChanges: checked }))
-                    }
+                    onChange={(checked) => updateDraft((current) => ({ ...current, anticipatesLifeChanges: checked }))}
                   />
                   <Field label="Benefit usage frequency">
                     <select
@@ -584,19 +694,16 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
+
                   <ToggleField
                     label="Regular out-of-state travel"
                     checked={draft.travelsOutOfState === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, travelsOutOfState: checked }))
-                    }
+                    onChange={(checked) => updateDraft((current) => ({ ...current, travelsOutOfState: checked }))}
                   />
                   <ToggleField
                     label="Needs international coverage"
                     checked={draft.needsInternationalCoverage === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, needsInternationalCoverage: checked }))
-                    }
+                    onChange={(checked) => updateDraft((current) => ({ ...current, needsInternationalCoverage: checked }))}
                   />
                   <Field label="Dental / vision preference">
                     <select
@@ -617,10 +724,9 @@ export function ProfileSettings({
                     </select>
                   </Field>
                 </div>
-              </section>
+              </CollapsibleSection>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Retirement & guidance</h3>
+              <CollapsibleSection title="Retirement & guidance">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <ToggleField
                     label="Contribute to retirement"
@@ -652,9 +758,7 @@ export function ProfileSettings({
                   <ToggleField
                     label="Want optimized targets"
                     checked={draft.wantsRetirementGuidance === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, wantsRetirementGuidance: checked }))
-                    }
+                    onChange={(checked) => updateDraft((current) => ({ ...current, wantsRetirementGuidance: checked }))}
                     disabled={draft.contributesToRetirement === null}
                   />
                   <Field label={`Confidence with insurance terms · ${draft.confidenceInsuranceTerms}/5`}>
@@ -690,31 +794,44 @@ export function ProfileSettings({
                     </select>
                   </Field>
                 </div>
-              </section>
+              </CollapsibleSection>
 
-              <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Additional details</h3>
+              <CollapsibleSection title="Additional details">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <ToggleField
                     label="Disability"
                     checked={draft.disability === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, disability: checked }))
-                    }
+                    onChange={(checked) => updateDraft((current) => ({ ...current, disability: checked }))}
                   />
                   <ToggleField
                     label="Veteran status"
                     checked={draft.veteran === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, veteran: checked }))
-                    }
+                    onChange={(checked) => updateDraft((current) => ({ ...current, veteran: checked }))}
                   />
                 </div>
-              </section>
+              </CollapsibleSection>
+
+              {/* Bottom Save */}
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <Button
+                  onClick={handleSave}
+                  disabled={saving || !dirty || !draft}
+                  className="rounded-full bg-[#A41E34] px-5 text-white hover:bg-[#7F1527] disabled:opacity-40"
+                >
+                  {saving ? "Saving…" : "Save Changes"}
+                </Button>
+                {saved && (
+                  <span className="inline-flex items-center gap-1 text-green-600 text-sm font-semibold">
+                    <CheckCircle className="h-4 w-4" />
+                    Saved
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </Card>
 
+        {/* Actions */}
         <Card className="glass p-6">
           <h2 className="mb-4 text-xl font-bold">Actions</h2>
           <div className="space-y-3">
@@ -751,34 +868,6 @@ export function ProfileSettings({
           </div>
         </Card>
       </div>
-    </div>
-  )
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="flex flex-col gap-2 text-sm font-medium text-[#7F1527]">
-      {label}
-      {children}
-    </label>
-  )
-}
-
-function ToggleField({
-  label,
-  checked,
-  onChange,
-  disabled = false,
-}: {
-  label: string
-  checked: boolean
-  onChange: (value: boolean) => void
-  disabled?: boolean
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-2xl border border-[#E3D8D5] bg-white px-4 py-3">
-      <span className="text-sm font-semibold text-[#2A1A1A]">{label}</span>
-      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </div>
   )
 }
