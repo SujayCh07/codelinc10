@@ -49,7 +49,7 @@ export function InsightsDashboard({
               className="rounded-full text-sm font-semibold text-[#A41E34] hover:text-[#7F1527]"
               onClick={onBackToLanding}
             >
-              Start over
+              Home
             </Button>
           </div>
         </div>
