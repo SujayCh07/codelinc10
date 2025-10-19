@@ -4,17 +4,15 @@ import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { BottomNav } from "@/components/bottom-nav"
-import { ChatPanel } from "@/components/chat-panel"
+import { ChatModal } from "@/components/chat-modal"
 import { DynamicQuiz } from "@/components/DynamicQuiz"
 import { FaqScreen } from "@/components/faq-screen"
 import { InsightsDashboard } from "@/components/insights-dashboard"
 import { LandingScreen } from "@/components/landing-screen"
 import { ProfileSettings } from "@/components/profile-settings"
-import { SupportDock } from "@/components/support-dock"
 import { TimelineScreen } from "@/components/timeline-screen"
-import { requestPlans, sendChatMessage, sendPlanReport, upsertUser } from "@/lib/api"
+import { requestPlans, sendPlanReport, upsertUser } from "@/lib/api"
 import {
-  CHAT_STORAGE_KEY,
   DEFAULT_ENROLLMENT_FORM,
   FORM_STORAGE_KEY,
   INSIGHTS_STORAGE_KEY,
@@ -22,7 +20,7 @@ import {
   PROFILE_CREATED_KEY,
 } from "@/lib/enrollment"
 import { useHydrated } from "@/lib/hooks/useHydrated"
-import { buildInsights, buildPriorityBenefits, mergeChatHistory, withDerivedMetrics } from "@/lib/insights"
+import { buildInsights, buildPriorityBenefits, withDerivedMetrics } from "@/lib/insights"
 import {
   removeStorage,
   readStorage,
@@ -31,7 +29,6 @@ import {
   writeString,
 } from "@/lib/storage"
 import type {
-  ChatEntry,
   EnrollmentFormData,
   LifeLensInsights,
   ProfileSnapshot,
@@ -54,7 +51,6 @@ export default function Home() {
   const [formData, setFormData] = useState<EnrollmentFormData | null>(() => createFreshForm())
   const [insights, setInsights] = useState<LifeLensInsights | null>(null)
   const [savedMoments, setSavedMoments] = useState<SavedMoment[]>([])
-  const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
   const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
   const [isGenerating, setIsGenerating] = useState(false)
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false)
@@ -94,10 +90,6 @@ export default function Home() {
       setSavedMoments(storedMoments)
     }
 
-    const storedChat = readStorage<ChatEntry[]>(CHAT_STORAGE_KEY, [])
-    if (storedChat.length) {
-      setChatHistory(storedChat)
-    }
   }, [isHydrated])
 
   useEffect(() => {
@@ -122,11 +114,6 @@ export default function Home() {
     if (!isHydrated) return
     writeStorage(MOMENTS_STORAGE_KEY, savedMoments)
   }, [savedMoments, isHydrated])
-
-  useEffect(() => {
-    if (!isHydrated) return
-    writeStorage(CHAT_STORAGE_KEY, chatHistory)
-  }, [chatHistory, isHydrated])
 
   const ensureUserSession = (name: string) => {
     login({ name, createdAt: profileCreatedAt })
@@ -185,16 +172,6 @@ export default function Home() {
     const localInsights = buildInsights(prepared)
     setInsights(localInsights)
     appendMomentForInsights(localInsights)
-
-    if (localInsights.conversation.length > 0) {
-      const additions: ChatEntry[] = localInsights.conversation.map((entry, index) => ({
-        speaker: entry.speaker,
-        message: entry.message,
-        timestamp: new Date(Date.now() + index).toISOString(),
-        status: "final" as const,
-      }))
-      setChatHistory((previous) => mergeChatHistory(previous, additions))
-    }
 
     try {
       const saveResult = await upsertUser(prepared)
@@ -263,63 +240,10 @@ export default function Home() {
     removeStorage(FORM_STORAGE_KEY)
     removeStorage(INSIGHTS_STORAGE_KEY)
     removeStorage(MOMENTS_STORAGE_KEY)
-    removeStorage(CHAT_STORAGE_KEY)
     removeStorage(PROFILE_CREATED_KEY)
     const refreshedCreatedAt = new Date().toISOString()
     setProfileCreatedAt(refreshedCreatedAt)
     setCurrentScreen("quiz")
-  }
-
-  const handleChatSend = async (message: string) => {
-    const trimmed = message.trim()
-    if (!trimmed) return
-
-    const userEntry: ChatEntry = {
-      speaker: "You",
-      message: trimmed,
-      timestamp: new Date().toISOString(),
-      status: "final",
-    }
-
-    const pendingEntry: ChatEntry = {
-      speaker: "LifeLens",
-      message: "Thinking…",
-      timestamp: new Date(Date.now() + 200).toISOString(),
-      status: "pending",
-    }
-
-    setChatHistory((previous) => [...previous, userEntry, pendingEntry])
-
-    const finalizeReply = (reply: string) => {
-      setChatHistory((previous) => {
-        const next = [...previous]
-        const pendingIndex = next.findIndex((entry) => entry.status === "pending" && entry.speaker === "LifeLens")
-        const finalEntry: ChatEntry = {
-          speaker: "LifeLens",
-          message: reply,
-          timestamp: new Date().toISOString(),
-          status: "final",
-        }
-        if (pendingIndex === -1) {
-          next.push(finalEntry)
-          return next
-        }
-        next[pendingIndex] = finalEntry
-        return next
-      })
-    }
-
-    try {
-      if (!formData?.userId) {
-        finalizeReply("I’ll save your answers once you complete the quiz.")
-        return
-      }
-      const response = await sendChatMessage(formData.userId, trimmed)
-      finalizeReply(response.data?.reply.message ?? "Here’s what I recommend: keep following your plan timeline.")
-    } catch (error) {
-      console.error("Chat message failed", error)
-      finalizeReply("I ran into an issue reaching Claude. Let’s try again in a moment.")
-    }
   }
 
   const profileSnapshot: ProfileSnapshot = useMemo(() => {
@@ -400,7 +324,8 @@ export default function Home() {
   const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile"]
 
   return (
-    <main className={cn("min-h-screen bg-[#F7F4F2] pb-24", isGenerating && "pointer-events-none opacity-95")}> 
+    <>
+      <main className={cn("min-h-screen bg-[#F7F4F2] pb-24", isGenerating && "pointer-events-none opacity-95")}> 
       <AnimatePresence mode="wait" initial={false}>
         {currentScreen === "landing" && (
           <motion.div
@@ -505,18 +430,13 @@ export default function Home() {
         <BottomNav currentScreen={currentScreen} onNavigate={handleNavigate} />
       )}
 
-      {insights && currentScreen !== "quiz" && (
-        <SupportDock
-          focusGoal={insights.focusGoal}
-          topPriority={insights.priorityBenefits[0]?.title}
-          screen={currentScreen}
-          prompts={insights.prompts}
-          conversation={insights.conversation}
-          onBackToLanding={currentScreen === "insights" ? () => setCurrentScreen("landing") : undefined}
-        />
-      )}
-
-      {insights && <ChatPanel history={chatHistory} onSend={handleChatSend} />}
-    </main>
+      </main>
+      <ChatModal
+        baseContext={{ app: "LifeLens" }}
+        focusGoal={insights?.focusGoal}
+        persona={insights?.goalTheme}
+        userId={formData?.userId ?? undefined}
+      />
+    </>
   )
 }

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 
+import { openLifeLensChat } from "@/components/chat-bus"
 import { Button } from "@/components/ui/button"
 import type { ScreenKey } from "@/lib/types"
 
@@ -63,11 +64,7 @@ export function SupportDock({ focusGoal, topPriority, screen, onBackToLanding, p
             <button
               key={prompt}
               type="button"
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  window.dispatchEvent(new CustomEvent("lifelens-open-chat", { detail: { prompt } }))
-                }
-              }}
+              onClick={() => openLifeLensChat({ prompt })}
               className="rounded-full border border-[#F0E6E7] bg-[#FBF7F6] px-3 py-1 font-semibold text-[#7F1527] transition hover:border-[#A41E34] hover:bg-[#F9EDEA]"
             >
               {prompt}

@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Analytics } from "@vercel/analytics/next"
+import { ChatBusMount } from "@/components/chat-bus"
 import { UserProvider } from "@/lib/user-context"
 import "@/styles/globals.css"
 
@@ -18,7 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">
+      <body className="min-h-screen font-sans antialiased">
+        <ChatBusMount />
         <UserProvider>
           {children}
         </UserProvider>

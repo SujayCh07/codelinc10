@@ -37,8 +37,8 @@ export function ChatPanel({ history, onSend }: ChatPanelProps) {
       }
     }
 
-    window.addEventListener("lifelens-open-chat", handler)
-    return () => window.removeEventListener("lifelens-open-chat", handler)
+    window.addEventListener("lifelens:chat:open", handler)
+    return () => window.removeEventListener("lifelens:chat:open", handler)
   }, [])
 
   useEffect(() => {
