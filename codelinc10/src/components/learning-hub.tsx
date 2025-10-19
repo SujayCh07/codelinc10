@@ -156,22 +156,22 @@ export function LearningHub({ persona }: LearningHubProps) {
   const lincolnResources = [
     {
       title: "Life Insurance Guide",
-      url: "https://www.lfg.com/public/individual/lifeinsurance",
+      url: "https://www.lincolnfinancial.com/public/individuals/support/customerservice/lifeinsuranceresources#startaclaim",
       description: "Comprehensive guide to life insurance options"
     },
     {
       title: "Retirement Planning Tools",
-      url: "https://www.lfg.com/public/individual/retirement",
+      url: "https://www.lincolnfinancial.com/public/individuals/support/customerservice/retirementplanresources#findmyplan",
       description: "Plan your retirement with expert guidance"
     },
     {
       title: "Financial Wellness Center",
-      url: "https://www.lfg.com/public/individual/financialwellness",
+      url: "https://www.lincolnfinancial.com/public/individuals/products/workplaceplan/financialwellness",
       description: "Resources to improve your financial well-being"
     },
     {
       title: "Education Planning",
-      url: "https://www.lfg.com/public/individual/education",
+      url: "https://www.lincolnfinancial.com/public/individuals/products/workplaceplan/lifeevents/understandingyouroptionsforeducationalfunding",
       description: "Save for education with 529 plans and more"
     }
   ]
