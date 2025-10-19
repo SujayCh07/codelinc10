@@ -5,9 +5,9 @@ const sessionTableName = "user_chat_sessions";
 const userTableName = "user_profiles";
 
 // Get full user record from user profile table
-async function getUserData(userId) {
+async function getUserData(userId, tableName) {
   const params = {
-    Statement: `SELECT * FROM "${userTableName}" WHERE user_id = ?`,
+    Statement: `SELECT * FROM "${tableName}" WHERE user_id = ?`,
     Parameters: [{ S: userId }]
   };
 
@@ -22,10 +22,10 @@ async function getUserData(userId) {
 }
 
 // Append a string to session_history list
-async function addChatSession(userId, sessionHistory) {
+async function addChatSession(userId, sessionHistory, tableName) {
   const params = {
     Statement: `
-      UPDATE "${sessionTableName}"
+      UPDATE "${tableName}"
       SET session_history = session_history || ?
       WHERE user_id = ?
     `,
@@ -44,9 +44,9 @@ async function addChatSession(userId, sessionHistory) {
 }
 
 // Get session_history from session table
-async function getChatSession(userId) {
+async function getChatSession(userId, tableName) {
   const params = {
-    Statement: `SELECT session_history FROM "${sessionTableName}" WHERE user_id = ?`,
+    Statement: `SELECT session_history FROM "${tableName}" WHERE user_id = ?`,
     Parameters: [{ S: userId }]
   };
 
@@ -60,9 +60,9 @@ async function getChatSession(userId) {
 }
 
 // Get full user profile
-async function getUserProfile(userId) {
+async function getUserProfile(userId, tableName) {
   const params = {
-    Statement: `SELECT * FROM "${userTableName}" WHERE user_id = ?`,
+    Statement: `SELECT * FROM "${tableName}" WHERE user_id = ?`,
     Parameters: [{ S: userId }]
   };
 
@@ -76,10 +76,10 @@ async function getUserProfile(userId) {
 }
 
 // Update profile_data map field in profile table
-async function updateUserProfile(userId, profileData) {
+async function updateUserProfile(userId, profileData, tableName) {
   const params = {
     Statement: `
-      UPDATE "${userTableName}"
+      UPDATE "${tableName}"
       SET profile_data = ?
       WHERE user_id = ?
     `,
