@@ -36,7 +36,7 @@ export function PersonalizedDashboard({ profile, insights, onReassess }: Persona
           <p className="text-muted-foreground">Here's what matters most for you right now.</p>
           <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
             <Sparkles className="w-4 h-4" />
-            {profile.aiPersona}
+            {profile.focusArea}
           </div>
         </div>
 

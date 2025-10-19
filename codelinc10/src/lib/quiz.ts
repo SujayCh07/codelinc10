@@ -4,6 +4,8 @@ import type {
   HealthCoverageOption,
   HomeOwnershipStatus,
   IncomeRange,
+  MaritalStatusOption,
+  ResidencyStatus,
 } from "./types"
 
 export type QuizQuestionType =
@@ -42,6 +44,50 @@ export const ACTIVITY_OPTIONS: QuizOption[] = [
   { label: "Team sports", value: "sports" },
   { label: "Cycling", value: "cycling" },
   { label: "Yoga", value: "yoga" },
+]
+
+const MARITAL_LABELS: Record<MaritalStatusOption, string> = {
+  single: "Single",
+  married: "Married",
+  partnered: "Domestic partner",
+  divorced: "Divorced",
+  widowed: "Widowed",
+  other: "Other",
+}
+
+export const MARITAL_OPTIONS: QuizOption[] = (Object.keys(MARITAL_LABELS) as MaritalStatusOption[]).map((value) => ({
+  value,
+  label: MARITAL_LABELS[value],
+}))
+
+const RESIDENCY_LABELS: Record<ResidencyStatus, string> = {
+  Citizen: "Citizen",
+  "Permanent Resident": "Permanent resident",
+  "Work Visa": "Work visa",
+  "Student Visa": "Student visa",
+  Other: "Other",
+}
+
+export const RESIDENCY_OPTIONS: QuizOption[] = (Object.keys(RESIDENCY_LABELS) as ResidencyStatus[]).map((value) => ({
+  value,
+  label: RESIDENCY_LABELS[value],
+}))
+
+export const CITIZENSHIP_OPTIONS: QuizOption[] = [
+  { label: "U.S. Citizen", value: "U.S. Citizen" },
+  { label: "Dual citizen", value: "Dual citizen" },
+  { label: "Permanent resident", value: "Permanent resident" },
+  { label: "Work visa", value: "Work visa" },
+  { label: "Other", value: "Other" },
+]
+
+export const EDUCATION_OPTIONS: QuizOption[] = [
+  { label: "High school", value: "high-school" },
+  { label: "Associate", value: "associate" },
+  { label: "Bachelor's", value: "bachelor" },
+  { label: "Master's", value: "master" },
+  { label: "Doctorate", value: "doctorate" },
+  { label: "Other", value: "other" },
 ]
 
 export const COVERAGE_OPTIONS: QuizOption[] = [
@@ -138,6 +184,34 @@ export function questionsFor(data: EnrollmentFormData): QuizQuestion[] {
       min: 18,
       max: 75,
       placeholder: "Enter your age",
+    },
+    {
+      id: "maritalStatus",
+      title: "What is your marital status?",
+      prompt: "We coordinate partner questions based on your answer.",
+      type: "select",
+      options: MARITAL_OPTIONS,
+    },
+    {
+      id: "residencyStatus",
+      title: "What's your residency status?",
+      prompt: "Ensures compliance and enrollment reminders are accurate.",
+      type: "select",
+      options: RESIDENCY_OPTIONS,
+    },
+    {
+      id: "citizenship",
+      title: "What best describes your citizenship?",
+      prompt: "We only use this to tailor plan paperwork guidance.",
+      type: "select",
+      options: CITIZENSHIP_OPTIONS,
+    },
+    {
+      id: "educationLevel",
+      title: "What's your highest education level?",
+      prompt: "Education can unlock student loan and learning benefits.",
+      type: "select",
+      options: EDUCATION_OPTIONS,
     },
     {
       id: "coveragePreference",
@@ -265,6 +339,21 @@ export function updateFormValue(
       if (next.coveragePreference === "self") {
         next.tobaccoUse = null
       }
+      break
+    case "maritalStatus":
+      next.maritalStatus = value as EnrollmentFormData["maritalStatus"]
+      if (!(["married", "partnered"] as EnrollmentFormData["maritalStatus"][]).includes(next.maritalStatus)) {
+        next.spouseHasSeparateInsurance = null
+      }
+      break
+    case "residencyStatus":
+      next.residencyStatus = value as EnrollmentFormData["residencyStatus"]
+      break
+    case "citizenship":
+      next.citizenship = typeof value === "string" ? value : next.citizenship
+      break
+    case "educationLevel":
+      next.educationLevel = value as EnrollmentFormData["educationLevel"]
       break
     case "dependents":
       if (typeof value === "number") {

@@ -35,7 +35,7 @@ export function TimelineView({ history }: TimelineViewProps) {
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className="text-lg font-bold">{entry.profile.aiPersona}</h3>
+                        <h3 className="text-lg font-bold">{entry.profile.focusArea}</h3>
                         <p className="text-sm text-muted-foreground">
                           {new Date(entry.insights.timestamp).toLocaleDateString("en-US", {
                             month: "long",

@@ -93,7 +93,7 @@ export function ProfileSettings({
                 <h3 className="text-lg font-bold">{profile.name || "Guest"}</h3>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Sparkles className="h-4 w-4" />
-                  <span>{profile.aiPersona}</span>
+                  <span>{profile.focusArea || "Priority guidance"}</span>
                 </div>
               </div>
             </div>
@@ -165,13 +165,24 @@ export function ProfileSettings({
                     <select
                       value={draft.maritalStatus}
                       onChange={(event) =>
-                        updateDraft((current) => ({ ...current, maritalStatus: event.target.value as EnrollmentFormData["maritalStatus"] }))
+                        updateDraft((current) => {
+                          const nextStatus = event.target.value as EnrollmentFormData["maritalStatus"]
+                          return {
+                            ...current,
+                            maritalStatus: nextStatus,
+                            spouseHasSeparateInsurance: (["married", "partnered"] as EnrollmentFormData["maritalStatus"][]).includes(
+                              nextStatus,
+                            )
+                              ? current.spouseHasSeparateInsurance
+                              : null,
+                          }
+                        })
                       }
                       className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
                     >
                       {MARITAL_OPTIONS.map((option) => (
-                        <option key={option} value={option} className="text-sm">
-                          {option.charAt(0).toUpperCase() + option.slice(1)}
+                        <option key={option.value} value={option.value} className="text-sm">
+                          {option.label}
                         </option>
                       ))}
                     </select>
@@ -238,8 +249,8 @@ export function ProfileSettings({
                       className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
                     >
                       {RESIDENCY_OPTIONS.map((option) => (
-                        <option key={option} value={option} className="text-sm">
-                          {option}
+                        <option key={option.value} value={option.value} className="text-sm">
+                          {option.label}
                         </option>
                       ))}
                     </select>
@@ -254,12 +265,15 @@ export function ProfileSettings({
                     <select
                       value={draft.coveragePreference}
                       onChange={(event) =>
-                        updateDraft((current) => ({
-                          ...current,
-                          coveragePreference: event.target.value as EnrollmentFormData["coveragePreference"],
-                          dependents:
-                            event.target.value === "self-plus-family" ? current.dependents : 0,
-                        }))
+                        updateDraft((current) => {
+                          const nextPreference = event.target.value as EnrollmentFormData["coveragePreference"]
+                          return {
+                            ...current,
+                            coveragePreference: nextPreference,
+                            dependents: nextPreference === "self-plus-family" ? current.dependents : 0,
+                            tobaccoUse: nextPreference === "self" ? null : current.tobaccoUse,
+                          }
+                        })
                       }
                       className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
                     >
@@ -361,7 +375,13 @@ export function ProfileSettings({
                       max={30}
                       step={1}
                       value={[draft.savingsRate]}
-                      onValueChange={([value]) => updateDraft((current) => ({ ...current, savingsRate: value }))}
+                      onValueChange={([value]) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          savingsRate: value,
+                          wantsSavingsSupport: value >= 10 ? null : current.wantsSavingsSupport,
+                        }))
+                      }
                     />
                   </Field>
                   <Field label={`Risk comfort · ${riskComfortLabel}`}>
@@ -370,12 +390,19 @@ export function ProfileSettings({
                       max={5}
                       step={1}
                       value={[draft.riskComfort]}
-                      onValueChange={([value]) => updateDraft((current) => ({ ...current, riskComfort: value }))}
+                      onValueChange={([value]) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          riskComfort: value,
+                          investsInMarkets: value >= 4 ? current.investsInMarkets : null,
+                        }))
+                      }
                     />
                   </Field>
                   <ToggleField
                     label="Savings coaching reminders"
                     checked={draft.wantsSavingsSupport === true}
+                    disabled={draft.savingsRate >= 10}
                     onChange={(checked) =>
                       updateDraft((current) => ({ ...current, wantsSavingsSupport: checked }))
                     }
@@ -383,6 +410,7 @@ export function ProfileSettings({
                   <ToggleField
                     label="Invests in markets"
                     checked={draft.investsInMarkets === true}
+                    disabled={draft.riskComfort < 4}
                     onChange={(checked) =>
                       updateDraft((current) => ({ ...current, investsInMarkets: checked }))
                     }
@@ -419,13 +447,15 @@ export function ProfileSettings({
                       ))}
                     </select>
                   </Field>
-                  <ToggleField
-                    label="Tobacco use"
-                    checked={draft.tobaccoUse === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({ ...current, tobaccoUse: checked }))
-                    }
-                  />
+                  {draft.coveragePreference !== "self" && (
+                    <ToggleField
+                      label="Tobacco use"
+                      checked={draft.tobaccoUse === true}
+                      onChange={(checked) =>
+                        updateDraft((current) => ({ ...current, tobaccoUse: checked }))
+                      }
+                    />
+                  )}
                   <ToggleField
                     label="Disability"
                     checked={draft.disability === true}
@@ -531,15 +561,17 @@ function ToggleField({
   label,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string
   checked: boolean
   onChange: (value: boolean) => void
+  disabled?: boolean
 }) {
   return (
     <div className="flex items-center justify-between rounded-2xl border border-[#E3D8D5] bg-white px-4 py-3">
       <span className="text-sm font-semibold text-[#2A1A1A]">{label}</span>
-      <Switch checked={checked} onCheckedChange={onChange} />
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </div>
   )
 }

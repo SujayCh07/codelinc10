@@ -88,11 +88,10 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
-/* Added Sora and Inter font variables */
 @theme inline {
-  --font-sans: var(--font-inter), "Geist", "Geist Fallback";
-  --font-heading: var(--font-sora), "Geist", "Geist Fallback";
-  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-sans: "Avenir Next", "Avenir Next LT Pro", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Avenir Next Demi", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Courier New", Courier, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -136,9 +135,10 @@
     @apply border-border outline-ring/50;
   }
   body {
+    font-family: var(--font-sans);
     @apply bg-background text-foreground;
   }
-  /* Apply Sora font to headings */
+  /* Apply Lincoln Financial heading font to headings */
   h1,
   h2,
   h3,

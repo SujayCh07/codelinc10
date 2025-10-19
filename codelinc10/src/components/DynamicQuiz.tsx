@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -13,12 +13,16 @@ import { Switch } from "@/components/ui/switch"
 import {
   ACTIVITY_OPTIONS,
   ACTIVITY_LEVEL_OPTIONS,
+  CITIZENSHIP_OPTIONS,
   COVERAGE_OPTIONS,
+  EDUCATION_OPTIONS,
   HEALTH_OPTIONS,
   HOME_OPTIONS,
   INCOME_OPTIONS,
+  MARITAL_OPTIONS,
   initializeQuizState,
   questionsFor,
+  RESIDENCY_OPTIONS,
   updateFormValue,
   type QuizOption,
   type QuizQuestion,
@@ -240,7 +244,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
                     We pulled your basics from the HR system. Review and continue to personalize your LifeLens guidance.
                   </p>
                 </div>
-                <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
+                <div className="hidden h-8 w-8 rounded-full border border-[#E3D8D5] sm:block" aria-hidden="true" />
               </div>
 
               <div className="mt-8 space-y-4">
@@ -283,7 +287,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
                   <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">{current.title}</h1>
                   <p className="mt-3 text-sm leading-relaxed text-[#4D3B3B]">{current.prompt}</p>
                 </div>
-                <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
+                <div className="hidden h-8 w-8 rounded-full border border-[#E3D8D5] sm:block" aria-hidden="true" />
               </div>
 
               <div className="mt-8 space-y-6">
@@ -309,15 +313,21 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
                     Confirm your answers and share consent so LifeLens can generate your personalized benefits plans.
                   </p>
                 </div>
-                <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
+                <div className="hidden h-8 w-8 rounded-full border border-[#E3D8D5] sm:block" aria-hidden="true" />
               </div>
 
               <div className="mt-8 space-y-4 text-sm text-[#4D3B3B]">
                 <SummaryRow label="Age" value={answers.age ? `${answers.age}` : "—"} />
                 <SummaryRow label="Marital status" value={formatMaritalStatus(answers.maritalStatus)} />
                 <SummaryRow label="Education" value={formatEducationLevel(answers.educationLevel)} />
-                <SummaryRow label="Residency" value={answers.residencyStatus} />
-                <SummaryRow label="Citizenship" value={answers.citizenship} />
+                <SummaryRow
+                  label="Residency"
+                  value={getLabelForOption(RESIDENCY_OPTIONS, answers.residencyStatus)}
+                />
+                <SummaryRow
+                  label="Citizenship"
+                  value={getLabelForOption(CITIZENSHIP_OPTIONS, answers.citizenship)}
+                />
                 <SummaryRow label="Work location" value={`${answers.workState}, ${answers.workCountry}`} />
                 <SummaryRow
                   label="Coverage focus"
@@ -562,41 +572,14 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 function formatMaritalStatus(value: EnrollmentFormData["maritalStatus"]) {
-  return toTitleCase(value.replace(/-/g, " "))
+  return getLabelForOption(MARITAL_OPTIONS, value)
 }
 
 function formatEducationLevel(value: EnrollmentFormData["educationLevel"]) {
-  switch (value) {
-    case "high-school":
-      return "High school"
-    case "associate":
-      return "Associate"
-    case "bachelor":
-      return "Bachelor"
-    case "master":
-      return "Master"
-    case "doctorate":
-      return "Doctorate"
-    default:
-      return toTitleCase(value.replace(/-/g, " "))
-  }
+  return getLabelForOption(EDUCATION_OPTIONS, value)
 }
 
 function getLabelForOption(options: QuizOption[], value: string) {
   const match = options.find((option) => option.value === value)
   return match ? match.label : value || "—"
-}
-
-function capitalize(value: string) {
-  if (!value) return value
-  return value.charAt(0).toUpperCase() + value.slice(1)
-}
-
-function toTitleCase(value: string) {
-  if (!value) return value
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((segment) => capitalize(segment))
-    .join(" ")
 }
