@@ -259,7 +259,7 @@ export function ProfileSettings({
                       type="number"
                       min={18}
                       max={90}
-                      value={draft.age ?? ""}
+                      value={draft.age ?? 19}
                       onChange={(event) =>
                         updateDraft((current) => ({
                           ...current,

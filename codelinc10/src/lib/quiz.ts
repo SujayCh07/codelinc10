@@ -272,7 +272,7 @@ const SECTION_ORDER: { title: string; description: string; questions: Omit<QuizQ
       {
         id: "coveragePreference",
         title: "Who should this coverage include?",
-        prompt: "LifeLens adjusts priorities based on the household you select.",
+        prompt: "FinMate adjusts priorities based on the household you select.",
         type: "select",
         options: COVERAGE_OPTIONS,
       },
@@ -324,7 +324,7 @@ const SECTION_ORDER: { title: string; description: string; questions: Omit<QuizQ
       {
         id: "healthConditionSummary",
         title: "Provide a quick summary",
-        prompt: "List diagnoses or care needs LifeLens should keep in mind.",
+        prompt: "List diagnoses or care needs FinMate should keep in mind.",
         type: "textarea",
         placeholder: "e.g., Asthma for my child, hypertension for partner",
         condition: (answers) => answers.hasHealthConditions === true,
@@ -461,8 +461,8 @@ const SECTION_ORDER: { title: string; description: string; questions: Omit<QuizQ
       },
       {
         id: "retirementContributionRate",
-        title: "What percentage of income do you contribute?",
-        prompt: "This helps LifeLens size catch-up opportunities.",
+        title: "What portion of your income do you put toward savings or retirement?",
+        prompt: "FinMate uses this to find smart ways for you to catch up or grow faster.",
         type: "slider",
         min: 0,
         max: 15,
@@ -472,7 +472,7 @@ const SECTION_ORDER: { title: string; description: string; questions: Omit<QuizQ
       },
       {
         id: "wantsRetirementGuidance",
-        title: "Would you like LifeLens to suggest optimized targets?",
+        title: "Would you like FinMate to suggest optimized targets?",
         prompt: "We’ll share nudges tailored to your retirement goals.",
         type: "boolean-choice",
         condition: (answers) => answers.contributesToRetirement !== null,
@@ -481,7 +481,7 @@ const SECTION_ORDER: { title: string; description: string; questions: Omit<QuizQ
   },
   {
     title: "Plan Experience & Consent",
-    description: "Choose how LifeLens supports you through enrollment.",
+    description: "Choose how FinMate supports you through enrollment.",
     questions: [
       {
         id: "confidenceInsuranceTerms",
@@ -496,7 +496,7 @@ const SECTION_ORDER: { title: string; description: string; questions: Omit<QuizQ
       },
       {
         id: "guidancePreference",
-        title: "How would you like LifeLens to guide you?",
+        title: "How would you like FinMate to guide you?",
         prompt: "Pick the coaching style that works best on mobile and desktop.",
         type: "select",
         options: GUIDANCE_PREFERENCE_OPTIONS,
