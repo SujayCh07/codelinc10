@@ -49,7 +49,6 @@ interface DynamicQuizProps {
 
 const QUESTION_TYPE_LABEL: Record<QuizQuestionType, string> = {
   number: "Number",
-  text: "Text",
   select: "Select",
   slider: "Slider",
   boolean: "Toggle",
@@ -538,22 +537,6 @@ function renderField(
   onChange: (value: string | number | boolean | string[] | null) => void,
 ) {
   switch (question.type) {
-    case "text":
-      return (
-        <div className="space-y-2">
-          <Label className="text-sm text-[#7F1527]">Your answer</Label>
-          <Input
-            type="text"
-            placeholder={question.placeholder}
-            value={typeof value === "string" ? value : ""}
-            onChange={(event) => onChange(event.target.value)}
-            className="h-12 rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] px-4 text-base"
-          />
-          {question.helperText && (
-            <p className="text-xs text-[#7F1527]/80">{question.helperText}</p>
-          )}
-        </div>
-      )
     case "number":
       return (
         <div className="space-y-2">

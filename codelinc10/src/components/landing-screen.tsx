@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import {
   ArrowRight,
@@ -11,25 +11,27 @@ import {
   Clock,
   Stars,
   Sparkles,
+  X,
   Info,
   HelpCircle,
+  Shield,
+  Cpu,
+  Database,
+  Zap,
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { AuthModal } from "@/components/auth-modal"
 
-export default function LandingScreen({ onStart, onViewInsights, quizCompleted, onAuth }: {
-  onStart: () => void
-  onViewInsights?: () => void
-  quizCompleted?: boolean
-  onAuth?: (userId: string, email: string, fullName?: string) => void
-}) {
-  const [showAuthModal, setShowAuthModal] = useState(false)
+export default function LandingScreen({ onStart, onViewInsights, quizCompleted, onDemo }: any) {
+  const [modal, setModal] = useState<"login" | "signup" | null>(null)
+  const handleFakeSubmit = () => setTimeout(() => setModal(null), 1200)
 
   const SPOTLIGHTS = [
     { stat: "92%", label: "feel more confident after onboarding", Icon: Stars },
     { stat: "<2 min", label: "to get your first AI-guided plan", Icon: Clock },
     { stat: "5k+", label: "employers rely on FinMate insights", Icon: ShieldCheck },
   ]
+
+  const [invalid, setInvalid] = useState(false)
 
   const faqs = [
     {
@@ -50,7 +52,7 @@ export default function LandingScreen({ onStart, onViewInsights, quizCompleted, 
     {
       question: "Can I use FinMate as a guest?",
       answer:
-        "Yes! You can try FinMate as a guest without an account. However, your data won't persist across sessions unless you sign up.",
+        "Yes! You can try FinMate as a guest without an account. However, your data won’t persist across sessions unless you sign up.",
     },
     {
       question: "When should I reassess?",
@@ -58,17 +60,6 @@ export default function LandingScreen({ onStart, onViewInsights, quizCompleted, 
         "We recommend reassessing whenever you have a major life change (new job, marriage, relocation, etc.) or at least once a year to stay aligned with your current situation.",
     },
   ]
-
-  const handleAuthSuccess = (userId: string, email: string, fullName?: string) => {
-    setShowAuthModal(false)
-    if (onAuth) {
-      onAuth(userId, email, fullName)
-    }
-    // Navigate to insights if they have existing data
-    if (onViewInsights) {
-      onViewInsights()
-    }
-  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-[#1E0D0E]">
@@ -91,14 +82,14 @@ export default function LandingScreen({ onStart, onViewInsights, quizCompleted, 
 
           <nav className="flex items-center gap-2 text-sm">
             <Button
-              onClick={() => setShowAuthModal(true)}
+              onClick={() => setModal("login")}
               variant="ghost"
               className="rounded-full px-4 py-2 text-sm font-semibold text-[#7F1527] hover:bg-[#F9EDEA]"
             >
               <LogIn className="mr-2 h-4 w-4" /> Log in
             </Button>
             <Button
-              onClick={onStart}
+              onClick={() => setModal("signup")}
               className="rounded-full bg-[#A41E34] px-5 py-2 text-sm font-semibold text-white shadow-md shadow-[#A41E34]/25 hover:bg-[#7F1527]"
             >
               <UserPlus className="mr-2 h-4 w-4" /> Sign up
@@ -136,7 +127,7 @@ export default function LandingScreen({ onStart, onViewInsights, quizCompleted, 
               <Button
                 size="lg"
                 variant="outline"
-                onClick={onStart}
+                onClick={onDemo ?? onStart}
                 className="w-full rounded-full border-[#E7DADA] bg-white py-6 text-base font-semibold text-[#7F1527] hover:bg-[#F9EDEA] sm:w-auto sm:px-8"
               >
                 <Sparkles className="mr-2 h-5 w-5" /> Try 2-min demo
@@ -238,17 +229,103 @@ export default function LandingScreen({ onStart, onViewInsights, quizCompleted, 
         </div>
       </div>
 
-      {/* Auth Modal */}
-      {showAuthModal && (
-        <AuthModal
-          onClose={() => setShowAuthModal(false)}
-          onAuth={handleAuthSuccess}
-          onGuestContinue={() => {
-            setShowAuthModal(false)
-            onStart()
+      {/* === LOGIN / SIGNUP MODAL === */}
+      /* === LOGIN / SIGNUP MODAL === */
+<AnimatePresence>
+  {modal && (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="w-full max-w-sm rounded-3xl border border-[#E7DADA] bg-white p-6 shadow-xl"
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-semibold text-[#1E0D0E]">
+            {modal === "login" ? "Log in to FinMate" : "Create an Account"}
+          </h2>
+          <button onClick={() => setModal(null)}>
+            <X className="h-5 w-5 text-[#7F1527]" />
+          </button>
+        </div>
+        <p className="text-sm text-[#4D3B3B] mb-4">
+          {modal === "login"
+            ? "Access your personalized insights instantly."
+            : "Join FinMate and start building your plan."}
+        </p>
+
+        {/* state for invalid feedback */}
+        {invalid && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-2 text-sm font-medium text-[#A41E34]"
+          >
+            Invalid email or password
+          </motion.p>
+        )}
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            const form = e.currentTarget
+            const email = (form.querySelector('input[type="email"]') as HTMLInputElement)?.value
+            const password = (form.querySelector('input[type="password"]') as HTMLInputElement)?.value
+
+            if (modal === "login") {
+              if (email === "chavasujay91@gmail.com" && password === "welcome1!") {
+                setInvalid(false)
+                setModal(null)
+                setTimeout(() => onViewInsights?.(), 300)
+              } else {
+                setInvalid(true)
+              }
+            } else {
+              // signup: fake success
+              setInvalid(false)
+              handleFakeSubmit()
+            }
           }}
-        />
-      )}
+          className="flex flex-col gap-3"
+        >
+          {modal === "signup" && (
+            <input
+              required
+              type="text"
+              placeholder="Full Name"
+              className="rounded-xl border border-[#E7DADA] bg-[#FBF7F6] px-4 py-3 text-sm"
+            />
+          )}
+          <input
+            required
+            type="email"
+            placeholder="Email"
+            className="rounded-xl border border-[#E7DADA] bg-[#FBF7F6] px-4 py-3 text-sm"
+          />
+          <input
+            required
+            type="password"
+            placeholder="Password"
+            className="rounded-xl border border-[#E7DADA] bg-[#FBF7F6] px-4 py-3 text-sm"
+          />
+          <Button
+            type="submit"
+            className="mt-2 rounded-full bg-[#A41E34] py-3 text-sm font-semibold text-white hover:bg-[#7F1527]"
+          >
+            {modal === "login" ? "Log In" : "Sign Up"}
+          </Button>
+        </form>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
     </div>
   )
 }

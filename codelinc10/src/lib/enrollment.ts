@@ -11,7 +11,6 @@ const buildDerived = (overrides?: Partial<EnrollmentFormData["derived"]>) => ({
 
 export const DEFAULT_ENROLLMENT_FORM: EnrollmentFormData = {
   userId: null,
-  email: "",
   fullName: "Sujay Chava",
   preferredName: "Sujay",
   age: null,
@@ -70,7 +69,6 @@ export const DEFAULT_ENROLLMENT_FORM: EnrollmentFormData = {
 export const SAMPLE_COMPLETED_FORM: EnrollmentFormData = {
   ...DEFAULT_ENROLLMENT_FORM,
   userId: "sample-user",
-  email: "sample@example.com",
   age: 32,
   maritalStatus: "partnered",
   dependents: 1,

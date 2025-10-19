@@ -10,7 +10,6 @@ import type {
 
 export type QuizQuestionType =
   | "number"
-  | "text"
   | "select"
   | "slider"
   | "boolean"
@@ -252,19 +251,6 @@ export function initializeQuizState(template: EnrollmentFormData): EnrollmentFor
 }
 
 const SECTION_ORDER: { title: string; description: string; questions: Omit<QuizQuestion, "section" | "sectionDescription">[] }[] = [
-  {
-    title: "Account Information",
-    description: "We need your email to save your profile and allow you to log in later.",
-    questions: [
-      {
-        id: "email",
-        title: "What's your email address?",
-        prompt: "This will be your username for logging in and we'll save your profile.",
-        type: "text" as QuizQuestionType,
-        placeholder: "you@example.com",
-      },
-    ],
-  },
   {
     title: "Coverage & Family",
     description: "Tell us who needs protection so we size the right benefits.",
@@ -525,9 +511,6 @@ export function updateFormValue(
   const next: EnrollmentFormData = { ...data }
 
   switch (id) {
-    case "email":
-      next.email = typeof value === "string" ? value : ""
-      break
     case "age":
       if (typeof value === "number") {
         next.age = Math.max(18, Math.min(75, value))

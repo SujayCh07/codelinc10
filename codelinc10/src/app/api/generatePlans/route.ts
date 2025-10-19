@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server"
 
 import { getStore } from "../_store"
-import { generateInsightsWithClaude } from "@/lib/bedrock"
 import { buildInsights, withDerivedMetrics } from "@/lib/insights"
 import type { EnrollmentFormData } from "@/lib/types"
 
 export async function POST(request: Request) {
   try {
-    const { userId, profile } = (await request.json()) as {
-      userId?: string
-      profile?: EnrollmentFormData
-    }
+    const { userId, profile } = (await request.json()) as { userId?: string; profile?: EnrollmentFormData }
     if (!userId) {
       return NextResponse.json({ error: "Missing userId" }, { status: 400 })
     }
@@ -25,29 +21,7 @@ export async function POST(request: Request) {
 
     store.profiles.set(userId, preparedProfile)
 
-    // Build local insights first
-    let insights = buildInsights(preparedProfile)
-
-    // Try to enhance with Claude AI insights if AWS is configured
-    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-      try {
-        const claudeInsights = await generateInsightsWithClaude(preparedProfile)
-        // Merge Claude insights with local insights
-        insights = {
-          ...insights,
-          ...claudeInsights,
-          // Keep the plans and timeline from local insights
-          plans: insights.plans,
-          timeline: insights.timeline,
-          conversation: insights.conversation,
-          prompts: insights.prompts,
-          selectedPlanId: insights.selectedPlanId,
-        }
-      } catch (bedrockError) {
-        console.error("Bedrock generation failed (using local insights):", bedrockError)
-      }
-    }
-
+    const insights = buildInsights(preparedProfile)
     store.insights.set(userId, insights)
 
     return NextResponse.json({ insights })

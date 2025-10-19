@@ -5,68 +5,52 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { X, Mail, Lock } from "lucide-react"
+import { X, Mail, Lock, Chrome, Linkedin } from "lucide-react"
 
 interface AuthModalProps {
   onClose: () => void
-  onAuth: (userId: string, email: string, fullName?: string) => void
+  onAuth: (name: string, email: string) => void
   onGuestContinue: () => void
 }
 
 export function AuthModal({ onClose, onAuth, onGuestContinue }: AuthModalProps) {
   const [email, setEmail] = useState("")
-  const [userId, setUserId] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [password, setPassword] = useState("")
+  const [name, setName] = useState("")
+  const [isSignUp, setIsSignUp] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
-    setIsLoading(true)
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, userId }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "Login failed")
-        setIsLoading(false)
-        return
-      }
-
-      // Successful login
-      onAuth(data.user.userId, data.user.email, data.user.fullName)
-    } catch (err) {
-      setError("An error occurred during login")
-      console.error("Login error:", err)
-    } finally {
-      setIsLoading(false)
-    }
+    onAuth(name || email.split("@")[0], email)
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
       <div className="glass-strong rounded-t-3xl sm:rounded-3xl p-6 w-full max-w-md animate-slide-up sm:animate-scale-in shadow-2xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-foreground">Sign In</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-muted rounded-full transition-colors"
-          >
+          <h2 className="text-2xl font-bold text-foreground">{isSignUp ? "Create Account" : "Welcome Back"}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp && (
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">Full Name</label>
+              <Input
+                type="text"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="glass"
+                required
+              />
+            </div>
+          )}
+
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Email (Username)
-            </label>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">Email</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
@@ -76,37 +60,27 @@ export function AuthModal({ onClose, onAuth, onGuestContinue }: AuthModalProps) 
                 onChange={(e) => setEmail(e.target.value)}
                 className="glass pl-10"
                 required
-                disabled={isLoading}
               />
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              User ID (Password)
-            </label>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">Password</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                type="text"
-                placeholder="Enter your user ID"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="glass pl-10"
                 required
-                disabled={isLoading}
               />
             </div>
           </div>
 
-          {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-              {error}
-            </div>
-          )}
-
-          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign In"}
+          <Button type="submit" className="w-full" size="lg">
+            {isSignUp ? "Sign Up" : "Sign In"}
           </Button>
         </form>
 
@@ -115,8 +89,27 @@ export function AuthModal({ onClose, onAuth, onGuestContinue }: AuthModalProps) 
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="bg-card px-2 text-muted-foreground">Or</span>
+            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <Button
+            variant="outline"
+            className="glass bg-transparent"
+            onClick={() => onAuth("Google User", "google@example.com")}
+          >
+            <Chrome className="w-5 h-5 mr-2" />
+            Google
+          </Button>
+          <Button
+            variant="outline"
+            className="glass bg-transparent"
+            onClick={() => onAuth("LinkedIn User", "linkedin@example.com")}
+          >
+            <Linkedin className="w-5 h-5 mr-2" />
+            LinkedIn
+          </Button>
         </div>
 
         <Button variant="ghost" className="w-full" onClick={onGuestContinue}>
@@ -124,7 +117,14 @@ export function AuthModal({ onClose, onAuth, onGuestContinue }: AuthModalProps) 
         </Button>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Don't have an account? Complete the personalization quiz to create your profile.
+          {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+          <button
+            type="button"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-primary font-medium hover:underline"
+          >
+            {isSignUp ? "Sign In" : "Sign Up"}
+          </button>
         </p>
       </div>
     </div>

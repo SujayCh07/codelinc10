@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react"
 import type { KeyboardEvent as ReactKeyboardEvent } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Send, X, MessageCircle } from "lucide-react"
-import ReactMarkdown from "react-markdown"
 
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -201,9 +200,7 @@ export function ChatPanel({ history, onSend }: ChatPanelProps) {
                               <span className="h-2 w-2 animate-bounce delay-300 rounded-full bg-current" />
                             </span>
                           ) : (
-                            <ReactMarkdown className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
-                              {entry.message}
-                            </ReactMarkdown>
+                            entry.message
                           )}
                         </div>
                         <span className="mt-1 text-[10px] uppercase tracking-[0.25em] text-[#9B8587]">
