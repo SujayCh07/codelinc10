@@ -6,7 +6,7 @@ import { UserProvider } from "@/lib/user-context"
 import "@/styles/globals.css"
 
 export const metadata: Metadata = {
-  title: "FinMate - AI-Powered Personal Financial Advisor",
+  title: "LifeLens - AI-Powered Personal Financial Advisor",
   description:
     "Every life event deserves clear financial guidance. AI-driven support to help you understand benefits, savings, and next steps.",
   generator: "v0.app",

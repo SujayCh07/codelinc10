@@ -90,7 +90,7 @@ function coerceRemotePlans(raw: LifeLensInsights | (LifeLensInsights & { recomme
       planId: plan.id ?? `remote-plan-${index + 1}`,
       planName: plan.name ?? `Plan ${index + 1}`,
       shortDescription: plan.reason ?? "Personalized option",
-      reasoning: plan.reason ?? "FinMate tailored this path for your profile.",
+      reasoning: plan.reason ?? "LifeLens tailored this path for your profile.",
       monthlyCostEstimate: plan.monthly_cost_estimate ?? "—",
       riskMatchScore: 80,
       highlights: [plan.reason ?? "Tailored guidance"],
