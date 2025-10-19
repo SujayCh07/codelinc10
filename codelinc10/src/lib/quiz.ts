@@ -73,14 +73,6 @@ export const RESIDENCY_OPTIONS: QuizOption[] = (Object.keys(RESIDENCY_LABELS) as
   label: RESIDENCY_LABELS[value],
 }))
 
-export const CITIZENSHIP_OPTIONS: QuizOption[] = [
-  { label: "U.S. Citizen", value: "U.S. Citizen" },
-  { label: "Dual citizen", value: "Dual citizen" },
-  { label: "Permanent resident", value: "Permanent resident" },
-  { label: "Work visa", value: "Work visa" },
-  { label: "Other", value: "Other" },
-]
-
 export const EDUCATION_OPTIONS: QuizOption[] = [
   { label: "High school", value: "high-school" },
   { label: "Associate", value: "associate" },
