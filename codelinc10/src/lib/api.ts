@@ -84,18 +84,30 @@ function profileToRecord(profile: EnrollmentFormData) {
 }
 
 function coerceRemotePlans(raw: LifeLensInsights | (LifeLensInsights & { recommendedPlans?: unknown })) {
-  const insights = raw as LifeLensInsights & { recommendedPlans?: { id?: string; name?: string; reason?: string; resources?: PlanResource[]; monthly_cost_estimate?: string }[] }
+  const insights = raw as LifeLensInsights & { 
+    recommendedPlans?: Array<{
+      id?: string
+      name?: string
+      reason?: string
+      resources?: PlanResource[]
+      monthly_cost_estimate?: string
+      monthlyCostEstimate?: string
+    }>
+  }
   if (!insights.plans && Array.isArray(insights.recommendedPlans)) {
-    insights.plans = insights.recommendedPlans.map((plan, index) => ({
-      planId: plan.id ?? `remote-plan-${index + 1}`,
-      planName: plan.name ?? `Plan ${index + 1}`,
-      shortDescription: plan.reason ?? "Personalized option",
-      reasoning: plan.reason ?? "LifeLens tailored this path for your profile.",
-      monthlyCostEstimate: plan.monthly_cost_estimate ?? "—",
-      riskMatchScore: 80,
-      highlights: [plan.reason ?? "Tailored guidance"],
-      resources: plan.resources ?? [],
-    }))
+    insights.plans = insights.recommendedPlans.map((plan, index) => {
+      const costEstimate = (plan as any).monthly_cost_estimate ?? (plan as any).monthlyCostEstimate ?? "—"
+      return {
+        planId: plan.id ?? `remote-plan-${index + 1}`,
+        planName: plan.name ?? `Plan ${index + 1}`,
+        shortDescription: plan.reason ?? "Personalized option",
+        reasoning: plan.reason ?? "LifeLens tailored this path for your profile.",
+        monthlyCostEstimate: costEstimate,
+        riskMatchScore: 80,
+        highlights: [plan.reason ?? "Tailored guidance"],
+        resources: plan.resources ?? [],
+      }
+    })
     insights.selectedPlanId = insights.plans[0]?.planId ?? null
   }
   return insights

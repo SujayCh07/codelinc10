@@ -44,7 +44,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     return (response.Item as UserProfile) || null
   } catch (error) {
     console.error("Error fetching user profile:", error)
-    throw new Error("Failed to fetch user profile")
+    // Return null instead of throwing to allow graceful fallback
+    return null
   }
 }
 

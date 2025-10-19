@@ -21,7 +21,7 @@ export default function LandingScreen({ onStart, onViewInsights, quizCompleted, 
   onStart: () => void
   onViewInsights?: () => void
   quizCompleted?: boolean
-  onAuth?: (userId: string, email: string, fullName?: string) => void
+  onAuth?: (userId: string, email: string, fullName?: string, profileData?: Record<string, unknown>) => void
 }) {
   const [showAuthModal, setShowAuthModal] = useState(false)
 
