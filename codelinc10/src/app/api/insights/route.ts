@@ -24,7 +24,6 @@ interface GenerateInsightsResponse {
 function dbProfileToFormData(dbProfile: any): EnrollmentFormData {
   return {
     userId: dbProfile.user_id,
-    email: dbProfile.user_email || '',
     fullName: dbProfile.full_name || 'Guest User',
     preferredName: dbProfile.full_name?.split(' ')[0] || 'Guest',
     age: dbProfile.age_years || null,
@@ -91,7 +90,6 @@ function dbProfileToFormData(dbProfile: any): EnrollmentFormData {
 function generatePlaceholderInsights(userId: string): LifeLensInsights {
   const placeholderProfile: EnrollmentFormData = {
     userId,
-    email: '',
     fullName: 'Sample User',
     preferredName: 'Sample',
     age: 30,
