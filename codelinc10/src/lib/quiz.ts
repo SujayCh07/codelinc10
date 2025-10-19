@@ -192,13 +192,6 @@ export function questionsFor(data: EnrollmentFormData): QuizQuestion[] {
       options: RESIDENCY_OPTIONS,
     },
     {
-      id: "citizenship",
-      title: "What best describes your citizenship?",
-      prompt: "We only use this to tailor plan paperwork guidance.",
-      type: "select",
-      options: CITIZENSHIP_OPTIONS,
-    },
-    {
       id: "educationLevel",
       title: "What's your highest education level?",
       prompt: "Education can unlock student loan and learning benefits.",
