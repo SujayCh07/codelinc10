@@ -88,7 +88,8 @@ export function InsightsDashboard({
             <span className="text-xs uppercase tracking-[0.3em] text-[#7F1527]">Three tailored options</span>
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
-            {insights.plans.map((plan) => {
+            {Array.isArray(insights?.plans) &&
+  insights.plans.map((plan) => {
               const isSelected = plan.planId === insights.selectedPlanId
               return (
                 <Card
