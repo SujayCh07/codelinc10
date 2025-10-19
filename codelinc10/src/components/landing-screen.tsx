@@ -29,7 +29,7 @@ interface LandingScreenProps {
 const SPOTLIGHTS = [
   { stat: "92%", label: "feel more confident after onboarding", Icon: Stars },
   { stat: "<2 min", label: "to get your first AI-guided plan", Icon: Clock },
-  { stat: "5k+", label: "employers rely on LifeLens insights", Icon: ShieldCheck },
+  { stat: "5k+", label: "employers rely on FinMate insights", Icon: ShieldCheck },
 ]
 
 export default function LandingScreen({
@@ -57,9 +57,9 @@ export default function LandingScreen({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Image src="/lifelens-logo.svg" alt="LifeLens logo" width={160} height={44} className="h-9 w-auto" />
+            <Image src="/FinMate-logo.svg" alt="FinMate logo" width={160} height={44} className="h-9 w-auto" />
             <span className="hidden text-xs font-semibold uppercase tracking-[0.35em] text-[#7F1527]/80 md:block">
-              Lincoln Financial · LifeLens
+              Lincoln Financial · FinMate
             </span>
           </motion.div>
 
@@ -269,7 +269,7 @@ export default function LandingScreen({
         {/* Footer */}
         <footer className="mt-14 border-t border-[#E7DADA] pt-6 text-xs text-[#7F1527]">
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p>© {new Date().getFullYear()} LifeLens • All rights reserved</p>
+            <p>© {new Date().getFullYear()} FinMate • All rights reserved</p>
             <div className="flex items-center gap-4">
               <button className="hover:text-[#2A1A1A]">Privacy</button>
               <button className="hover:text-[#2A1A1A]">Security</button>
