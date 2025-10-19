@@ -6,16 +6,16 @@ import { Button } from "@/components/ui/button"
 import type { ScreenKey } from "@/lib/types"
 
 interface SupportDockProps {
-  persona?: string
   focusGoal?: string
+  topPriority?: string
   screen: ScreenKey
   onBackToLanding?: () => void
   prompts?: string[]
   conversation?: { speaker: "LifeLens" | "You"; message: string }[]
 }
 
-export function SupportDock({ persona, focusGoal, screen, onBackToLanding, prompts, conversation }: SupportDockProps) {
-  if (!persona || screen === "quiz" || screen === "landing") {
+export function SupportDock({ focusGoal, topPriority, screen, onBackToLanding, prompts, conversation }: SupportDockProps) {
+  if (!focusGoal || screen === "quiz" || screen === "landing") {
     return null
   }
 
@@ -31,13 +31,13 @@ export function SupportDock({ persona, focusGoal, screen, onBackToLanding, promp
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed bottom-24 left-4 z-40 w-[min(320px,90vw)] rounded-3xl border border-[#E2D5D7] bg-white/95 p-5 text-[#2A1A1A] shadow-xl shadow-[#A41E34]/15"
+      className="hidden md:block fixed bottom-24 left-4 z-40 w-[min(320px,90vw)] rounded-3xl border border-[#E2D5D7] bg-white/95 p-5 text-[#2A1A1A] shadow-xl shadow-[#A41E34]/15"
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">LifeLens persona</p>
-          <p className="text-base font-semibold">{persona}</p>
-          {focusGoal && <p className="text-sm text-[#4D3B3B]">Focused on {focusGoal.toLowerCase()}</p>}
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">Focus area</p>
+          <p className="text-base font-semibold">{focusGoal}</p>
+          {topPriority && <p className="text-sm text-[#4D3B3B]">Next action: {topPriority}</p>}
         </div>
         {onBackToLanding && (
           <Button
@@ -74,9 +74,7 @@ export function SupportDock({ persona, focusGoal, screen, onBackToLanding, promp
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-[#7F1527]/70">
-          Use the chat bubble to ask LifeLens anything about your plan.
-        </p>
+        <p className="text-[11px] text-[#7F1527]/70">Use the chat bubble to ask LifeLens anything about your plan.</p>
       </div>
     </motion.aside>
   )

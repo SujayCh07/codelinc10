@@ -87,8 +87,8 @@ export function AboutFaq() {
               <div>
                 <h3 className="font-bold mb-1">AI Analyzes Your Needs</h3>
                 <p className="text-sm text-muted-foreground">
-                  Our AI (powered by AWS Bedrock) processes your information to understand your unique financial persona
-                  and priorities.
+                  Our AI (powered by AWS Bedrock) processes your information to pinpoint your benefits priorities and highlight
+                  any gaps that need attention.
                 </p>
               </div>
             </div>
@@ -121,7 +121,7 @@ export function AboutFaq() {
               <div>
                 <h3 className="font-semibold mb-1">AI-Powered Analysis</h3>
                 <p className="text-sm text-muted-foreground">
-                  AWS Bedrock (Claude 4) for intelligent persona classification and priority ranking
+                  AWS Bedrock (Claude 4) for intelligent priority ranking and plan scoring
                 </p>
               </div>
             </div>
