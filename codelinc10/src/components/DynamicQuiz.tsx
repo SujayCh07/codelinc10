@@ -66,11 +66,13 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    const prepared = initializeQuizState(initialData)
-    setAnswers(prepared)
-    setPhase("hr")
-    setIndex(0)
-  }, [initialData])
+  const prepared = initializeQuizState(initialData)
+  setAnswers(prepared)
+  setPhase("hr")
+  setIndex(0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [])
+
 
   useEffect(() => {
     onUpdate?.(answers)
@@ -121,10 +123,17 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
 
   const goNext = () => {
     if (phase === "hr") {
-      setPhase("steps")
-      setIndex(0)
-      return
-    }
+  // Ensure there's always at least one question before switching
+  if (!flow || flow.length === 0) {
+    console.warn("No questions found in flow, skipping to summary.")
+    setPhase("summary")
+  } else {
+    setPhase("steps")
+    setIndex(0)
+  }
+  return
+}
+
     if (phase === "steps") {
       if (index < flow.length - 1) {
         setIndex((previous) => previous + 1)
