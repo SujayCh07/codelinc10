@@ -5,26 +5,24 @@ import { buildChatReply, buildInsights, mergeChatHistory } from "@/lib/insights"
 import type { ChatEntry } from "@/lib/types"
 
 describe("insights generation", () => {
-  it("derives persona, theme, and timeline from enrollment data", () => {
+  it("creates three tailored plans and selects a default", () => {
     const insights = buildInsights({
       ...DEFAULT_ENROLLMENT_FORM,
-      householdCoverage: "You + partner",
-      financialGoals: ["Buy a home"],
-      milestoneFocus: "Secure a first home",
-      monthlySavingsRate: 9,
+      riskComfort: 4,
+      dependents: 1,
     })
 
-    expect(insights.persona).toBe("Collaborative Planner")
-    expect(insights.goalTheme).toBe("Home stretch")
+    expect(insights.plans).toHaveLength(3)
+    expect(insights.selectedPlanId).toEqual(insights.plans[1]?.planId)
     expect(insights.timeline).toHaveLength(3)
-    expect(insights.focusGoal).toBe("Secure a first home")
-    expect(insights.resources[0]?.title).toContain("Home")
   })
 
-  it("responds to timeline questions in chat replies", () => {
+  it("responds to cost and plan prompts in chat replies", () => {
     const insights = buildInsights(DEFAULT_ENROLLMENT_FORM)
-    const reply = buildChatReply("Can you review my timeline?", insights)
-    expect(reply).toContain(insights.timeline[0].title)
+    const costReply = buildChatReply("What will this cost?", insights)
+    expect(costReply).toContain("monthly")
+    const planReply = buildChatReply("Tell me about the plan", insights)
+    expect(planReply).toContain("highlight")
   })
 
   it("avoids duplicate chat history entries", () => {

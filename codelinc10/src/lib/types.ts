@@ -1,51 +1,79 @@
 export type ScreenKey =
   | "landing"
-  | "enrollment"
+  | "quiz"
   | "insights"
   | "timeline"
   | "learning"
   | "faq"
   | "profile"
 
+export type ResidencyStatus =
+  | "Citizen"
+  | "Permanent Resident"
+  | "Work Visa"
+  | "Student Visa"
+  | "Other"
+
+export type MaritalStatusOption =
+  | "single"
+  | "married"
+  | "partnered"
+  | "divorced"
+  | "widowed"
+  | "other"
+
 export interface EnrollmentFormData {
+  userId: string | null
   fullName: string
   preferredName: string
-  employmentStart: string
-  age: number
-  maritalStatus: string
-  educationLevel: string
-  citizenship: string
-  householdCoverage: string
-  dependentCount: number
-  spouseHasSeparateInsurance: boolean | null
-  homeStatus: string
-  hasTobaccoUsers: boolean | null
-  incomeRange: string
-  financialGoals: string[]
-  monthlySavingsRate: number
-  milestoneFocus: string
-  healthCoverage: boolean | null
-  accountTypes: string[]
-  wantsLifeDisabilityInsights: boolean | null
-  contributes401k: boolean | null
-  wantsEmployerMatchHelp: boolean | null
+  age: number | null
+  maritalStatus: MaritalStatusOption
+  dependents: number
+  employmentStartDate: string
+  educationLevel: "high-school" | "associate" | "bachelor" | "master" | "doctorate" | "other"
+  educationMajor: string
+  workCountry: string
+  workState: string
   riskComfort: number
-  additionalNotes: string
-  consentToFollowUp: boolean
+  physicalActivities: boolean | null
+  activityList: string[]
+  tobaccoUse: boolean | null
+  disability: boolean | null
+  veteran: boolean | null
+  creditScore: number
+  citizenship: string
+  residencyStatus: ResidencyStatus
+  createdAt: string
   isGuest: boolean
+  consentToFollowUp: boolean
+  derived: {
+    riskFactorScore: number
+    activityRiskModifier: number
+    coverageComplexity: "low" | "medium" | "high"
+  }
+}
+
+export interface LifeLensPlan {
+  planId: string
+  planName: string
+  shortDescription: string
+  reasoning: string
+  monthlyCostEstimate: string
+  riskMatchScore: number
+  highlights: string[]
 }
 
 export interface LifeLensInsights {
   ownerName: string
   persona: string
-  statement: string
-  priorities: { title: string; description: string }[]
-  tips: { title: string; description: string; icon: string }[]
-  timeline: { period: string; title: string; description: string }[]
   focusGoal: string
+  statement: string
+  timeline: { period: string; title: string; description: string }[]
   resources: { title: string; description: string; url: string }[]
   conversation: { speaker: "LifeLens" | "You"; message: string }[]
   prompts: string[]
+  plans: LifeLensPlan[]
+  selectedPlanId: string | null
   goalTheme?: string
   themeKey?: string
 }
@@ -69,11 +97,13 @@ export interface ChatEntry {
 export interface ProfileSnapshot {
   name: string
   aiPersona: string
-  ageRange: string
-  employmentType: string
-  householdSize: number
+  age: string
+  employmentStartDate: string
   dependents: number
-  lifeEvents: string[]
-  goals: string[]
+  residencyStatus: ResidencyStatus
+  citizenship: string
+  riskFactorScore: number
+  activitySummary: string
+  coverageComplexity: EnrollmentFormData["derived"]["coverageComplexity"]
   createdAt: string
 }

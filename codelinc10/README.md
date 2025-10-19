@@ -4,12 +4,14 @@ LifeLens is a Next.js 15 application that delivers an AI-assisted financial plan
 
 ## Features
 
-- **Multi-screen app router experience** for landing, enrollment, insights dashboard, timeline, learning hub, FAQ, and profile.
+- **Dynamic quiz flow** with single-question cards, progress tracking, and hydration-safe persistence.
+- **Multi-screen app router experience** for landing, insights dashboard, timeline, learning hub, FAQ, and profile.
 - **Persistent local caching** of enrollment responses, insights, saved moments, chat history, and profile metadata with hydration-safe utilities.
-- **AI-inspired chat panel** with scripted replies, thinking animation, and context-aware prompts.
+- **AI-inspired chat panel** that calls Next.js API routes for Claude-style replies with “thinking” states and context-aware prompts.
 - **Framer Motion transitions** across screens with Tailwind 4 styling, pastel theming, and glassmorphism accents.
 - **Support dock** and bottom navigation for quick access to primary workflows.
-- **Type-safe data models** for forms, insights, chat, and profile snapshots.
+- **Type-safe data models** for forms, insights, plans, chat, and profile snapshots.
+- **Server routes** for user persistence, plan generation, chat replies, and PDF report stubs (ready for Supabase/Bedrock wiring).
 
 ## Tech Stack
 

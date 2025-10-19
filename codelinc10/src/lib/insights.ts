@@ -1,4 +1,9 @@
-import type { ChatEntry, EnrollmentFormData, LifeLensInsights } from "./types"
+import type {
+  ChatEntry,
+  EnrollmentFormData,
+  LifeLensInsights,
+  LifeLensPlan,
+} from "./types"
 
 export function mergeChatHistory(existing: ChatEntry[], additions: ChatEntry[]) {
   const seen = new Set(existing.map((entry) => `${entry.speaker}-${entry.message}`))
@@ -11,256 +16,242 @@ export function mergeChatHistory(existing: ChatEntry[], additions: ChatEntry[]) 
   return [...existing, ...filtered]
 }
 
-export function buildChatReply(message: string, insights: LifeLensInsights | null): string {
-  if (!insights) {
-    return "I'm here whenever you want to revisit your LifeLens questionnaire or start a new plan."
+export function computeDerivedMetrics(
+  data: EnrollmentFormData
+): EnrollmentFormData["derived"] {
+  const riskFactorScore = Math.round(
+    (Number(data.age ?? 30) / 2 + data.creditScore / 20 + data.riskComfort * 7) /
+      (data.tobaccoUse ? 1.15 : 1)
+  )
+
+  const activityRiskModifier = data.physicalActivities
+    ? Math.min(10, data.activityList.length * 2 + (data.veteran ? 3 : 0))
+    : data.veteran
+      ? 2
+      : 0
+
+  const complexityScore =
+    (data.dependents > 2 ? 2 : data.dependents > 0 ? 1 : 0) +
+    (data.residencyStatus === "Citizen" ? 0 : 1) +
+    (data.creditScore < 650 ? 1 : 0)
+
+  const coverageComplexity = complexityScore >= 3 ? "high" : complexityScore === 2 ? "medium" : "low"
+
+  return {
+    riskFactorScore,
+    activityRiskModifier,
+    coverageComplexity,
   }
-
-  const lower = message.toLowerCase()
-
-  if (lower.includes("timeline") || lower.includes("when")) {
-    const nextStep = insights.timeline[0]
-    if (nextStep) {
-      return `Start with "${nextStep.title}" this week and we’ll check in after you complete it.`
-    }
-  }
-
-  if (lower.includes("401") || lower.includes("retire")) {
-    return `Focus on your match: ${insights.priorities[0]?.description ?? "Increase contributions gradually."}`
-  }
-
-  if (lower.includes("resource") || lower.includes("link")) {
-    const resource = insights.resources[0]
-    if (resource) {
-      return `Open "${resource.title}" to go deeper — it’s tailored to ${insights.focusGoal.toLowerCase()}.`
-    }
-  }
-
-  if (lower.includes("goal") || lower.includes("focus")) {
-    return `Your plan centers on ${insights.focusGoal.toLowerCase()}. Let’s tackle the first timeline step together.`
-  }
-
-  if (lower.includes("hi") || lower.includes("hello") || lower.includes("hey")) {
-    return "Hi there! I’ve got your LifeLens plan ready. Ask about your timeline, resources, or anything else on your mind."
-  }
-
-  if (lower.includes("thank")) {
-    return "You’re welcome! I’ll keep your plan updated as new milestones pop up."
-  }
-
-  const prompt = insights.prompts[0]
-  if (prompt) {
-    return `Try asking: “${prompt}” to see what we’ve lined up.`
-  }
-
-  return "I’m ready when you are—ask about your benefits, timeline, or how to stay on track."
 }
 
-export function buildInsights(data: EnrollmentFormData): LifeLensInsights {
-  const persona =
-    data.householdCoverage === "You + family"
-      ? "Family Guardian"
-      : data.householdCoverage === "You + partner"
-        ? "Collaborative Planner"
-        : data.riskComfort >= 4
-          ? "Momentum Builder"
-          : "Balanced Navigator"
+export function withDerivedMetrics(data: EnrollmentFormData): EnrollmentFormData {
+  return {
+    ...data,
+    derived: computeDerivedMetrics(data),
+  }
+}
 
-  const focusGoal = data.financialGoals[0] ?? "strengthen your financial foundation"
-  const milestone = data.milestoneFocus?.trim() || focusGoal
+const planThemes: Record<string, { persona: string; focus: string; themeKey: string }> = {
+  home: {
+    persona: "Home Stretch Strategist",
+    focus: "Build a down payment runway",
+    themeKey: "home",
+  },
+  retirement: {
+    persona: "Momentum Builder",
+    focus: "Grow retirement confidence",
+    themeKey: "retirement",
+  },
+  protection: {
+    persona: "Family Guardian",
+    focus: "Protect your household",
+    themeKey: "protection",
+  },
+  savings: {
+    persona: "Cashflow Navigator",
+    focus: "Elevate savings discipline",
+    themeKey: "savings",
+  },
+  resilience: {
+    persona: "Resilience Architect",
+    focus: "Build a safety-first plan",
+    themeKey: "foundation",
+  },
+}
 
-  const householdLine =
-    data.householdCoverage === "You only"
-      ? "your individual coverage"
-      : data.householdCoverage === "You + partner"
-        ? "coverage that supports you and your partner"
-        : `supporting ${data.dependentCount || "your"} dependents`
+function pickTheme(data: EnrollmentFormData) {
+  if (data.creditScore < 640) return planThemes.resilience
+  if (data.riskComfort >= 4) return planThemes.retirement
+  if (data.dependents > 0) return planThemes.protection
+  if (data.educationLevel === "master" || data.educationLevel === "doctorate") return planThemes.savings
+  return planThemes.home
+}
 
-  const summary = `${data.preferredName || data.fullName}, we're centering your plan on ${milestone.toLowerCase()} while keeping ${householdLine} steady.`
+function describePlanVariant(
+  planId: string,
+  baseName: string,
+  data: EnrollmentFormData,
+  variant: "conservative" | "balanced" | "bold"
+): LifeLensPlan {
+  const monthly = Math.max(80, 120 + (data.dependents || 0) * 45)
+  const offset = variant === "bold" ? 60 : variant === "balanced" ? 35 : 0
+  const riskScoreBase = data.riskComfort * 18 + data.derived.activityRiskModifier
+  const riskMatchScore = Math.min(100, riskScoreBase + (variant === "conservative" ? -10 : variant === "bold" ? 8 : 0))
 
-  const priorities = [
-    {
-      title: data.financialGoals.includes("Buy a home") ? "Plan your home stretch" : "Reinforce your safety net",
-      description: data.financialGoals.includes("Buy a home")
-        ? "Line up closing costs and use Lincoln worksheets to compare loan paths."
-        : "Automate a weekly reserve so surprises don’t slow your safety net.",
-    },
-    {
-      title: data.wantsLifeDisabilityInsights ? "Right-size protection" : "Check your coverage essentials",
-      description: data.wantsLifeDisabilityInsights
-        ? "Right-size life and disability coverage against today’s income."
-        : "Glance through health, dental, and supplemental coverage ahead of enrollment.",
-    },
-    {
-      title: data.contributes401k ? "Optimize long-term growth" : "Kickstart retirement habits",
-      description: data.contributes401k
-        ? "Boost contributions to capture the full match and set a quarterly check-in."
-        : "Schedule a match check and start a 1-2% bump to build momentum.",
-    },
+  const highlightBase = [
+    "Employer benefit comparison",
+    data.physicalActivities ? "Activity injury coverage review" : "Income protection tune-up",
+    data.creditScore < 700 ? "Credit rebuild playbook" : "Savings automation template",
   ]
 
-  const tips = [
-    {
-      title: "Auto reminders",
-      description: "Set nudges for savings moves and enrollment dates.",
-      icon: "⏱️",
-    },
-    {
-      title: "Learning hub",
-      description: "Skim short videos tied to today’s priorities.",
-      icon: "🎓",
-    },
-    {
-      title: "Track micro-wins",
-      description: "Capture each payment or coverage tweak to stay motivated.",
-      icon: "🎉",
-    },
+  const descriptions: Record<typeof variant, string> = {
+    conservative: `Keep essentials steady with enhanced protection for your household and ${
+      data.dependents > 0 ? "dependents" : "income"
+    }.`,
+    balanced: "Blend savings, protection, and growth to stay adaptable through upcoming life moments.",
+    bold: "Accelerate long-term wealth with strategic investments and employer matches while minding safeguards.",
+  }
+
+  return {
+    planId,
+    planName: `${baseName} (${variant === "bold" ? "Accelerate" : variant === "conservative" ? "Shield" : "Balance"})`,
+    shortDescription: descriptions[variant],
+    reasoning:
+      variant === "bold"
+        ? "You’re comfortable with calculated risk, so LifeLens prioritizes investment growth while reinforcing safety nets."
+        : variant === "balanced"
+          ? "Grounded saving habits and coverage reviews keep you agile across milestones."
+          : "This path minimizes surprises and keeps your loved ones covered first.",
+    monthlyCostEstimate: `$${monthly + offset}/mo`,
+    riskMatchScore,
+    highlights: highlightBase,
+  }
+}
+
+export function buildPlans(data: EnrollmentFormData): LifeLensPlan[] {
+  const baseName = "LifeLens Guidance"
+  return [
+    describePlanVariant(`plan-${data.userId ?? "guest"}-1`, baseName, data, "conservative"),
+    describePlanVariant(`plan-${data.userId ?? "guest"}-2`, baseName, data, "balanced"),
+    describePlanVariant(`plan-${data.userId ?? "guest"}-3`, baseName, data, "bold"),
   ]
+}
+
+export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights {
+  const data = withDerivedMetrics(enrollment)
+  const theme = pickTheme(data)
+  const plans = buildPlans(data)
 
   const timeline = [
     {
-      period: "This Week",
-      title: "Refresh your benefits snapshot",
-      description: `Confirm dependents, beneficiaries, and coverage details for ${householdLine}.`,
+      period: "Today",
+      title: "Finalize your LifeLens profile",
+      description: "Confirm family, coverage, and residency details before enrolling in new plans.",
     },
     {
-      period: "Next 30 Days",
-      title: "Dial in your cash flow",
-      description: `Align your ${data.monthlySavingsRate}% savings rhythm with ${focusGoal.toLowerCase()}.`,
+      period: "Next 30 days",
+      title: "Meet your advisor",
+      description: "Schedule a LifeLens micro-session to align benefits with your latest goals.",
     },
     {
-      period: "This Year",
-      title: "Schedule a LifeLens check-in",
-      description: "Meet with LifeLens before open enrollment to update the plan.",
+      period: "This quarter",
+      title: "Automate contributions",
+      description: "Lock in savings transfers and enrollment reminders across your benefit lineup.",
     },
   ]
 
-  const goalThemeKey = data.financialGoals.includes("Plan for retirement")
-    ? "retirement"
-    : data.financialGoals.includes("Protect my family")
-      ? "protection"
-      : data.financialGoals.includes("Buy a home")
-        ? "home"
-        : data.financialGoals.includes("Increase savings")
-          ? "savings"
-          : "foundation"
-
-  const goalThemeLabel: Record<string, string> = {
-    retirement: "Retirement track",
-    protection: "Family protection",
-    home: "Home stretch",
-    savings: "Savings momentum",
-    foundation: "Financial foundation",
-  }
-
-  const resourceLibrary: Record<string, { title: string; description: string; url: string }[]> = {
-    retirement: [
-      {
-        title: "Retirement income estimator",
-        description: "Model how increasing your 401(k) contribution changes future income.",
-        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/retirement-plans",
-      },
-      {
-        title: "Quarterly market outlook",
-        description: "Stay current on guidance from Lincoln’s retirement strategists.",
-        url: "https://newsroom.lfg.com/",
-      },
-    ],
-    protection: [
-      {
-        title: "Benefits protection checklist",
-        description: "Review life, disability, and supplemental coverage options available through work.",
-        url: "https://www.lincolnfinancial.com/public/individuals/protect-my-income",
-      },
-      {
-        title: "Family security playbook",
-        description: "Understand how to align dependents, beneficiaries, and emergency contacts.",
-        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
-      },
-    ],
-    home: [
-      {
-        title: "Home buying roadmap",
-        description: "Plan down payments, insurance, and emergency reserves side-by-side.",
-        url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
-      },
-      {
-        title: "Protection for new homeowners",
-        description: "See how life, disability, and accident coverage can secure a mortgage.",
-        url: "https://www.lincolnfinancial.com/public/individuals/protect-my-income",
-      },
-    ],
-    savings: [
-      {
-        title: "Budget & savings hub",
-        description: "Use calculators and articles to balance debt payoff with savings goals.",
-        url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
-      },
-      {
-        title: "Emergency savings toolkit",
-        description: "Step-by-step guidance to automate 3–6 months of essential expenses.",
-        url: "https://www.lincolnfinancial.com/public/individuals/financial-wellness",
-      },
-    ],
-    foundation: [
-      {
-        title: "LifeLens learning studio",
-        description: "Short lessons on budgeting, benefits enrollment, and debt confidence.",
-        url: "https://www.lincolnfinancial.com/public/individuals/financial-wellness",
-      },
-      {
-        title: "Lincoln Financial resource center",
-        description: "Find HR contacts, FAQs, and on-demand webinars tailored to your workplace.",
-        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits",
-      },
-    ],
-  }
-
-  const resources = resourceLibrary[goalThemeKey]
-
-  const conversation = [
-    data.milestoneFocus
-      ? {
-          speaker: "You" as const,
-          message: `I'm gearing up for ${data.milestoneFocus.toLowerCase()}.`,
-        }
-      : null,
+  const resources = [
     {
-      speaker: "LifeLens" as const,
-      message: `We linked your benefits and savings moves so ${milestone.toLowerCase()} stays on track without losing protection.`,
+      title: "Benefits orientation playlist",
+      description: "Short videos from Lincoln experts about making the most of open enrollment.",
+      url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
     },
-    data.accountTypes.length
-      ? {
-          speaker: "You" as const,
-          message: `I’m currently using ${data.accountTypes.join(" and ")} for health spending.`,
-        }
-      : null,
     {
-      speaker: "LifeLens" as const,
-      message: `Expect reminders tuned to your ${data.monthlySavingsRate}% savings rhythm and ${
-        data.contributes401k ? "401(k) contributions" : "upcoming retirement moves"
-      }.`,
+      title: "Claude-powered planning prompts",
+      description: "Keep conversations focused on your household priorities with pre-built prompts.",
+      url: "https://www.lincolnfinancial.com/public/individuals",
     },
-  ].filter(Boolean) as { speaker: "LifeLens" | "You"; message: string }[]
+    {
+      title: "Budget + benefits worksheet",
+      description: "Capture pay-period costs and the value of employer programs in one view.",
+      url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+    },
+  ]
+
+  const conversation: LifeLensInsights["conversation"] = [
+    {
+      speaker: "LifeLens",
+      message: `Hi ${data.preferredName || data.fullName}, I’m ready to walk you through your three tailored benefit paths.`,
+    },
+    {
+      speaker: "LifeLens",
+      message: `We’ll focus on ${theme.focus.toLowerCase()} while maintaining safeguards for your family.`,
+    },
+  ]
 
   const prompts = [
-    "How do I hit my next milestone?",
-    data.contributes401k ? "Can you review my 401(k) match?" : "What’s the best way to start my 401(k)?",
-    data.financialGoals.includes("Buy a home") ? "What should I save for closing costs?" : "Which benefits should I adjust next?",
+    "How different are the three plans?",
+    "What should I do in the next 30 days?",
+    "Can you summarize the costs for my partner?",
   ]
 
   return {
     ownerName: data.preferredName || data.fullName,
-    persona,
-    statement: summary,
-    priorities,
-    tips,
+    persona: theme.persona,
+    focusGoal: theme.focus,
+    statement: `LifeLens analyzed your profile and mapped benefits around your risk comfort of ${data.riskComfort}/5 and credit score of ${data.creditScore}.`,
     timeline,
-    focusGoal: milestone,
     resources,
     conversation,
     prompts,
-    goalTheme: goalThemeLabel[goalThemeKey],
-    themeKey: goalThemeKey,
+    plans,
+    selectedPlanId: plans[1]?.planId ?? plans[0]?.planId ?? null,
+    goalTheme: theme.focus,
+    themeKey: theme.themeKey,
   }
+}
+
+export function buildChatReply(message: string, insights: LifeLensInsights | null): string {
+  if (!insights) {
+    return "I’m ready whenever you want to restart the LifeLens quiz."
+  }
+
+  const normalized = message.toLowerCase()
+
+  if (normalized.includes("plan")) {
+    const plan = insights.plans.find((entry) => entry.planId === insights.selectedPlanId) ?? insights.plans[0]
+    if (plan) {
+      return `Here’s the highlight reel for ${plan.planName}: ${plan.highlights.join(" · ")}.`
+    }
+  }
+
+  if (normalized.includes("cost")) {
+    const costs = insights.plans.map((plan) => `${plan.planName.split(" (")[0]} ~${plan.monthlyCostEstimate}`).join(", ")
+    return `Your monthly outlook: ${costs}. Pick the mix that matches your comfort level.`
+  }
+
+  if (normalized.includes("timeline") || normalized.includes("when")) {
+    const step = insights.timeline[0]
+    return step
+      ? `Kick things off with “${step.title}” — it only takes 10 minutes today.`
+      : "We’ll add a new milestone once you refresh your plan."
+  }
+
+  if (normalized.includes("resource")) {
+    const resource = insights.resources[0]
+    return resource
+      ? `Open “${resource.title}” for a quick walkthrough. I’ll stay here while you explore.`
+      : "I’ll add more resources after your next quiz refresh."
+  }
+
+  if (normalized.includes("thanks")) {
+    return "You’re welcome! Ping me anytime you want to compare plans or send the report to HR."
+  }
+
+  const prompt = insights.prompts[0]
+  if (prompt) {
+    return `Try asking “${prompt}” next — it unlocks a deeper breakdown of your three plans.`
+  }
+
+  return "Ask about the plan lineup, costs, or what to tackle this week and I’ll guide you."
 }
