@@ -300,6 +300,44 @@ export default function Home() {
     }
   }
 
+  const profileSnapshot: ProfileSnapshot = useMemo(() => {
+    if (!formData) {
+      return {
+        name: user?.name ?? "Guest",
+        aiPersona: insights?.persona ?? "Balanced Navigator",
+        age: "—",
+        employmentStartDate: "—",
+        dependents: 0,
+        residencyStatus: "Citizen",
+        citizenship: "United States",
+        riskFactorScore: 0,
+        activitySummary: "",
+        coverageComplexity: "medium",
+        createdAt: user?.createdAt ?? profileCreatedAt,
+      }
+    }
+
+    const activitySummary = formData.physicalActivities
+      ? formData.activityList.length
+        ? formData.activityList.join(", ")
+        : "Active lifestyle"
+      : "Low impact"
+
+    return {
+      name: formData.preferredName || formData.fullName,
+      aiPersona: insights?.persona ?? "Balanced Navigator",
+      age: formData.age ? String(formData.age) : "—",
+      employmentStartDate: formData.employmentStartDate,
+      dependents: formData.dependents,
+      residencyStatus: formData.residencyStatus,
+      citizenship: formData.citizenship,
+      riskFactorScore: formData.derived.riskFactorScore,
+      activitySummary,
+      coverageComplexity: formData.derived.coverageComplexity,
+      createdAt: user?.createdAt ?? profileCreatedAt,
+    }
+  }, [formData, insights?.persona, profileCreatedAt, user])
+
   const handleSelectPlan = (planId: string) => {
     setInsights((current) => (current ? { ...current, selectedPlanId: planId } : current))
   }
@@ -340,44 +378,6 @@ export default function Home() {
       </div>
     )
   }
-
-  const profileSnapshot: ProfileSnapshot = useMemo(() => {
-    if (!formData) {
-      return {
-        name: user?.name ?? "Guest",
-        aiPersona: insights?.persona ?? "Balanced Navigator",
-        age: "—",
-        employmentStartDate: "—",
-        dependents: 0,
-        residencyStatus: "Citizen",
-        citizenship: "United States",
-        riskFactorScore: 0,
-        activitySummary: "",
-        coverageComplexity: "medium",
-        createdAt: user?.createdAt ?? profileCreatedAt,
-      }
-    }
-
-    const activitySummary = formData.physicalActivities
-      ? formData.activityList.length
-        ? formData.activityList.join(", ")
-        : "Active lifestyle"
-      : "Low impact"
-
-    return {
-      name: formData.preferredName || formData.fullName,
-      aiPersona: insights?.persona ?? "Balanced Navigator",
-      age: formData.age ? String(formData.age) : "—",
-      employmentStartDate: formData.employmentStartDate,
-      dependents: formData.dependents,
-      residencyStatus: formData.residencyStatus,
-      citizenship: formData.citizenship,
-      riskFactorScore: formData.derived.riskFactorScore,
-      activitySummary,
-      coverageComplexity: formData.derived.coverageComplexity,
-      createdAt: user?.createdAt ?? profileCreatedAt,
-    }
-  }, [formData, insights?.persona, profileCreatedAt, user])
 
   const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile"]
 
