@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { FileDown, Sparkles, Trash2, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import type { EnrollmentFormData, ProfileSnapshot } from "@/lib/types"
+import { upsertUserProfile } from "@/lib/db-client"
 import {
   COVERAGE_OPTIONS,
   HEALTH_OPTIONS,
@@ -53,18 +54,40 @@ export function ProfileSettings({
 }: ProfileSettingsProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const [draft, setDraft] = useState<EnrollmentFormData | null>(formData)
+  const [dirty, setDirty] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveOk, setSaveOk] = useState(false)
+  const saveOkTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     setDraft(formData)
+    setDirty(false)
+    setSaveError(null)
+    setSaveOk(false)
   }, [formData])
 
+  useEffect(() => {
+    return () => {
+      if (saveOkTimer.current) {
+        clearTimeout(saveOkTimer.current)
+      }
+    }
+  }, [])
+
   const updateDraft = (updater: (current: EnrollmentFormData) => EnrollmentFormData) => {
+    let didUpdate = false
     setDraft((current) => {
       if (!current) return current
       const next = updater(current)
-      onUpdateProfile?.(next)
+      didUpdate = true
       return next
     })
+    if (didUpdate) {
+      setDirty(true)
+      setSaveError(null)
+      setSaveOk(false)
+    }
   }
 
   const riskComfortLabel = useMemo(() => {
@@ -72,6 +95,101 @@ export function ProfileSettings({
     const scale = ["Very low", "Low", "Moderate", "High", "Very high"]
     return scale[draft.riskComfort - 1] ?? `${draft.riskComfort}/5`
   }, [draft])
+
+  async function handleSave() {
+    if (!draft) return
+    setSaving(true)
+    setSaveError(null)
+    setSaveOk(false)
+
+    try {
+      const userId =
+        (draft as any).userId ||
+        (typeof window !== "undefined" && (window as any).__lifelens_user_id) ||
+        `user_${crypto.randomUUID()}`
+
+      if (typeof window !== "undefined") {
+        ;(window as any).__lifelens_user_id = userId
+      }
+
+      const payload: Record<string, unknown> = {
+        full_name: draft.fullName || undefined,
+        preferred_name: draft.preferredName || undefined,
+        employment_start_date: draft.employmentStartDate || undefined,
+        marital_status: draft.maritalStatus || undefined,
+        dependents: Number.isFinite(draft.dependents) ? draft.dependents : undefined,
+        education_level: draft.educationLevel || undefined,
+        major: draft.educationMajor || undefined,
+        work_country: draft.workCountry || undefined,
+        work_state: draft.workState || undefined,
+        work_region: draft.workRegion || undefined,
+        citizenship: draft.citizenship || undefined,
+        residency_status: draft.residencyStatus || undefined,
+        risk_aversion: Number.isFinite(draft.riskComfort) ? draft.riskComfort : undefined,
+        tobacco_user: typeof draft.tobaccoUse === "boolean" ? draft.tobaccoUse : undefined,
+        disability_status: typeof draft.disability === "boolean" ? draft.disability : undefined,
+        veteran_status: typeof draft.veteran === "boolean" ? draft.veteran : undefined,
+        credit_score: Number.isFinite(draft.creditScore) ? draft.creditScore : undefined,
+        coverage_preference: draft.coveragePreference || undefined,
+        partner_coverage_status: draft.partnerCoverageStatus || undefined,
+        spouse_has_separate_insurance:
+          typeof draft.spouseHasSeparateInsurance === "boolean" ? draft.spouseHasSeparateInsurance : undefined,
+        health_coverage: draft.healthCoverage || undefined,
+        has_continuous_coverage: typeof draft.hasContinuousCoverage === "boolean" ? draft.hasContinuousCoverage : undefined,
+        has_health_conditions: typeof draft.hasHealthConditions === "boolean" ? draft.hasHealthConditions : undefined,
+        health_condition_summary: draft.healthConditionSummary || undefined,
+        primary_care_frequency: draft.primaryCareFrequency || undefined,
+        prescription_frequency: draft.prescriptionFrequency || undefined,
+        activity_level: draft.activityLevel || undefined,
+        activity_level_score: Number.isFinite(draft.activityLevelScore) ? draft.activityLevelScore : undefined,
+        benefits_budget: Number.isFinite(draft.benefitsBudget) ? draft.benefitsBudget : undefined,
+        plan_preference: draft.planPreference || undefined,
+        tax_preferred_account: draft.taxPreferredAccount || undefined,
+        anticipates_life_changes:
+          typeof draft.anticipatesLifeChanges === "boolean" ? draft.anticipatesLifeChanges : undefined,
+        expected_benefit_usage: draft.expectedBenefitUsage || undefined,
+        travels_out_of_state: typeof draft.travelsOutOfState === "boolean" ? draft.travelsOutOfState : undefined,
+        needs_international_coverage:
+          typeof draft.needsInternationalCoverage === "boolean" ? draft.needsInternationalCoverage : undefined,
+        dental_vision_preference: draft.dentalVisionPreference || undefined,
+        contributes_to_retirement:
+          typeof draft.contributesToRetirement === "boolean" ? draft.contributesToRetirement : undefined,
+        retirement_contribution_rate: Number.isFinite(draft.retirementContributionRate)
+          ? draft.retirementContributionRate
+          : undefined,
+        wants_retirement_guidance:
+          typeof draft.wantsRetirementGuidance === "boolean" ? draft.wantsRetirementGuidance : undefined,
+        guidance_preference: draft.guidancePreference || undefined,
+        confidence_insurance_terms: Number.isFinite(draft.confidenceInsuranceTerms)
+          ? draft.confidenceInsuranceTerms
+          : undefined,
+        savings_rate: Number.isFinite(draft.savingsRate) ? draft.savingsRate : undefined,
+        invests_in_markets: typeof draft.investsInMarkets === "boolean" ? draft.investsInMarkets : undefined,
+        physical_activities: typeof draft.physicalActivities === "boolean" ? draft.physicalActivities : undefined,
+        activity_list: draft.activityList?.length ? draft.activityList : undefined,
+        is_active: true,
+      }
+
+      await upsertUserProfile({ user_id: userId, payload })
+
+      onUpdateProfile?.({ ...draft, userId })
+      setDraft((current) => (current ? { ...current, userId } : current))
+
+      setDirty(false)
+      setSaveOk(true)
+      if (saveOkTimer.current) {
+        clearTimeout(saveOkTimer.current)
+      }
+      saveOkTimer.current = setTimeout(() => {
+        setSaveOk(false)
+      }, 2000)
+    } catch (error) {
+      console.error("[profile save] failed:", error)
+      setSaveError(String((error as Error)?.message ?? error))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
@@ -718,6 +836,13 @@ export function ProfileSettings({
         <Card className="glass p-6">
           <h2 className="mb-4 text-xl font-bold">Actions</h2>
           <div className="space-y-3">
+            <div className="space-y-2">
+              <Button onClick={handleSave} disabled={saving || !dirty || !draft} className="w-full gap-2">
+                {saving ? "Saving..." : "Save changes"}
+              </Button>
+              {saveError && <div className="text-sm text-red-600">Save failed: {saveError}</div>}
+              {!saveError && saveOk && <div className="text-sm text-emerald-700">Saved!</div>}
+            </div>
             <Button
               onClick={onSendReport}
               variant="outline"
