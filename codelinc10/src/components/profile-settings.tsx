@@ -10,7 +10,16 @@ import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import type { EnrollmentFormData, ProfileSnapshot } from "@/lib/types"
-import { ACTIVITY_OPTIONS, MARITAL_OPTIONS, RESIDENCY_OPTIONS } from "@/lib/quiz"
+import {
+  ACTIVITY_LEVEL_OPTIONS,
+  ACTIVITY_OPTIONS,
+  COVERAGE_OPTIONS,
+  HEALTH_OPTIONS,
+  HOME_OPTIONS,
+  INCOME_OPTIONS,
+  MARITAL_OPTIONS,
+  RESIDENCY_OPTIONS,
+} from "@/lib/quiz"
 
 interface ProfileSettingsProps {
   profile: ProfileSnapshot
@@ -143,17 +152,6 @@ export function ProfileSettings({
                       }
                     />
                   </Field>
-                  <Field label="Dependents">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={10}
-                      value={draft.dependents}
-                      onChange={(event) =>
-                        updateDraft((current) => ({ ...current, dependents: Number(event.target.value || 0) }))
-                      }
-                    />
-                  </Field>
                   <Field label="Employment start date">
                     <Input
                       type="date"
@@ -219,6 +217,12 @@ export function ProfileSettings({
                       onChange={(event) => updateDraft((current) => ({ ...current, workState: event.target.value }))}
                     />
                   </Field>
+                  <Field label="Work region">
+                    <Input
+                      value={draft.workRegion}
+                      onChange={(event) => updateDraft((current) => ({ ...current, workRegion: event.target.value }))}
+                    />
+                  </Field>
                   <Field label="Citizenship">
                     <Input
                       value={draft.citizenship}
@@ -244,8 +248,122 @@ export function ProfileSettings({
               </section>
 
               <section className="space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Coverage & household</h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Coverage focus">
+                    <select
+                      value={draft.coveragePreference}
+                      onChange={(event) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          coveragePreference: event.target.value as EnrollmentFormData["coveragePreference"],
+                          dependents:
+                            event.target.value === "self-plus-family" ? current.dependents : 0,
+                        }))
+                      }
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                    >
+                      {COVERAGE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="text-sm">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  {draft.coveragePreference === "self-plus-family" && (
+                    <Field label="Dependents">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={10}
+                        value={draft.dependents}
+                        onChange={(event) =>
+                          updateDraft((current) => ({
+                            ...current,
+                            dependents: Number(event.target.value || 0),
+                          }))
+                        }
+                      />
+                    </Field>
+                  )}
+                  <Field label="Home setup">
+                    <select
+                      value={draft.homeOwnership}
+                      onChange={(event) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          homeOwnership: event.target.value as EnrollmentFormData["homeOwnership"],
+                        }))
+                      }
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                    >
+                      {HOME_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="text-sm">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Household income">
+                    <select
+                      value={draft.incomeRange}
+                      onChange={(event) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          incomeRange: event.target.value as EnrollmentFormData["incomeRange"],
+                        }))
+                      }
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                    >
+                      {INCOME_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="text-sm">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Health coverage source">
+                    <select
+                      value={draft.healthCoverage}
+                      onChange={(event) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          healthCoverage: event.target.value as EnrollmentFormData["healthCoverage"],
+                        }))
+                      }
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                    >
+                      {HEALTH_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="text-sm">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  {(["married", "partnered"] as EnrollmentFormData["maritalStatus"][]).includes(draft.maritalStatus) && (
+                    <ToggleField
+                      label="Partner has separate insurance"
+                      checked={draft.spouseHasSeparateInsurance === true}
+                      onChange={(checked) =>
+                        updateDraft((current) => ({ ...current, spouseHasSeparateInsurance: checked }))
+                      }
+                    />
+                  )}
+                </div>
+              </section>
+
+              <section className="space-y-4">
                 <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-primary/80">Preferences</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label={`Savings rate · ${draft.savingsRate}%`}>
+                    <Slider
+                      min={0}
+                      max={30}
+                      step={1}
+                      value={[draft.savingsRate]}
+                      onValueChange={([value]) => updateDraft((current) => ({ ...current, savingsRate: value }))}
+                    />
+                  </Field>
                   <Field label={`Risk comfort · ${riskComfortLabel}`}>
                     <Slider
                       min={1}
@@ -255,6 +373,20 @@ export function ProfileSettings({
                       onValueChange={([value]) => updateDraft((current) => ({ ...current, riskComfort: value }))}
                     />
                   </Field>
+                  <ToggleField
+                    label="Savings coaching reminders"
+                    checked={draft.wantsSavingsSupport === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({ ...current, wantsSavingsSupport: checked }))
+                    }
+                  />
+                  <ToggleField
+                    label="Invests in markets"
+                    checked={draft.investsInMarkets === true}
+                    onChange={(checked) =>
+                      updateDraft((current) => ({ ...current, investsInMarkets: checked }))
+                    }
+                  />
                   <Field label={`Credit score · ${draft.creditScore}`}>
                     <Slider
                       min={300}
@@ -264,17 +396,29 @@ export function ProfileSettings({
                       onValueChange={([value]) => updateDraft((current) => ({ ...current, creditScore: value }))}
                     />
                   </Field>
-                  <ToggleField
-                    label="Physically active"
-                    checked={draft.physicalActivities === true}
-                    onChange={(checked) =>
-                      updateDraft((current) => ({
-                        ...current,
-                        physicalActivities: checked,
-                        activityList: checked ? current.activityList : [],
-                      }))
-                    }
-                  />
+                  <Field label="Activity level">
+                    <select
+                      value={draft.activityLevel}
+                      onChange={(event) =>
+                        updateDraft((current) => {
+                          const nextLevel = event.target.value as EnrollmentFormData["activityLevel"]
+                          return {
+                            ...current,
+                            activityLevel: nextLevel,
+                            physicalActivities: nextLevel === "active" ? true : nextLevel === "balanced" ? null : false,
+                            activityList: nextLevel === "active" ? current.activityList : [],
+                          }
+                        })
+                      }
+                      className="h-11 w-full rounded-xl border border-[#E3D8D5] bg-white px-3 text-sm font-medium text-[#2A1A1A]"
+                    >
+                      {ACTIVITY_LEVEL_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value} className="text-sm">
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
                   <ToggleField
                     label="Tobacco use"
                     checked={draft.tobaccoUse === true}
@@ -298,7 +442,7 @@ export function ProfileSettings({
                   />
                 </div>
 
-                {draft.physicalActivities && (
+                {draft.activityLevel === "active" && (
                   <div>
                     <p className="mb-2 text-sm font-semibold text-[#7F1527]">Activities you enjoy</p>
                     <div className="flex flex-wrap gap-2">

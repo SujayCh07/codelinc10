@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
@@ -54,7 +53,6 @@ export default function Home() {
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false)
   const isHydrated = useHydrated()
 
-  // ------------------------- Restore persisted state -------------------------
   useEffect(() => {
     if (!isHydrated) return
 
@@ -89,7 +87,6 @@ export default function Home() {
     }
   }, [isHydrated])
 
-  // ------------------------- Persist on changes -------------------------
   useEffect(() => {
     if (!isHydrated) return
     if (formData) {
@@ -118,7 +115,6 @@ export default function Home() {
     writeStorage(CHAT_STORAGE_KEY, chatHistory)
   }, [chatHistory, isHydrated])
 
-  // ------------------------- Session helpers -------------------------
   const ensureUserSession = (name: string) => {
     login({ name, createdAt: profileCreatedAt })
   }
@@ -126,7 +122,6 @@ export default function Home() {
   const assignUserId = () =>
     (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `user-${Date.now()}`)
 
-  // ------------------------- Navigation handlers -------------------------
   const handleStart = () => {
     if (hasCompletedQuiz && insights) {
       setCurrentScreen("insights")
@@ -172,7 +167,6 @@ export default function Home() {
     setIsGenerating(true)
     setHasCompletedQuiz(true)
 
-    // Local optimistic insights
     const localInsights = buildInsights(prepared)
     setInsights(localInsights)
     appendMomentForInsights(localInsights)
@@ -254,7 +248,6 @@ export default function Home() {
     setCurrentScreen("landing")
   }
 
-  // ------------------------- Chat -------------------------
   const handleChatSend = async (message: string) => {
     const trimmed = message.trim()
     if (!trimmed) return
@@ -307,46 +300,6 @@ export default function Home() {
     }
   }
 
-  // ------------------------- Profile snapshot (fixed useMemo) -------------------------
-  const profileSnapshot: ProfileSnapshot = useMemo(() => {
-    if (!formData) {
-      return {
-        name: user?.name ?? "Guest",
-        aiPersona: insights?.persona ?? "Balanced Navigator",
-        age: "—",
-        employmentStartDate: "—",
-        dependents: 0,
-        residencyStatus: "Citizen",
-        citizenship: "United States",
-        riskFactorScore: 0,
-        activitySummary: "",
-        coverageComplexity: "medium",
-        createdAt: user?.createdAt ?? profileCreatedAt,
-      }
-    }
-
-    const activitySummary = (formData as any).physicalActivities
-      ? (formData as any).activityList?.length
-        ? (formData as any).activityList.join(", ")
-        : "Active lifestyle"
-      : "Low impact"
-
-    return {
-      name: (formData as any).preferredName || (formData as any).fullName,
-      aiPersona: insights?.persona ?? "Balanced Navigator",
-      age: (formData as any).age ? String((formData as any).age) : "—",
-      employmentStartDate: (formData as any).employmentStartDate ?? (formData as any).employmentStart ?? "—",
-      dependents: (formData as any).dependents ?? (formData as any).dependentCount ?? 0,
-      residencyStatus: (formData as any).residencyStatus ?? "Citizen",
-      citizenship: (formData as any).citizenship ?? "United States",
-      riskFactorScore: (formData as any).derived?.riskFactorScore ?? 0,
-      activitySummary,
-      coverageComplexity: (formData as any).derived?.coverageComplexity ?? "medium",
-      createdAt: user?.createdAt ?? profileCreatedAt,
-    }
-  }, [formData, insights?.persona, profileCreatedAt, user])
-
-  // ------------------------- Plan selection / profile updates / report -------------------------
   const handleSelectPlan = (planId: string) => {
     setInsights((current) => (current ? { ...current, selectedPlanId: planId } : current))
   }
@@ -377,7 +330,6 @@ export default function Home() {
     }
   }
 
-  // ------------------------- Loading gate -------------------------
   if (!isHydrated || userLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F4F2] text-[#A41E34]">
@@ -389,11 +341,48 @@ export default function Home() {
     )
   }
 
-  // ------------------------- Screens -------------------------
+  const profileSnapshot: ProfileSnapshot = useMemo(() => {
+    if (!formData) {
+      return {
+        name: user?.name ?? "Guest",
+        aiPersona: insights?.persona ?? "Balanced Navigator",
+        age: "—",
+        employmentStartDate: "—",
+        dependents: 0,
+        residencyStatus: "Citizen",
+        citizenship: "United States",
+        riskFactorScore: 0,
+        activitySummary: "",
+        coverageComplexity: "medium",
+        createdAt: user?.createdAt ?? profileCreatedAt,
+      }
+    }
+
+    const activitySummary = formData.physicalActivities
+      ? formData.activityList.length
+        ? formData.activityList.join(", ")
+        : "Active lifestyle"
+      : "Low impact"
+
+    return {
+      name: formData.preferredName || formData.fullName,
+      aiPersona: insights?.persona ?? "Balanced Navigator",
+      age: formData.age ? String(formData.age) : "—",
+      employmentStartDate: formData.employmentStartDate,
+      dependents: formData.dependents,
+      residencyStatus: formData.residencyStatus,
+      citizenship: formData.citizenship,
+      riskFactorScore: formData.derived.riskFactorScore,
+      activitySummary,
+      coverageComplexity: formData.derived.coverageComplexity,
+      createdAt: user?.createdAt ?? profileCreatedAt,
+    }
+  }, [formData, insights?.persona, profileCreatedAt, user])
+
   const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile"]
 
   return (
-    <main className={cn("min-h-screen bg-[#F7F4F2] pb-24", isGenerating && "pointer-events-none opacity-95")}>
+    <main className={cn("min-h-screen bg-[#F7F4F2] pb-24", isGenerating && "pointer-events-none opacity-95")}> 
       <AnimatePresence mode="wait" initial={false}>
         {currentScreen === "landing" && (
           <motion.div

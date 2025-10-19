@@ -6,7 +6,7 @@ import type { EnrollmentFormData } from "@/lib/types"
 
 export async function POST(request: Request) {
   try {
-    const { profile } = (await request.json()) as { profile?: EnrollmentFormData }
+    const { profile } = (await request.json()) as { profile?: EnrollmentFormData; record?: Record<string, unknown> }
     if (!profile) {
       return NextResponse.json({ error: "Missing profile" }, { status: 400 })
     }

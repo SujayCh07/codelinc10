@@ -20,19 +20,28 @@ export function mergeChatHistory(existing: ChatEntry[], additions: ChatEntry[]) 
 export function computeDerivedMetrics(
   data: EnrollmentFormData
 ): EnrollmentFormData["derived"] {
+  const savingsLift = data.savingsRate >= 15 ? 8 : data.savingsRate >= 10 ? 4 : -4
+  const investmentLift = data.investsInMarkets ? 6 : 0
   const riskFactorScore = Math.round(
-    (Number(data.age ?? 30) / 2 + data.creditScore / 20 + data.riskComfort * 7) /
-      (data.tobaccoUse ? 1.15 : 1)
+    (Number(data.age ?? 30) / 2 + data.creditScore / 18 + data.riskComfort * 8 + savingsLift + investmentLift) /
+      (data.tobaccoUse ? 1.12 : 1)
   )
 
-  const activityRiskModifier = data.physicalActivities
-    ? Math.min(10, data.activityList.length * 2 + (data.veteran ? 3 : 0))
-    : data.veteran
-      ? 2
-      : 0
+  const activityRiskModifier =
+    data.activityLevel === "active"
+      ? Math.min(10, data.activityList.length * 2 + (data.veteran ? 3 : 0))
+      : data.activityLevel === "balanced"
+        ? data.veteran
+          ? 3
+          : 1
+        : data.veteran
+          ? 2
+          : 0
 
   const complexityScore =
     (data.dependents > 2 ? 2 : data.dependents > 0 ? 1 : 0) +
+    (data.coveragePreference !== "self" ? 1 : 0) +
+    (data.homeOwnership === "own" ? 1 : 0) +
     (data.residencyStatus === "Citizen" ? 0 : 1) +
     (data.creditScore < 650 ? 1 : 0)
 
@@ -81,11 +90,12 @@ const planThemes: Record<string, { persona: string; focus: string; themeKey: str
 }
 
 function pickTheme(data: EnrollmentFormData) {
+  if (data.coveragePreference === "self-plus-family" || data.dependents > 0) return planThemes.protection
+  if (data.homeOwnership === "own" || data.homeOwnership === "with-family") return planThemes.home
+  if (data.riskComfort >= 4 && (data.investsInMarkets || data.savingsRate >= 15)) return planThemes.retirement
+  if (data.savingsRate < 10 || data.wantsSavingsSupport) return planThemes.savings
   if (data.creditScore < 640) return planThemes.resilience
-  if (data.riskComfort >= 4) return planThemes.retirement
-  if (data.dependents > 0) return planThemes.protection
-  if (data.educationLevel === "master" || data.educationLevel === "doctorate") return planThemes.savings
-  return planThemes.home
+  return planThemes.retirement
 }
 
 function describePlanVariant(
@@ -94,41 +104,59 @@ function describePlanVariant(
   data: EnrollmentFormData,
   variant: "conservative" | "balanced" | "bold"
 ): LifeLensPlan {
-  const monthly = Math.max(80, 120 + (data.dependents || 0) * 45)
-  const offset = variant === "bold" ? 60 : variant === "balanced" ? 35 : 0
-  const riskScoreBase = data.riskComfort * 18 + data.derived.activityRiskModifier
-  const riskMatchScore = Math.min(100, riskScoreBase + (variant === "conservative" ? -10 : variant === "bold" ? 8 : 0))
+  const monthlyBase = Math.max(80, 110 + (data.dependents || 0) * 45)
+  const coverageLift = data.coveragePreference !== "self" ? 25 : 0
+  const offset = variant === "bold" ? 60 : variant === "balanced" ? 30 : 0
+  const monthly = monthlyBase + coverageLift + offset
+  const riskScoreBase = data.riskComfort * 18 + data.derived.activityRiskModifier + (data.wantsSavingsSupport ? -6 : 0)
+  const riskMatchScore = Math.min(100, riskScoreBase + (variant === "conservative" ? -12 : variant === "bold" ? 10 : 0))
 
   const highlightBase = [
-    "Employer benefit comparison",
-    data.physicalActivities ? "Activity injury coverage review" : "Income protection tune-up",
-    data.creditScore < 700 ? "Credit rebuild playbook" : "Savings automation template",
+    data.coveragePreference === "self-plus-family"
+      ? "Household protection audit"
+      : data.coveragePreference === "self-plus-partner"
+        ? "Partner coverage coordination"
+        : "Solo coverage refresh",
+    data.activityLevel === "active" ? "Wellness perks matched to your activities" : "Lifestyle-friendly wellness tips",
+    data.savingsRate < 10 || data.wantsSavingsSupport
+      ? "Savings automation starter kit"
+      : "Investment optimization checklist",
   ]
 
   const resources: PlanResource[] = [
     {
-      title: "Benefits overview portal",
-      description: "Launch the latest enrollment guide curated for your focus area.",
+      title: "LifeLens benefits hub",
+      description: "Review health, wealth, and protection benefits tailored to your profile.",
       url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
     },
     {
-      title: "Action checklist",
+      title: "Personalized plan canvas",
       description:
         variant === "conservative"
-          ? "Step-by-step protections to review with HR before enrollment closes."
+          ? "Lock in foundational protections and emergency support."
           : variant === "bold"
-            ? "Investment and savings moves to discuss with your advisor."
-            : "Balanced coverage and savings reminders for this quarter.",
+            ? "Channel extra savings into growth pathways with guardrails."
+            : "Balance savings automation with flexible coverage upgrades.",
       url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+    },
+    {
+      title: "Quick actions",
+      description:
+        data.healthCoverage === "none"
+          ? "Enroll in core medical and disability options this week."
+          : data.healthCoverage === "partner"
+            ? "Coordinate with your partner to avoid duplicate coverage."
+            : "Verify beneficiaries and adjust contributions before open enrollment.",
+      url: "https://www.lincolnfinancial.com/public/individuals/emergency-preparedness",
     },
   ]
 
   const descriptions: Record<typeof variant, string> = {
-    conservative: `Keep essentials steady with enhanced protection for your household and ${
-      data.dependents > 0 ? "dependents" : "income"
+    conservative: `Keep essentials steady with enhanced protection for your ${
+      data.coveragePreference === "self" ? "income" : "household"
     }.`,
-    balanced: "Blend savings, protection, and growth to stay adaptable through upcoming life moments.",
-    bold: "Accelerate long-term wealth with strategic investments and employer matches while minding safeguards.",
+    balanced: "Blend savings, protection, and growth to stay adaptable through upcoming milestones.",
+    bold: "Accelerate long-term wealth while reinforcing the guardrails you rely on.",
   }
 
   return {
@@ -141,7 +169,7 @@ function describePlanVariant(
         : variant === "balanced"
           ? "Grounded saving habits and coverage reviews keep you agile across milestones."
           : "This path minimizes surprises and keeps your loved ones covered first.",
-    monthlyCostEstimate: `$${monthly + offset}/mo`,
+    monthlyCostEstimate: `$${monthly}/mo`,
     riskMatchScore,
     highlights: highlightBase,
     resources,
@@ -197,6 +225,13 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
     "Can you summarize the costs for my partner?",
   ]
 
+  const recommendedPlans = plans.map((plan) => ({
+    id: plan.planId,
+    name: plan.planName,
+    reason: plan.reasoning,
+    resources: plan.resources,
+  }))
+
   return {
     ownerName: data.preferredName || data.fullName,
     persona: theme.persona,
@@ -206,6 +241,7 @@ export function buildInsights(enrollment: EnrollmentFormData): LifeLensInsights 
     conversation,
     prompts,
     plans,
+    recommendedPlans,
     selectedPlanId: plans[1]?.planId ?? plans[0]?.planId ?? null,
     goalTheme: theme.focus,
     themeKey: theme.themeKey,

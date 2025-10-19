@@ -21,6 +21,21 @@ export type MaritalStatusOption =
   | "widowed"
   | "other"
 
+export type CoveragePreference = "self" | "self-plus-partner" | "self-plus-family"
+
+export type HomeOwnershipStatus = "rent" | "own" | "with-family" | "other"
+
+export type IncomeRange =
+  | "under-50k"
+  | "50-80k"
+  | "80-120k"
+  | "120-160k"
+  | "160k-plus"
+
+export type HealthCoverageOption = "employer" | "partner" | "marketplace" | "none"
+
+export type ActivityLevel = "relaxed" | "balanced" | "active"
+
 export interface EnrollmentFormData {
   userId: string | null
   fullName: string
@@ -33,7 +48,17 @@ export interface EnrollmentFormData {
   educationMajor: string
   workCountry: string
   workState: string
+  workRegion: string
+  coveragePreference: CoveragePreference
+  homeOwnership: HomeOwnershipStatus
+  incomeRange: IncomeRange
+  healthCoverage: HealthCoverageOption
+  spouseHasSeparateInsurance: boolean | null
+  savingsRate: number
+  wantsSavingsSupport: boolean | null
   riskComfort: number
+  investsInMarkets: boolean | null
+  activityLevel: ActivityLevel
   physicalActivities: boolean | null
   activityList: string[]
   tobaccoUse: boolean | null
@@ -78,6 +103,7 @@ export interface LifeLensInsights {
   conversation: { speaker: "LifeLens" | "You"; message: string }[]
   prompts: string[]
   plans: LifeLensPlan[]
+  recommendedPlans?: { id: string; name: string; reason: string; resources?: PlanResource[] }[]
   selectedPlanId: string | null
   goalTheme?: string
   themeKey?: string

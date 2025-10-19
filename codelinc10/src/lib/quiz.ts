@@ -1,21 +1,29 @@
-import type { EnrollmentFormData, MaritalStatusOption, ResidencyStatus } from "./types"
+import type {
+  ActivityLevel,
+  EnrollmentFormData,
+  HealthCoverageOption,
+  HomeOwnershipStatus,
+  IncomeRange,
+} from "./types"
 
 export type QuizQuestionType =
-  | "text"
   | "number"
-  | "date"
   | "select"
   | "slider"
   | "boolean"
+  | "boolean-choice"
   | "multi-select"
 
 export interface QuizOption {
   label: string
   value: string
+  helper?: string
 }
 
 export interface QuizQuestion {
-  id: keyof EnrollmentFormData | "educationMajor" | "activityList"
+  id:
+    | keyof EnrollmentFormData
+    | "activityLevel"
   title: string
   prompt: string
   type: QuizQuestionType
@@ -24,249 +32,260 @@ export interface QuizQuestion {
   min?: number
   max?: number
   step?: number
-  followUpId?: QuizQuestion["id"]
-  condition?: (data: Partial<EnrollmentFormData>) => boolean
+  condition?: (data: EnrollmentFormData) => boolean
 }
-
-export const RESIDENCY_OPTIONS: ResidencyStatus[] = [
-  "Citizen",
-  "Permanent Resident",
-  "Work Visa",
-  "Student Visa",
-  "Other",
-]
-
-export const MARITAL_OPTIONS: MaritalStatusOption[] = [
-  "single",
-  "married",
-  "partnered",
-  "divorced",
-  "widowed",
-  "other",
-]
 
 export const ACTIVITY_OPTIONS: QuizOption[] = [
   { label: "Running", value: "running" },
   { label: "Hiking", value: "hiking" },
-  { label: "Gym/strength", value: "gym" },
+  { label: "Gym", value: "gym" },
   { label: "Team sports", value: "sports" },
   { label: "Cycling", value: "cycling" },
+  { label: "Yoga", value: "yoga" },
+]
+
+export const COVERAGE_OPTIONS: QuizOption[] = [
+  { label: "Just me", value: "self", helper: "Solo coverage focused on you" },
+  {
+    label: "Me + partner",
+    value: "self-plus-partner",
+    helper: "Pair coverage with shared benefits",
+  },
+  {
+    label: "Me + dependents",
+    value: "self-plus-family",
+    helper: "Family-first protections",
+  },
+]
+
+export const HOME_OPTIONS: QuizOption[] = [
+  { label: "Rent", value: "rent" },
+  { label: "Own", value: "own" },
+  { label: "Live with family", value: "with-family" },
   { label: "Other", value: "other" },
 ]
 
-export const QUIZ_QUESTIONS: QuizQuestion[] = [
-  {
-    id: "fullName",
-    title: "Who’s getting guidance?",
-    prompt: "Enter your full legal name so LifeLens can personalize the plan and future report.",
-    type: "text",
-    placeholder: "Your full name",
-  },
-  {
-    id: "preferredName",
-    title: "What should LifeLens call you?",
-    prompt: "We’ll use this in chats and your personalized plan.",
-    type: "text",
-    placeholder: "Preferred name",
-  },
-  {
-    id: "age",
-    title: "How old are you?",
-    prompt: "We only use this to tune the benefits guidance.",
-    type: "number",
-    min: 18,
-    max: 75,
-  },
-  {
-    id: "maritalStatus",
-    title: "What’s your relationship status?",
-    prompt: "This helps us recommend the right dependents and benefits mix.",
-    type: "select",
-    options: MARITAL_OPTIONS.map((value) => ({
-      value,
-      label: value.charAt(0).toUpperCase() + value.slice(1),
-    })),
-  },
-  {
-    id: "dependents",
-    title: "How many dependents rely on you?",
-    prompt: "Include children, partners, or others you cover.",
-    type: "number",
-    min: 0,
-    max: 6,
-  },
-  {
-    id: "employmentStartDate",
-    title: "When did you start at Lincoln?",
-    prompt: "We’ll spotlight milestones around your tenure.",
-    type: "date",
-  },
-  {
-    id: "educationLevel",
-    title: "Highest education completed?",
-    prompt: "Advanced education unlocks tailored upskilling resources.",
-    type: "select",
-    options: [
-      { label: "High school", value: "high-school" },
-      { label: "Associate", value: "associate" },
-      { label: "Bachelor’s", value: "bachelor" },
-      { label: "Master’s", value: "master" },
-      { label: "Doctorate", value: "doctorate" },
-      { label: "Other", value: "other" },
-    ],
-    followUpId: "educationMajor",
-  },
-  {
-    id: "educationMajor",
-    title: "What did you study?",
-    prompt: "We’ll reference this when sharing learning pathways.",
-    type: "text",
-    placeholder: "Marketing, Finance, etc.",
-    condition: (data) =>
-      ["associate", "bachelor", "master", "doctorate"].includes(data.educationLevel ?? ""),
-  },
-  {
-    id: "workCountry",
-    title: "Where do you work?",
-    prompt: "Country first, state next.",
-    type: "text",
-    placeholder: "United States",
-  },
-  {
-    id: "workState",
-    title: "Which state are you based in?",
-    prompt: "We’ll align benefits and compliance by region.",
-    type: "text",
-    placeholder: "PA",
-  },
-  {
-    id: "riskComfort",
-    title: "How comfortable are you with financial risk?",
-    prompt: "Slide from very low (1) to very high (5).",
-    type: "slider",
-    min: 1,
-    max: 5,
-    step: 1,
-  },
-  {
-    id: "physicalActivities",
-    title: "Do you stay active through sports or exercise?",
-    prompt: "We tailor injury and wellness benefits based on this.",
-    type: "boolean",
-    followUpId: "activityList",
-  },
-  {
-    id: "activityList",
-    title: "Which activities are part of your routine?",
-    prompt: "Pick all that apply.",
-    type: "multi-select",
-    options: ACTIVITY_OPTIONS,
-    condition: (data) => data.physicalActivities === true,
-  },
-  {
-    id: "tobaccoUse",
-    title: "Do you use tobacco products?",
-    prompt: "We keep this private — it only adjusts certain coverages.",
-    type: "boolean",
-  },
-  {
-    id: "disability",
-    title: "Do you identify as having a disability?",
-    prompt: "This ensures we highlight the right support programs.",
-    type: "boolean",
-  },
-  {
-    id: "veteran",
-    title: "Are you a veteran?",
-    prompt: "We’ll surface veteran-specific benefits and resources.",
-    type: "boolean",
-  },
-  {
-    id: "creditScore",
-    title: "What’s your current credit score?",
-    prompt: "Approximate is fine — LifeLens uses a slider from 300 to 850.",
-    type: "slider",
-    min: 300,
-    max: 850,
-    step: 10,
-  },
-  {
-    id: "citizenship",
-    title: "What’s your citizenship?",
-    prompt: "List the country or status in your own words.",
-    type: "text",
-    placeholder: "United States",
-  },
-  {
-    id: "residencyStatus",
-    title: "And your residency status?",
-    prompt: "This is only used to ensure the right coverage guidance.",
-    type: "select",
-    options: RESIDENCY_OPTIONS.map((status) => ({ label: status, value: status })),
-  },
+export const INCOME_OPTIONS: QuizOption[] = [
+  { label: "Under $50k", value: "under-50k" },
+  { label: "$50k – $80k", value: "50-80k" },
+  { label: "$80k – $120k", value: "80-120k" },
+  { label: "$120k – $160k", value: "120-160k" },
+  { label: "$160k+", value: "160k-plus" },
 ]
 
-export function questionsFor(data: Partial<EnrollmentFormData>) {
-  return QUIZ_QUESTIONS.filter((question) => question.condition ? question.condition(data) : true)
+export const HEALTH_OPTIONS: QuizOption[] = [
+  { label: "Employer plan", value: "employer" },
+  { label: "Partner's plan", value: "partner" },
+  { label: "Marketplace plan", value: "marketplace" },
+  { label: "No current coverage", value: "none" },
+]
+
+export const ACTIVITY_LEVEL_OPTIONS: QuizOption[] = [
+  { label: "Relaxed", value: "relaxed", helper: "Light activity" },
+  { label: "Balanced", value: "balanced", helper: "Mix of movement and rest" },
+  { label: "Active lifestyle", value: "active", helper: "Frequent workouts or sports" },
+]
+
+export function initializeQuizState(template: EnrollmentFormData): EnrollmentFormData {
+  const preferredName = template.preferredName || template.fullName.split(" ")[0] || template.fullName
+
+  return {
+    ...template,
+    preferredName,
+    activityList: Array.from(new Set(template.activityList)),
+    physicalActivities:
+      template.activityLevel === "active"
+        ? true
+        : template.activityLevel === "relaxed"
+          ? false
+          : template.physicalActivities,
+  }
 }
 
-export function applyQuizBranching() {
-  return QUIZ_QUESTIONS
+export function questionsFor(data: EnrollmentFormData): QuizQuestion[] {
+  const steps: QuizQuestion[] = [
+    {
+      id: "age",
+      title: "How old are you?",
+      prompt: "Your age helps LifeLens tune plan milestones.",
+      type: "number",
+      min: 18,
+      max: 75,
+    },
+    {
+      id: "coveragePreference",
+      title: "Who do you want coverage for?",
+      prompt: "We'll customize guidance around the people you support.",
+      type: "select",
+      options: COVERAGE_OPTIONS,
+    },
+    {
+      id: "dependents",
+      title: "How many dependents count on you?",
+      prompt: "Include children or others you plan to cover.",
+      type: "number",
+      min: 0,
+      max: 6,
+      condition: (answers) => answers.coveragePreference === "self-plus-family",
+    },
+    {
+      id: "homeOwnership",
+      title: "What's your home setup?",
+      prompt: "We'll align protections for your living situation.",
+      type: "select",
+      options: HOME_OPTIONS,
+    },
+    {
+      id: "incomeRange",
+      title: "What's your household income?",
+      prompt: "This keeps savings and protections realistic.",
+      type: "select",
+      options: INCOME_OPTIONS,
+    },
+    {
+      id: "healthCoverage",
+      title: "Where does your health coverage come from?",
+      prompt: "We'll flag any gaps based on your answer.",
+      type: "select",
+      options: HEALTH_OPTIONS,
+    },
+    {
+      id: "spouseHasSeparateInsurance",
+      title: "Does your partner carry separate insurance?",
+      prompt: "Helps us coordinate coverages if you share benefits.",
+      type: "boolean-choice",
+      condition: (answers) => ["married", "partnered"].includes(answers.maritalStatus),
+    },
+    {
+      id: "savingsRate",
+      title: "How much do you save each month?",
+      prompt: "Estimate the percent of income you set aside.",
+      type: "slider",
+      min: 0,
+      max: 30,
+      step: 1,
+    },
+    {
+      id: "wantsSavingsSupport",
+      title: "Want a savings boost?",
+      prompt: "We'll surface automation tips if you'd like help.",
+      type: "boolean-choice",
+      condition: (answers) => (answers.savingsRate ?? 0) < 10,
+    },
+    {
+      id: "riskComfort",
+      title: "How comfortable are you with risk?",
+      prompt: "Slide from very low (1) to very high (5).",
+      type: "slider",
+      min: 1,
+      max: 5,
+      step: 1,
+    },
+    {
+      id: "investsInMarkets",
+      title: "Do you invest in crypto or stocks?",
+      prompt: "We tailor education and guardrails based on this.",
+      type: "boolean-choice",
+      condition: (answers) => (answers.riskComfort ?? 1) >= 4,
+    },
+    {
+      id: "activityLevel",
+      title: "How active is your lifestyle?",
+      prompt: "Choose the best match so we can pair the right wellness perks.",
+      type: "select",
+      options: ACTIVITY_LEVEL_OPTIONS,
+    },
+    {
+      id: "activityList",
+      title: "What keeps you moving?",
+      prompt: "Pick all activities you enjoy.",
+      type: "multi-select",
+      options: ACTIVITY_OPTIONS,
+      condition: (answers) => answers.activityLevel === "active",
+    },
+    {
+      id: "tobaccoUse",
+      title: "Do you use tobacco products?",
+      prompt: "Only used to tailor certain protections.",
+      type: "boolean-choice",
+    },
+    {
+      id: "creditScore",
+      title: "What's your credit score range?",
+      prompt: "Approximate is fine — LifeLens uses a slider from 300 to 850.",
+      type: "slider",
+      min: 300,
+      max: 850,
+      step: 10,
+    },
+  ]
+
+  return steps.filter((question) => (question.condition ? question.condition(data) : true))
 }
 
 export function updateFormValue(
   data: EnrollmentFormData,
   id: QuizQuestion["id"],
-  value: string | number | boolean | string[] | null
+  value: string | number | boolean | string[] | null,
 ): EnrollmentFormData {
   const next: EnrollmentFormData = { ...data }
+
   switch (id) {
-    case "fullName":
-    case "preferredName":
-    case "employmentStartDate":
-    case "educationLevel":
-    case "educationMajor":
-    case "workCountry":
-    case "workState":
-    case "citizenship":
-      next[id as keyof EnrollmentFormData] = value as never
-      break
     case "age":
+      next.age = typeof value === "number" ? value : value ? Number(value) : null
+      break
+    case "coveragePreference":
+      next.coveragePreference = value as EnrollmentFormData["coveragePreference"]
+      if (next.coveragePreference !== "self-plus-family") {
+        next.dependents = 0
+      }
+      break
     case "dependents":
-    case "creditScore":
-      next[id as keyof EnrollmentFormData] = Number(value ?? 0) as never
+      next.dependents = typeof value === "number" ? value : value ? Number(value) : 0
+      break
+    case "homeOwnership":
+      next.homeOwnership = value as HomeOwnershipStatus
+      break
+    case "incomeRange":
+      next.incomeRange = value as IncomeRange
+      break
+    case "healthCoverage":
+      next.healthCoverage = value as HealthCoverageOption
+      break
+    case "spouseHasSeparateInsurance":
+      next.spouseHasSeparateInsurance = typeof value === "boolean" ? value : null
+      break
+    case "savingsRate":
+      next.savingsRate = typeof value === "number" ? value : value ? Number(value) : next.savingsRate
+      break
+    case "wantsSavingsSupport":
+      next.wantsSavingsSupport = typeof value === "boolean" ? value : null
       break
     case "riskComfort":
-      next.riskComfort = Number(value ?? 1)
+      next.riskComfort = typeof value === "number" ? value : value ? Number(value) : next.riskComfort
       break
-    case "physicalActivities":
-    case "tobaccoUse":
-    case "disability":
-    case "veteran":
-      next[id as keyof EnrollmentFormData] = (value as boolean | null) ?? null as never
-      if (id === "physicalActivities" && value !== true) {
+    case "investsInMarkets":
+      next.investsInMarkets = typeof value === "boolean" ? value : null
+      break
+    case "activityLevel":
+      next.activityLevel = value as ActivityLevel
+      next.physicalActivities = next.activityLevel === "active"
+      if (next.activityLevel !== "active") {
         next.activityList = []
       }
       break
     case "activityList":
       next.activityList = Array.isArray(value) ? value : []
       break
-    case "maritalStatus":
-      next.maritalStatus = value as MaritalStatusOption
+    case "tobaccoUse":
+      next.tobaccoUse = typeof value === "boolean" ? value : null
       break
-    case "residencyStatus":
-      next.residencyStatus = value as ResidencyStatus
+    case "creditScore":
+      next.creditScore = typeof value === "number" ? value : value ? Number(value) : next.creditScore
       break
     default:
       break
   }
-  return next
-}
 
-export function initializeQuizState(template: EnrollmentFormData) {
-  return {
-    ...template,
-    activityList: Array.from(new Set(template.activityList)),
-    preferredName: template.preferredName || template.fullName.split(" ")[0] || template.fullName,
-  }
+  return next
 }

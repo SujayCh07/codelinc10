@@ -5,21 +5,30 @@ import { AnimatePresence, motion } from "framer-motion"
 import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import {
   ACTIVITY_OPTIONS,
+  ACTIVITY_LEVEL_OPTIONS,
+  COVERAGE_OPTIONS,
+  HEALTH_OPTIONS,
+  HOME_OPTIONS,
+  INCOME_OPTIONS,
   initializeQuizState,
   questionsFor,
   updateFormValue,
+  type QuizOption,
   type QuizQuestion,
   type QuizQuestionType,
 } from "@/lib/quiz"
 import { withDerivedMetrics } from "@/lib/insights"
 import type { EnrollmentFormData } from "@/lib/types"
 import { cn } from "@/lib/utils"
+
+type Phase = "hr" | "steps" | "summary"
 
 interface DynamicQuizProps {
   initialData: EnrollmentFormData
@@ -29,96 +38,125 @@ interface DynamicQuizProps {
 }
 
 const QUESTION_TYPE_LABEL: Record<QuizQuestionType, string> = {
-  text: "Text",
   number: "Number",
-  date: "Date",
   select: "Select",
   slider: "Slider",
   boolean: "Toggle",
+  "boolean-choice": "Yes/No",
   "multi-select": "Multi select",
 }
 
+const HR_CARD_COPY = [
+  { label: "Marital status", accessor: (data: EnrollmentFormData) => data.maritalStatus },
+  { label: "Education", accessor: (data: EnrollmentFormData) => data.educationLevel },
+  { label: "Employment start", accessor: (data: EnrollmentFormData) => data.employmentStartDate },
+  { label: "Citizenship", accessor: (data: EnrollmentFormData) => data.citizenship },
+  { label: "Location", accessor: (data: EnrollmentFormData) => `${data.workState}, ${data.workCountry}` },
+  { label: "Region", accessor: (data: EnrollmentFormData) => data.workRegion },
+]
+
 export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: DynamicQuizProps) {
   const [answers, setAnswers] = useState<EnrollmentFormData>(() => initializeQuizState(initialData))
+  const [phase, setPhase] = useState<Phase>("hr")
   const [index, setIndex] = useState(0)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    setAnswers(initializeQuizState(initialData))
+    const prepared = initializeQuizState(initialData)
+    setAnswers(prepared)
+    setPhase("hr")
     setIndex(0)
   }, [initialData])
-
-  const flow = useMemo(() => questionsFor(answers), [answers])
-  const current = flow[index]
 
   useEffect(() => {
     onUpdate?.(answers)
   }, [answers, onUpdate])
 
+  const flow = useMemo(() => questionsFor(answers), [answers])
+  const current = phase === "steps" ? flow[index] : null
+
   useEffect(() => {
-    if (index > flow.length - 1) {
-      setIndex(Math.max(0, flow.length - 1))
+    if (phase === "steps" && index > flow.length - 1 && flow.length > 0) {
+      setIndex(flow.length - 1)
     }
-  }, [flow.length, index])
+  }, [flow.length, index, phase])
 
-  const progress = flow.length ? ((index + 1) / flow.length) * 100 : 0
+  const progress = useMemo(() => {
+    if (phase === "hr") return 5
+    if (phase === "summary") return 100
+    if (!flow.length) return 0
+    return ((index + 1) / flow.length) * 100
+  }, [flow.length, index, phase])
 
-  const handleValueChange = (value: string | number | boolean | string[] | null) => {
-    if (!current) return
-    const updated = withDerivedMetrics(updateFormValue(answers, current.id, value))
-    if (current.id === "fullName" && !updated.preferredName) {
-      const fallback = typeof value === "string" ? value.split(" ")[0] : ""
-      updated.preferredName = fallback
+  const valueForQuestion = (question: QuizQuestion) => {
+    const value = answers[question.id as keyof EnrollmentFormData]
+    if (question.id === "activityLevel") {
+      return answers.activityLevel
     }
+    return value ?? null
+  }
+
+  const handleValueChange = (question: QuizQuestion, value: string | number | boolean | string[] | null) => {
+    const updated = withDerivedMetrics(updateFormValue(answers, question.id, value))
     setAnswers(updated)
   }
 
-  const goNext = () => {
-    if (index < flow.length - 1) {
-      setIndex(index + 1)
-    }
-  }
-
-  const goPrevious = () => {
-    if (index > 0) {
-      setIndex(index - 1)
-    } else {
+  const goBack = () => {
+    if (phase === "hr") {
       onBack()
+      return
+    }
+    if (phase === "summary") {
+      if (flow.length) {
+        setPhase("steps")
+        setIndex(Math.max(flow.length - 1, 0))
+      } else {
+        setPhase("hr")
+      }
+      return
+    }
+    if (index === 0) {
+      setPhase("hr")
+    } else {
+      setIndex((previous) => Math.max(previous - 1, 0))
     }
   }
 
-  const valueForQuestion = () => {
-    if (!current) return null
-    return (answers[current.id as keyof EnrollmentFormData] ?? null) as
-      | string
-      | number
-      | boolean
-      | string[]
-      | null
+  const goNext = () => {
+    if (phase === "hr") {
+      setPhase("steps")
+      setIndex(0)
+      return
+    }
+    if (phase === "steps") {
+      if (index < flow.length - 1) {
+        setIndex((previous) => previous + 1)
+      } else {
+        setPhase("summary")
+      }
+    }
   }
 
-  const isCurrentValid = () => {
-    if (!current) return false
-    const value = valueForQuestion()
-    if (current.type === "text") {
-      return typeof value === "string" && value.trim().length > 0
+  const isCurrentValid = (question: QuizQuestion | null) => {
+    if (!question) return false
+    const value = valueForQuestion(question)
+    switch (question.type) {
+      case "text":
+        return typeof value === "string" && value.trim().length > 0
+      case "number":
+      case "slider":
+        return typeof value === "number" && !Number.isNaN(value)
+      case "date":
+      case "select":
+        return Boolean(value)
+      case "boolean":
+      case "boolean-choice":
+        return value === true || value === false
+      case "multi-select":
+        return Array.isArray(value) && value.length > 0
+      default:
+        return false
     }
-    if (current.type === "number" || current.type === "slider") {
-      return typeof value === "number" && !Number.isNaN(value)
-    }
-    if (current.type === "date") {
-      return typeof value === "string" && value.length > 0
-    }
-    if (current.type === "select") {
-      return Boolean(value)
-    }
-    if (current.type === "boolean") {
-      return value === true || value === false
-    }
-    if (current.type === "multi-select") {
-      return Array.isArray(value) && value.length > 0
-    }
-    return false
   }
 
   const handleSubmit = async () => {
@@ -131,22 +169,30 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
     }
   }
 
+  const consentChecked = answers.consentToFollowUp
+
   return (
-    <div className="relative min-h-screen bg-[#F7F4F2] text-[#2A1A1A]">
+    <div className="relative flex min-h-screen flex-col bg-[#F7F4F2] text-[#2A1A1A]">
       <header className="sticky top-0 z-30 border-b border-[#E3D8D5] bg-[#F7F4F2]/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-5 py-4">
           <button
             type="button"
-            onClick={goPrevious}
+            onClick={goBack}
             className="flex items-center gap-2 rounded-full border border-[#E3D8D5] bg-white px-4 py-2 text-sm font-semibold text-[#7F1527]"
           >
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
           <div className="text-right">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#7F1527]">LifeLens quiz</p>
-            <p className="text-xs text-[#7F1527]/70">
-              {index + 1} of {flow.length} · {QUESTION_TYPE_LABEL[current?.type ?? "text"]}
-            </p>
+            {phase === "steps" && current ? (
+              <p className="text-xs text-[#7F1527]/70">
+                {index + 1} of {flow.length} · {QUESTION_TYPE_LABEL[current.type]}
+              </p>
+            ) : (
+              <p className="text-xs text-[#7F1527]/70">
+                {phase === "hr" ? "HR confirmation" : "Review"}
+              </p>
+            )}
           </div>
         </div>
         <div className="h-1 w-full bg-[#EBDDD8]">
@@ -154,65 +200,190 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-10">
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pb-16 pt-6">
         <AnimatePresence mode="wait">
-          {current && (
+          {phase === "hr" && (
             <motion.section
-              key={current.id}
+              key="hr-phase"
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+              className="min-h-[calc(100vh-220px)] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">
-                    Question {index + 1}
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Synced from HR</p>
+                  <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">Welcome back, {answers.preferredName || answers.fullName}</h1>
+                  <p className="mt-3 text-sm text-[#4D3B3B]">
+                    We pulled your basics from the HR system. Review and continue to personalize your LifeLens guidance.
                   </p>
+                </div>
+                <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
+              </div>
+
+              <div className="mt-8 space-y-4">
+                <div className="rounded-3xl border border-[#E2D5D7] bg-white p-5 shadow-sm text-sm text-[#4D3B3B]">
+                  <p>
+                    <strong>Employee:</strong> {answers.fullName}
+                  </p>
+                  <p>
+                    <strong>Work location:</strong> {answers.workState}, {answers.workCountry}
+                  </p>
+                  <p>
+                    <strong>Status:</strong> Active – verified via HR system
+                  </p>
+                </div>
+
+                <div className="grid gap-3 text-sm text-[#4D3B3B] sm:grid-cols-2">
+                  {HR_CARD_COPY.map((item) => (
+                    <Card key={item.label} className="rounded-2xl border border-[#F0E6E7] bg-[#FBF7F6] p-4 shadow-none">
+                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7F1527]">{item.label}</p>
+                      <p className="mt-1 text-sm font-semibold text-[#2A1A1A]">{item.accessor(answers) || "—"}</p>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </motion.section>
+          )}
+
+          {phase === "steps" && current && (
+            <motion.section
+              key={current.id as string}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.35 }}
+              className="min-h-[calc(100vh-220px)] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Question {index + 1}</p>
                   <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">{current.title}</h1>
                   <p className="mt-3 text-sm text-[#4D3B3B]">{current.prompt}</p>
                 </div>
                 <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
               </div>
 
-              <div className="mt-8">
-                {renderField(current, valueForQuestion(), handleValueChange)}
-                {current.id === "physicalActivities" && (
-                  <p className="mt-3 text-xs text-[#7F1527]">
-                    Select yes to surface activity-specific benefits in your plan.
+              <div className="mt-8 space-y-6">
+                {renderField(current, valueForQuestion(current), (value) => handleValueChange(current, value))}
+              </div>
+            </motion.section>
+          )}
+
+          {phase === "summary" && (
+            <motion.section
+              key="summary-phase"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.35 }}
+              className="min-h-[calc(100vh-220px)] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Summary</p>
+                  <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">Here’s your LifeLens profile</h1>
+                  <p className="mt-3 text-sm text-[#4D3B3B]">
+                    Confirm your answers and share consent so LifeLens can generate your personalized benefits plans.
                   </p>
+                </div>
+                <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
+              </div>
+
+              <div className="mt-8 space-y-4 text-sm text-[#4D3B3B]">
+                <SummaryRow label="Age" value={answers.age ? `${answers.age}` : "—"} />
+                <SummaryRow
+                  label="Coverage focus"
+                  value={getLabelForOption(COVERAGE_OPTIONS, answers.coveragePreference)}
+                />
+                {answers.coveragePreference === "self-plus-family" && (
+                  <SummaryRow label="Dependents" value={String(answers.dependents)} />
                 )}
+                <SummaryRow label="Home" value={getLabelForOption(HOME_OPTIONS, answers.homeOwnership)} />
+                <SummaryRow label="Household income" value={getLabelForOption(INCOME_OPTIONS, answers.incomeRange)} />
+                <SummaryRow
+                  label="Health coverage"
+                  value={getLabelForOption(HEALTH_OPTIONS, answers.healthCoverage)}
+                />
+                {answers.spouseHasSeparateInsurance !== null && (
+                  <SummaryRow
+                    label="Partner coverage"
+                    value={answers.spouseHasSeparateInsurance ? "Has their own plan" : "Relies on your plan"}
+                  />
+                )}
+                <SummaryRow label="Savings rate" value={`${answers.savingsRate}% of income`} />
+                {answers.wantsSavingsSupport !== null && (
+                  <SummaryRow
+                    label="Savings coaching"
+                    value={answers.wantsSavingsSupport ? "Send me reminders" : "I'm all set"}
+                  />
+                )}
+                <SummaryRow label="Risk tolerance" value={`${answers.riskComfort}/5`} />
+                {answers.investsInMarkets !== null && (
+                  <SummaryRow
+                    label="Investing"
+                    value={answers.investsInMarkets ? "Active investor" : "Keeping it simple"}
+                  />
+                )}
+                <SummaryRow
+                  label="Activity level"
+                  value={getLabelForOption(ACTIVITY_LEVEL_OPTIONS, answers.activityLevel)}
+                />
+                {answers.activityList.length > 0 && (
+                  <SummaryRow label="Activities" value={answers.activityList.map(capitalize).join(", ")} />
+                )}
+                <SummaryRow
+                  label="Tobacco use"
+                  value={
+                    answers.tobaccoUse === null ? "Not shared" : answers.tobaccoUse ? "Yes" : "No"
+                  }
+                />
+                <SummaryRow label="Credit score" value={`${answers.creditScore}`} />
+              </div>
+
+              <div className="mt-6 flex items-center justify-between rounded-2xl border border-[#E2D5D7] bg-[#FBF7F6] p-4">
+                <div>
+                  <p className="text-sm font-semibold text-[#2A1A1A]">I agree to share this profile for plan generation</p>
+                  <p className="text-xs text-[#7F1527]">Required so LifeLens can generate recommendations and chat summaries.</p>
+                </div>
+                <Switch
+                  checked={consentChecked}
+                  onCheckedChange={(checked) =>
+                    setAnswers((current) => withDerivedMetrics({ ...current, consentToFollowUp: checked }))
+                  }
+                />
               </div>
             </motion.section>
           )}
         </AnimatePresence>
 
-        <div className="flex items-center justify-between gap-4">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
             variant="outline"
-            onClick={goPrevious}
-            className="rounded-full border-[#E3D8D5] text-sm font-semibold text-[#7F1527]"
+            onClick={goBack}
+            className="rounded-full border-[#E3D8D5] px-6 py-3 text-sm font-semibold text-[#7F1527]"
           >
             Back
           </Button>
 
-          {index < flow.length - 1 ? (
+          {phase === "summary" ? (
             <Button
-              onClick={goNext}
-              disabled={!isCurrentValid()}
+              onClick={handleSubmit}
+              disabled={!consentChecked || submitting}
               className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527] disabled:opacity-40"
             >
-              Next
+              {submitting ? "Analyzing…" : "Generate my insights"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Button
-              onClick={handleSubmit}
-              disabled={!isCurrentValid() || submitting}
+              onClick={goNext}
+              disabled={phase === "steps" && !isCurrentValid(current)}
               className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527] disabled:opacity-40"
             >
-              {submitting ? "Generating plans…" : "See my plans"}
+              Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           )}
         </div>
@@ -224,21 +395,9 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
 function renderField(
   question: QuizQuestion,
   value: string | number | boolean | string[] | null,
-  onChange: (value: string | number | boolean | string[] | null) => void
+  onChange: (value: string | number | boolean | string[] | null) => void,
 ) {
   switch (question.type) {
-    case "text":
-      return (
-        <div className="space-y-2">
-          <Label className="text-sm text-[#7F1527]">Your answer</Label>
-          <Input
-            value={typeof value === "string" ? value : ""}
-            onChange={(event) => onChange(event.target.value)}
-            placeholder={question.placeholder}
-            className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6]"
-          />
-        </div>
-      )
     case "number":
       return (
         <div className="space-y-2">
@@ -249,63 +408,70 @@ function renderField(
             max={question.max}
             value={typeof value === "number" ? value : value ? Number(value) : ""}
             onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)}
-            className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6]"
-          />
-        </div>
-      )
-    case "date":
-      return (
-        <div className="space-y-2">
-          <Label className="text-sm text-[#7F1527]">Employment start</Label>
-          <Input
-            type="date"
-            value={typeof value === "string" ? value : ""}
-            onChange={(event) => onChange(event.target.value)}
-            className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6]"
+            className="h-12 rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] px-4 text-base"
           />
         </div>
       )
     case "select":
       return (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-3">
           {question.options?.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => onChange(option.value)}
               className={cn(
-                "rounded-full border px-4 py-2 text-sm font-semibold transition",
+                "flex items-center justify-between rounded-2xl border px-4 py-4 text-left text-sm transition",
                 value === option.value
                   ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
-                  : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40"
+                  : "border-[#E3D8D5] bg-[#FBF7F6] text-[#2A1A1A] hover:border-[#A41E34]/40",
               )}
             >
-              {option.label}
+              <span>
+                <span className="block font-semibold">{option.label}</span>
+                {option.helper && (
+                  <span className={cn("text-xs", value === option.value ? "text-white/80" : "text-[#7F1527]")}>{option.helper}</span>
+                )}
+              </span>
+              <ArrowRight className="h-4 w-4" />
             </button>
           ))}
         </div>
       )
     case "slider":
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Slider
             min={question.min ?? 0}
             max={question.max ?? 10}
             step={question.step ?? 1}
-            value={[typeof value === "number" ? value : (question.min ?? 0)]}
+            value={[typeof value === "number" ? value : question.min ?? 0]}
             onValueChange={(numbers) => onChange(numbers[0])}
           />
           <p className="text-sm font-semibold text-[#7F1527]">
-            {typeof value === "number" ? value : value ? Number(value) : 0}
+            {typeof value === "number" ? value : question.id === "riskComfort" ? 1 : question.id === "creditScore" ? 300 : 0}
+            {question.id === "savingsRate" ? "%" : ""}
           </p>
         </div>
       )
-    case "boolean":
+    case "boolean-choice":
       return (
-        <div className="flex items-center gap-4">
-          <Label className="text-sm text-[#7F1527]">No</Label>
-          <Switch checked={value === true} onCheckedChange={(checked) => onChange(checked)} />
-          <Label className="text-sm text-[#7F1527]">Yes</Label>
+        <div className="flex flex-wrap gap-3">
+          {[{ label: "No", value: false }, { label: "Yes", value: true }].map((choice) => (
+            <button
+              key={choice.label}
+              type="button"
+              onClick={() => onChange(choice.value)}
+              className={cn(
+                "rounded-full border px-5 py-3 text-sm font-semibold transition",
+                value === choice.value
+                  ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
+                  : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40",
+              )}
+            >
+              {choice.label}
+            </button>
+          ))}
         </div>
       )
     case "multi-select":
@@ -318,7 +484,7 @@ function renderField(
                 key={option.value}
                 type="button"
                 onClick={() => {
-                  if (!Array.isArray(value)) {
+                  if (!Array.isArray(value) || value === null) {
                     onChange([option.value])
                     return
                   }
@@ -330,7 +496,7 @@ function renderField(
                   "rounded-full border px-4 py-2 text-sm font-semibold transition",
                   active
                     ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
-                    : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40"
+                    : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40",
                 )}
               >
                 {option.label}
@@ -342,4 +508,23 @@ function renderField(
     default:
       return null
   }
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-[#F0E6E7] bg-[#FBF7F6] px-4 py-3">
+      <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">{label}</span>
+      <span className="text-sm font-semibold text-[#2A1A1A]">{value}</span>
+    </div>
+  )
+}
+
+function getLabelForOption(options: QuizOption[], value: string) {
+  const match = options.find((option) => option.value === value)
+  return match ? match.label : value || "—"
+}
+
+function capitalize(value: string) {
+  if (!value) return value
+  return value.charAt(0).toUpperCase() + value.slice(1)
 }
