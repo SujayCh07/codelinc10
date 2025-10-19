@@ -3,6 +3,7 @@ export type ScreenKey =
   | "quiz"
   | "insights"
   | "timeline"
+  | "learn"
   | "faq"
   | "profile"
 

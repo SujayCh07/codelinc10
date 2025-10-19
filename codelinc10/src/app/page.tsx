@@ -9,6 +9,7 @@ import { DynamicQuiz } from "@/components/DynamicQuiz"
 import { FaqScreen } from "@/components/faq-screen"
 import { InsightsDashboard } from "@/components/insights-dashboard"
 import LandingScreen from "@/components/landing-screen"
+import { LearningHub } from "@/components/learning-hub"
 import { ProfileSettings } from "@/components/profile-settings"
 import { TimelineScreen } from "@/components/timeline-screen"
 import { requestPlans, sendPlanReport, upsertUser } from "@/lib/api"
@@ -234,7 +235,6 @@ export default function Home() {
     setFormData(createFreshForm())
     setInsights(null)
     setSavedMoments([])
-    setChatHistory([])
     setHasCompletedQuiz(false)
     logout()
     removeStorage(FORM_STORAGE_KEY)
@@ -321,7 +321,7 @@ export default function Home() {
     )
   }
 
-  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile"]
+  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "learn", "faq", "profile"]
 
   return (
     <>
@@ -422,6 +422,18 @@ export default function Home() {
               formData={formData}
               onUpdateProfile={handleProfileUpdate}
             />
+          </motion.div>
+        )}
+
+        {currentScreen === "learn" && (
+          <motion.div
+            key="learn"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <LearningHub persona={insights?.goalTheme ?? "New Professional"} />
           </motion.div>
         )}
       </AnimatePresence>

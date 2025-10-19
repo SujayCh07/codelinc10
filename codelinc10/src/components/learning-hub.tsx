@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Search, ExternalLink, TrendingUp, Shield, Heart, Home, Award } from "lucide-react"
+import { BookOpen, Search, ExternalLink, TrendingUp, Shield, Heart, Home, Award, MessageCircle } from "lucide-react"
 
 interface LearningHubProps {
   persona: string
@@ -19,6 +19,18 @@ export function LearningHub({ persona }: LearningHubProps) {
     "Transitioning Retiree": ["Medicare Enrollment Guide", "Retirement Income Strategy", "Social Security Timing"],
     "Career Advancer": ["Advanced Retirement Planning", "Tax-Advantaged Investing", "Estate Planning Basics"],
     "Financial Stabilizer": ["Emergency Fund Essentials", "Debt Reduction Strategies", "Budget Optimization"],
+  }
+
+  const handleOpenChat = () => {
+    const educationPrompt = "I'd like to learn more about my benefits and financial planning options. Can you help me understand what resources are available to me?"
+    window.dispatchEvent(
+      new CustomEvent("FinMate:chat:open", {
+        detail: { 
+          prompt: educationPrompt,
+          context: { screen: "learning-hub", persona }
+        }
+      })
+    )
   }
 
   const categories = [
@@ -140,6 +152,30 @@ export function LearningHub({ persona }: LearningHubProps) {
 
   const recommendedArticles = categories.flatMap((cat) => cat.articles.filter((article) => article.recommended))
 
+  // Lincoln Financial Resources
+  const lincolnResources = [
+    {
+      title: "Life Insurance Guide",
+      url: "https://www.lfg.com/public/individual/lifeinsurance",
+      description: "Comprehensive guide to life insurance options"
+    },
+    {
+      title: "Retirement Planning Tools",
+      url: "https://www.lfg.com/public/individual/retirement",
+      description: "Plan your retirement with expert guidance"
+    },
+    {
+      title: "Financial Wellness Center",
+      url: "https://www.lfg.com/public/individual/financialwellness",
+      description: "Resources to improve your financial well-being"
+    },
+    {
+      title: "Education Planning",
+      url: "https://www.lfg.com/public/individual/education",
+      description: "Save for education with 529 plans and more"
+    }
+  ]
+
   return (
     <div className="min-h-screen px-4 py-8 pb-24">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -163,6 +199,57 @@ export function LearningHub({ persona }: LearningHubProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-12 h-12"
             />
+          </div>
+        </div>
+
+        {/* AI Chat Assistant Section */}
+        <Card className="glass-strong p-6 border-[#A41E34]/20">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageCircle className="w-5 h-5 text-[#A41E34]" />
+                <h2 className="text-xl font-bold">Ask FinMate</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get personalized guidance about your benefits, financial planning, and more. Our AI assistant is ready to help answer your questions.
+              </p>
+              <Button 
+                onClick={handleOpenChat}
+                className="bg-[#A41E34] hover:bg-[#7F1527] text-white"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Start Learning with AI
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Lincoln Financial Resources */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Shield className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-bold">Lincoln Financial Resources</h2>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {lincolnResources.map((resource, index) => (
+              <Card key={index} className="glass p-4 hover:border-primary/30 transition-all">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <h3 className="font-bold mb-1">{resource.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-2">{resource.description}</p>
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="h-auto p-0 text-primary"
+                      onClick={() => window.open(resource.url, "_blank")}
+                    >
+                      Visit Resource
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
 
