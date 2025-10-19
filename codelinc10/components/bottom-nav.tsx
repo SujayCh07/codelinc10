@@ -10,16 +10,16 @@ interface BottomNavProps {
 
 export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
   const navItems = [
-    { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { id: "insights", icon: LayoutDashboard, label: "Insights" },
     { id: "timeline", icon: Clock, label: "Timeline" },
     { id: "learning", icon: BookOpen, label: "Learn" },
+    { id: "faq", icon: Info, label: "FAQ" },
     { id: "profile", icon: User, label: "Profile" },
-    { id: "about", icon: Info, label: "About" },
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border/50 safe-area-bottom backdrop-blur-xl">
-      <div className="flex items-center justify-around px-2 py-3 max-w-2xl mx-auto">
+    <nav className="fixed bottom-4 left-1/2 z-50 w-[min(360px,92vw)] -translate-x-1/2 rounded-3xl border border-[#E2D5D7] bg-white/95 px-2 py-3 shadow-xl shadow-[#A41E34]/15">
+      <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = currentScreen === item.id
@@ -29,12 +29,12 @@ export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
               key={item.id}
               onClick={() => onNavigate(item.id)}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all touch-manipulation active:scale-95",
-                isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground",
+                "flex flex-col items-center gap-1 px-3 py-1 text-xs font-semibold transition-all touch-manipulation active:scale-95",
+                isActive ? "text-[#A41E34]" : "text-[#6F4D51] hover:text-[#A41E34]",
               )}
             >
-              <Icon className={cn("w-5 h-5", isActive && "animate-bounce-in")} />
-              <span className="text-xs font-medium">{item.label}</span>
+              <Icon className={cn("h-5 w-5", isActive && "animate-bounce-in")} />
+              <span>{item.label}</span>
             </button>
           )
         })}
