@@ -447,14 +447,15 @@ export function buildChatReply(message: string, insights: LifeLensInsights | nul
   if (normalized.includes("plan") || normalized.includes("priority")) {
     const titles = insights.priorityBenefits.map((benefit) => benefit.title)
     if (titles.length > 0) {
-      return `Your priority path is ${titles.join(" → ")}. Start with ${titles[0]} and I’ll cue up the next step when you’re ready.`
+      return `I’ll highlight your priority path as ${titles.join(" → ")}. Start with ${titles[0]} and I’ll cue up the next step when you’re ready.`
     }
   }
 
   if (normalized.includes("cost")) {
     const plan = insights.plans.find((entry) => entry.planId === insights.selectedPlanId) ?? insights.plans[0]
     if (plan) {
-      return `The current estimate for ${plan.planName.split(" (")[0]} is ${plan.monthlyCostEstimate}. Adjusting coverage within your priorities will update that number.`
+      const planName = plan.planName.split(" (")[0]
+      return `The current monthly estimate for ${planName} is ${plan.monthlyCostEstimate}. Adjusting coverage within your priorities will update that number.`
     }
   }
 
