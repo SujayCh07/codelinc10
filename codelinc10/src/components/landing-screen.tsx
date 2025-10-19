@@ -57,7 +57,6 @@ export default function LandingScreen({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Image src="/FinMate-logo.svg" alt="FinMate logo" width={160} height={44} className="h-9 w-auto" />
             <span className="hidden text-xs font-semibold uppercase tracking-[0.35em] text-[#7F1527]/80 md:block">
               Lincoln Financial · FinMate
             </span>
