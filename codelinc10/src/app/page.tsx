@@ -48,7 +48,7 @@ function createFreshForm(): EnrollmentFormData {
 
 export default function Home() {
   const { user, isLoading: userLoading, login, logout } = useUser()
-  const [currentScreen, setCurrentScreen] = useState<ScreenKey>(() => "quiz")
+  const [currentScreen, setCurrentScreen] = useState<ScreenKey>(() => "landing")
   const [formData, setFormData] = useState<EnrollmentFormData | null>(() => createFreshForm())
   const [insights, setInsights] = useState<LifeLensInsights | null>(null)
   const [savedMoments, setSavedMoments] = useState<SavedMoment[]>([])
@@ -89,7 +89,7 @@ export default function Home() {
       }
     } else {
       setHasCompletedQuiz(false)
-      setCurrentScreen("quiz")
+      setCurrentScreen("landing")
     }
 
     const storedMoments = readStorage<SavedMoment[]>(MOMENTS_STORAGE_KEY, [])
@@ -128,6 +128,24 @@ export default function Home() {
 
   const assignUserId = () =>
     (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `user-${Date.now()}`)
+
+  const handleAuth = (userId: string, email: string, fullName?: string) => {
+    // Set the user session with the authenticated user
+    login({ name: fullName || email, createdAt: profileCreatedAt })
+    
+    // Update form data with the authenticated user's ID
+    setFormData((current) => {
+      const updated = current ? { ...current, userId, fullName: fullName || current.fullName } : createFreshForm()
+      return withDerivedMetrics({ ...updated, userId })
+    })
+    
+    // Check if user has existing insights, if yes navigate there
+    if (hasCompletedQuiz && insights) {
+      setCurrentScreen("insights")
+    } else {
+      setCurrentScreen("quiz")
+    }
+  }
 
   const handleStart = () => {
     const base = formData
@@ -377,6 +395,7 @@ export default function Home() {
               hasExistingInsights={!!insights}
               onViewInsights={() => setCurrentScreen("insights")}
               quizCompleted={hasCompletedQuiz}
+              onAuth={handleAuth}
             />
           </motion.div>
         )}
