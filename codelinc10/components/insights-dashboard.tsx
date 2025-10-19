@@ -22,6 +22,8 @@ export interface LifeLensInsights {
   resources: { title: string; description: string; url: string }[]
   conversation: { speaker: "LifeLens" | "You"; message: string }[]
   prompts: string[]
+  goalTheme?: string
+  themeKey?: string
 }
 
 interface InsightsDashboardProps {
@@ -77,8 +79,15 @@ export function InsightsDashboard({ insights, onBackToLanding, onRegenerate, onR
               <h1 className="text-2xl font-semibold text-[#2A1A1A]">{insights.focusGoal}</h1>
               <p className="text-sm text-[#4D3B3B]">{insights.statement}</p>
             </div>
-            <div className="rounded-2xl bg-[#F9EDEA] px-4 py-3 text-sm font-semibold text-[#A41E34]">
-              <Sparkles className="mr-2 inline h-4 w-4" /> LifeLens spotlight
+            <div className="space-y-2 text-right sm:text-left">
+              {insights.goalTheme && (
+                <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#A41E34]">
+                  <Sparkles className="h-3 w-3" /> {insights.goalTheme}
+                </span>
+              )}
+              <div className="rounded-2xl bg-[#F9EDEA] px-4 py-3 text-sm font-semibold text-[#A41E34]">
+                <Sparkles className="mr-2 inline h-4 w-4" /> LifeLens spotlight
+              </div>
             </div>
           </div>
           <div className="mt-6 space-y-3">

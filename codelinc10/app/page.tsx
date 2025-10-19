@@ -12,51 +12,79 @@ import {
 } from "@/components/enrollment-form"
 import { InsightsDashboard, type LifeLensInsights } from "@/components/insights-dashboard"
 import { SupportDock } from "@/components/support-dock"
+import { BottomNav } from "@/components/bottom-nav"
+import { TimelineScreen, type SavedMoment } from "@/components/timeline-screen"
+import { LearningHub } from "@/components/learning-hub"
+import { FaqScreen } from "@/components/faq-screen"
+import { ProfileSettings } from "@/components/profile-settings"
+import { ChatPanel, type ChatEntry } from "@/components/chat-panel"
 
 const FORM_STORAGE_KEY = "lifelens-form-cache"
 const INSIGHTS_STORAGE_KEY = "lifelens-insights-cache"
+const MOMENTS_STORAGE_KEY = "lifelens-moments-cache"
+const CHAT_STORAGE_KEY = "lifelens-chat-cache"
+const PROFILE_CREATED_KEY = "lifelens-profile-created"
 
-type Screen = "landing" | "quiz" | "insights"
+type Screen = "landing" | "enrollment" | "insights" | "timeline" | "learning" | "faq" | "profile"
+
+interface ProfileSnapshot {
+  name: string
+  aiPersona: string
+  ageRange: string
+  employmentType: string
+  householdSize: number
+  dependents: number
+  lifeEvents: string[]
+  goals: string[]
+  createdAt: string
+}
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>("landing")
+  const [currentScreen, setCurrentScreen] = useState<Screen>("landing")
   const [formData, setFormData] = useState<EnrollmentFormData | null>(null)
   const [insights, setInsights] = useState<LifeLensInsights | null>(null)
+  const [savedMoments, setSavedMoments] = useState<SavedMoment[]>([])
+  const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
+  const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
   const [isHydrated, setIsHydrated] = useState(false)
 
-  // ✅ Load cache safely
   useEffect(() => {
     if (typeof window === "undefined") return
+
     try {
-      const storedFormRaw = window.localStorage.getItem(FORM_STORAGE_KEY)
-      const storedInsightsRaw = window.localStorage.getItem(INSIGHTS_STORAGE_KEY)
+      const storedForm = window.localStorage.getItem(FORM_STORAGE_KEY)
+      const storedInsights = window.localStorage.getItem(INSIGHTS_STORAGE_KEY)
+      const storedMoments = window.localStorage.getItem(MOMENTS_STORAGE_KEY)
+      const storedChat = window.localStorage.getItem(CHAT_STORAGE_KEY)
+      const storedProfileCreated = window.localStorage.getItem(PROFILE_CREATED_KEY)
 
-      const parsedForm = storedFormRaw ? (JSON.parse(storedFormRaw) as Partial<EnrollmentFormData>) : null
-      const hydratedForm = parsedForm ? { ...DEFAULT_ENROLLMENT_FORM, ...parsedForm } : null
-      const parsedInsights = storedInsightsRaw ? (JSON.parse(storedInsightsRaw) as Partial<LifeLensInsights>) : null
-
-      if (hydratedForm) {
-        setFormData(hydratedForm)
+      if (storedProfileCreated) {
+        setProfileCreatedAt(storedProfileCreated)
+      } else {
+        const created = new Date().toISOString()
+        setProfileCreatedAt(created)
+        window.localStorage.setItem(PROFILE_CREATED_KEY, created)
       }
 
-      if (parsedInsights && hydratedForm) {
-        const rebuilt = buildInsights(hydratedForm)
-        const merged: LifeLensInsights = {
-          ...rebuilt,
-          ...parsedInsights,
-          ownerName:
-            parsedInsights.ownerName ?? rebuilt.ownerName ?? hydratedForm.preferredName ?? hydratedForm.fullName,
-          priorities: parsedInsights.priorities ?? rebuilt.priorities,
-          tips: parsedInsights.tips ?? rebuilt.tips,
-          timeline: parsedInsights.timeline ?? rebuilt.timeline,
-          resources: parsedInsights.resources ?? rebuilt.resources,
-          conversation: parsedInsights.conversation ?? rebuilt.conversation,
-          focusGoal: parsedInsights.focusGoal ?? rebuilt.focusGoal,
-          persona: parsedInsights.persona ?? rebuilt.persona,
-          statement: parsedInsights.statement ?? rebuilt.statement,
-        }
-        setInsights(merged)
-        setScreen("insights")
+      if (storedForm) {
+        const parsedForm = JSON.parse(storedForm) as EnrollmentFormData
+        setFormData({ ...DEFAULT_ENROLLMENT_FORM, ...parsedForm })
+      }
+
+      if (storedInsights) {
+        const parsedInsights = JSON.parse(storedInsights) as LifeLensInsights
+        setInsights(parsedInsights)
+        setCurrentScreen("insights")
+      }
+
+      if (storedMoments) {
+        const parsedMoments = JSON.parse(storedMoments) as SavedMoment[]
+        setSavedMoments(parsedMoments)
+      }
+
+      if (storedChat) {
+        const parsedChat = JSON.parse(storedChat) as ChatEntry[]
+        setChatHistory(parsedChat)
       }
     } catch (error) {
       console.error("LifeLens cache could not be restored", error)
@@ -65,44 +93,71 @@ export default function Home() {
     }
   }, [])
 
-  // ✅ Start flow
+  useEffect(() => {
+    if (!isHydrated || typeof window === "undefined") return
+    if (formData) {
+      window.localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData))
+    }
+  }, [formData, isHydrated])
+
+  useEffect(() => {
+    if (!isHydrated || typeof window === "undefined") return
+    if (insights) {
+      window.localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(insights))
+    }
+  }, [insights, isHydrated])
+
+  useEffect(() => {
+    if (!isHydrated || typeof window === "undefined") return
+    window.localStorage.setItem(MOMENTS_STORAGE_KEY, JSON.stringify(savedMoments))
+  }, [savedMoments, isHydrated])
+
+  useEffect(() => {
+    if (!isHydrated || typeof window === "undefined") return
+    window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory))
+  }, [chatHistory, isHydrated])
+
   const handleStart = (asGuest: boolean) => {
     const template = asGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
-    const existingMatchesMode = formData && formData.isGuest === asGuest
-    const next = existingMatchesMode ? { ...formData } : { ...template }
-    setFormData({ ...next, isGuest: asGuest })
-    setScreen("quiz")
+    setFormData({ ...template, isGuest: asGuest })
+    setCurrentScreen("enrollment")
   }
 
-  // ✅ Update local form progress
   const handleEnrollmentUpdate = (data: EnrollmentFormData) => {
     setFormData(data)
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data))
-    }
-  }
-
-  // ✅ Navigation handlers
-  const handleBackToLanding = () => {
-    setScreen("landing")
-  }
-
-  const handleRestartQuiz = () => {
-    const useGuest = formData?.isGuest ?? true
-    const reset = useGuest ? { ...DEMO_ENROLLMENT_FORM } : { ...DEFAULT_ENROLLMENT_FORM }
-    setFormData({ ...reset, isGuest: useGuest })
-    setScreen("quiz")
   }
 
   const handleEnrollmentComplete = (data: EnrollmentFormData) => {
     const generated = buildInsights(data)
+    const timestamp = new Date().toISOString()
+
     setFormData(data)
     setInsights(generated)
-    setScreen("insights")
+    setCurrentScreen("insights")
 
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data))
-      window.localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(generated))
+    const momentId = `${generated.themeKey ?? "plan"}-${Date.now()}`
+    const newMoment: SavedMoment = {
+      id: momentId,
+      category: generated.themeKey ?? "foundation",
+      summary: generated.focusGoal,
+      timeline: generated.timeline,
+      timestamp,
+      insight: generated,
+    }
+
+    setSavedMoments((previous) => {
+      const filtered = previous.filter((entry) => entry.summary !== newMoment.summary)
+      const updated = [...filtered, newMoment].slice(-8)
+      return updated
+    })
+
+    if (generated.conversation.length > 0) {
+      const additions: ChatEntry[] = generated.conversation.map((entry, index) => ({
+        speaker: entry.speaker,
+        message: entry.message,
+        timestamp: new Date(Date.now() + index).toISOString(),
+      }))
+      setChatHistory((previous) => mergeChatHistory(previous, additions))
     }
   }
 
@@ -110,9 +165,58 @@ export default function Home() {
     if (!formData) return
     const regenerated = buildInsights(formData)
     setInsights(regenerated)
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(regenerated))
+    setSavedMoments((previous) => {
+      if (!previous.length) return previous
+      const latest = previous[previous.length - 1]
+      const updatedLatest: SavedMoment = { ...latest, timeline: regenerated.timeline, insight: regenerated }
+      return [...previous.slice(0, -1), updatedLatest]
+    })
+  }
+
+  const handleRestartQuiz = () => {
+    const isGuest = formData?.isGuest ?? true
+    const template = isGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
+    setFormData({ ...template, isGuest })
+    setCurrentScreen("enrollment")
+  }
+
+  const handleSelectMoment = (selectedInsight: LifeLensInsights) => {
+    setInsights(selectedInsight)
+    setCurrentScreen("insights")
+  }
+
+  const handleNavigate = (target: Screen) => {
+    if (target === "insights" && !insights) {
+      setCurrentScreen(formData ? "enrollment" : "landing")
+      return
     }
+    setCurrentScreen(target)
+  }
+
+  const handleClearAllData = () => {
+    setFormData(null)
+    setInsights(null)
+    setSavedMoments([])
+    setChatHistory([])
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(FORM_STORAGE_KEY)
+      window.localStorage.removeItem(INSIGHTS_STORAGE_KEY)
+      window.localStorage.removeItem(MOMENTS_STORAGE_KEY)
+      window.localStorage.removeItem(CHAT_STORAGE_KEY)
+    }
+    setCurrentScreen("landing")
+  }
+
+  const handleChatSend = (message: string) => {
+    const userEntry: ChatEntry = { speaker: "You", message, timestamp: new Date().toISOString() }
+    const replyMessage = buildChatReply(message, insights)
+    const replyEntry: ChatEntry = {
+      speaker: "LifeLens",
+      message: replyMessage,
+      timestamp: new Date(Date.now() + 500).toISOString(),
+    }
+
+    setChatHistory((previous) => [...previous, userEntry, replyEntry])
   }
 
   if (!isHydrated) {
@@ -123,10 +227,45 @@ export default function Home() {
     )
   }
 
+  const profileSnapshot: ProfileSnapshot = useMemo(() => {
+    if (!formData) {
+      return {
+        name: "Guest",
+        aiPersona: insights?.persona ?? "Balanced Navigator",
+        ageRange: "—",
+        employmentType: "—",
+        householdSize: 1,
+        dependents: 0,
+        lifeEvents: [],
+        goals: [],
+        createdAt: profileCreatedAt,
+      }
+    }
+
+    const householdSize =
+      formData.householdCoverage === "You only"
+        ? 1
+        : formData.householdCoverage === "You + partner"
+          ? 2
+          : Math.max(2, 1 + formData.dependentCount)
+
+    return {
+      name: formData.preferredName || formData.fullName,
+      aiPersona: insights?.persona ?? "Balanced Navigator",
+      ageRange: `${formData.age}`,
+      employmentType: `Since ${formData.employmentStart}`,
+      householdSize,
+      dependents: formData.dependentCount,
+      lifeEvents: formData.milestoneFocus ? [formData.milestoneFocus] : [],
+      goals: formData.financialGoals,
+      createdAt: profileCreatedAt,
+    }
+  }, [formData, insights?.persona, profileCreatedAt])
+
   return (
-    <>
+    <main className="min-h-screen bg-[#F7F4F2] pb-24">
       <AnimatePresence mode="wait" initial={false}>
-        {screen === "landing" && (
+        {currentScreen === "landing" && (
           <motion.div
             key="landing"
             initial={{ opacity: 0 }}
@@ -138,9 +277,9 @@ export default function Home() {
           </motion.div>
         )}
 
-        {screen === "quiz" && (
+        {currentScreen === "enrollment" && (
           <motion.div
-            key="quiz"
+            key="enrollment"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
@@ -148,14 +287,14 @@ export default function Home() {
           >
             <EnrollmentForm
               onComplete={handleEnrollmentComplete}
-              onBackToLanding={handleBackToLanding}
+              onBackToLanding={() => setCurrentScreen("landing")}
               onUpdate={handleEnrollmentUpdate}
               initialData={formData ?? DEFAULT_ENROLLMENT_FORM}
             />
           </motion.div>
         )}
 
-        {screen === "insights" && insights && (
+        {currentScreen === "insights" && insights && (
           <motion.div
             key="insights"
             initial={{ opacity: 0, y: 12 }}
@@ -165,27 +304,127 @@ export default function Home() {
           >
             <InsightsDashboard
               insights={insights}
-              onBackToLanding={handleBackToLanding}
+              onBackToLanding={() => setCurrentScreen("landing")}
               onRegenerate={handleRegenerate}
               onRestartQuiz={handleRestartQuiz}
             />
           </motion.div>
         )}
+
+        {currentScreen === "timeline" && (
+          <motion.div
+            key="timeline"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <TimelineScreen
+              savedInsights={savedMoments}
+              onBack={() => setCurrentScreen(insights ? "insights" : "enrollment")}
+              onSelectInsight={handleSelectMoment}
+            />
+          </motion.div>
+        )}
+
+        {currentScreen === "learning" && (
+          <motion.div
+            key="learning"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <LearningHub persona={insights?.persona ?? "Balanced Navigator"} />
+          </motion.div>
+        )}
+
+        {currentScreen === "faq" && (
+          <motion.div
+            key="faq"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <FaqScreen onBack={() => setCurrentScreen(insights ? "insights" : "landing")} />
+          </motion.div>
+        )}
+
+        {currentScreen === "profile" && (
+          <motion.div
+            key="profile"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ProfileSettings
+              profile={profileSnapshot}
+              onClearData={handleClearAllData}
+              onReassess={() => setCurrentScreen("enrollment")}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
+
+      {currentScreen !== "landing" && (
+        <BottomNav currentScreen={currentScreen} onNavigate={handleNavigate} />
+      )}
 
       <SupportDock
         persona={insights?.persona}
         focusGoal={insights?.focusGoal}
-        screen={screen}
+        screen={currentScreen}
         prompts={insights?.prompts}
         conversation={insights?.conversation}
-        onBackToLanding={screen === "insights" ? handleBackToLanding : undefined}
+        onBackToLanding={currentScreen === "insights" ? () => setCurrentScreen("landing") : undefined}
       />
-    </>
+
+      <ChatPanel history={chatHistory} onSend={handleChatSend} />
+    </main>
   )
 }
 
-// ✅ Basic insight generator (replace with Bedrock later)
+function mergeChatHistory(existing: ChatEntry[], additions: ChatEntry[]) {
+  const seen = new Set(existing.map((entry) => `${entry.speaker}-${entry.message}`))
+  const filtered = additions.filter((entry) => {
+    const key = `${entry.speaker}-${entry.message}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  return [...existing, ...filtered]
+}
+
+function buildChatReply(message: string, insights: LifeLensInsights | null): string {
+  if (!insights) {
+    return "I'm here whenever you want to revisit your LifeLens questionnaire or start a new plan."
+  }
+
+  const lower = message.toLowerCase()
+
+  if (lower.includes("timeline") || lower.includes("when")) {
+    const nextStep = insights.timeline[0]
+    if (nextStep) {
+      return `Start with "${nextStep.title}" this week and we’ll check in after you complete it.`
+    }
+  }
+
+  if (lower.includes("401") || lower.includes("retire")) {
+    return `Focus on your match: ${insights.priorities[0]?.description ?? "Increase contributions gradually."}`
+  }
+
+  if (lower.includes("resource") || lower.includes("link")) {
+    const resource = insights.resources[0]
+    if (resource) {
+      return `Open "${resource.title}" to go deeper — it’s tailored to ${insights.focusGoal.toLowerCase()}.`
+    }
+  }
+
+  return `Let's keep ${insights.focusGoal.toLowerCase()} moving. ${insights.priorities[0]?.description ?? "We’ll highlight the next nudge soon."}`
+}
+
 function buildInsights(data: EnrollmentFormData): LifeLensInsights {
   const persona =
     data.householdCoverage === "You + family"
@@ -206,7 +445,7 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
         ? "coverage that supports you and your partner"
         : `supporting ${data.dependentCount || "your"} dependents`
 
-  const summary = `${data.preferredName || data.fullName}, we centered your plan on ${milestone.toLowerCase()} while keeping ${householdLine} steady.`
+  const summary = `${data.preferredName || data.fullName}, we're centering your plan on ${milestone.toLowerCase()} while keeping ${householdLine} steady.`
 
   const priorities = [
     {
@@ -265,7 +504,7 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
     },
   ]
 
-  const goalTheme = data.financialGoals.includes("Plan for retirement")
+  const goalThemeKey = data.financialGoals.includes("Plan for retirement")
     ? "retirement"
     : data.financialGoals.includes("Protect my family")
       ? "protection"
@@ -274,6 +513,14 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
         : data.financialGoals.includes("Increase savings")
           ? "savings"
           : "foundation"
+
+  const goalThemeLabel: Record<string, string> = {
+    retirement: "Retirement track",
+    protection: "Family protection",
+    home: "Home stretch",
+    savings: "Savings momentum",
+    foundation: "Financial foundation",
+  }
 
   const resourceLibrary: Record<string, { title: string; description: string; url: string }[]> = {
     retirement: [
@@ -338,7 +585,7 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
     ],
   }
 
-  const resources = resourceLibrary[goalTheme]
+  const resources = resourceLibrary[goalThemeKey]
 
   const conversation = [
     data.milestoneFocus
@@ -371,7 +618,6 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
     data.financialGoals.includes("Buy a home") ? "What should I save for closing costs?" : "Which benefits should I adjust next?",
   ]
 
-
   return {
     ownerName: data.preferredName || data.fullName,
     persona,
@@ -383,5 +629,7 @@ function buildInsights(data: EnrollmentFormData): LifeLensInsights {
     resources,
     conversation,
     prompts,
+    goalTheme: goalThemeLabel[goalThemeKey],
+    themeKey: goalThemeKey,
   }
 }

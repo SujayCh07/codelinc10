@@ -6,10 +6,21 @@ import { Card } from "@/components/ui/card"
 import { CheckCircle2, Circle, Calendar, Clock } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
+import { type LifeLensInsights } from "@/components/insights-dashboard"
+
+export interface SavedMoment {
+  id: string
+  category: string
+  summary: string
+  timeline: { period: string; title: string; description: string }[]
+  timestamp: string
+  insight: LifeLensInsights
+}
+
 interface TimelineScreenProps {
-  savedInsights: any[]
+  savedInsights: SavedMoment[]
   onBack: () => void
-  onSelectInsight: (insight: any) => void
+  onSelectInsight: (insight: LifeLensInsights) => void
 }
 
 export function TimelineScreen({ savedInsights, onBack, onSelectInsight }: TimelineScreenProps) {
@@ -39,6 +50,10 @@ export function TimelineScreen({ savedInsights, onBack, onSelectInsight }: Timel
     home: "🏠",
     health: "🏥",
     education: "🎓",
+    savings: "💰",
+    protection: "🛡️",
+    retirement: "📈",
+    foundation: "🧭",
   }
 
   return (
@@ -70,7 +85,7 @@ export function TimelineScreen({ savedInsights, onBack, onSelectInsight }: Timel
             <div className="mb-6">
               <p className="text-sm font-medium mb-3 text-muted-foreground">Your Life Moments</p>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                {savedInsights.map((insight, index) => (
+                {savedInsights.map((moment, index) => (
                   <button
                     key={index}
                     onClick={() => {
@@ -84,20 +99,20 @@ export function TimelineScreen({ savedInsights, onBack, onSelectInsight }: Timel
                     }`}
                   >
                     <div className="flex items-start gap-3 mb-3">
-                      <span className="text-2xl">{categoryIcons[insight.category]}</span>
+                      <span className="text-2xl">{categoryIcons[moment.category] ?? "🧭"}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {formatDistanceToNow(new Date(insight.timestamp), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(moment.timestamp), { addSuffix: true })}
                         </div>
-                        <p className="text-sm font-medium line-clamp-2 leading-snug">{insight.input}</p>
+                        <p className="text-sm font-medium line-clamp-2 leading-snug">{moment.summary}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div className="h-full bg-primary" style={{ width: "0%" }} />
                       </div>
-                      <span className="text-xs text-muted-foreground">{insight.timeline.length} steps</span>
+                      <span className="text-xs text-muted-foreground">{moment.timeline.length} steps</span>
                     </div>
                   </button>
                 ))}
@@ -119,10 +134,21 @@ export function TimelineScreen({ savedInsights, onBack, onSelectInsight }: Timel
                       style={{ width: `${progress}%` }}
                     />
                   </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+                    <span>Viewing: {currentInsight.summary}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="touch-manipulation"
+                      onClick={() => onSelectInsight(currentInsight.insight)}
+                    >
+                      View full plan
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
-                  {timeline.map((item: any, index: number) => {
+                  {timeline.map((item, index) => {
                     const isCompleted = completedSteps.has(index)
 
                     return (

@@ -10,11 +10,11 @@ interface BottomNavProps {
 
 export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
   const navItems = [
-    { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { id: "insights", icon: LayoutDashboard, label: "Insights" },
     { id: "timeline", icon: Clock, label: "Timeline" },
     { id: "learning", icon: BookOpen, label: "Learn" },
+    { id: "faq", icon: Info, label: "FAQ" },
     { id: "profile", icon: User, label: "Profile" },
-    { id: "about", icon: Info, label: "About" },
   ]
 
   return (

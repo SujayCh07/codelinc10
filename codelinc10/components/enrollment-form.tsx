@@ -136,6 +136,49 @@ const GOAL_OPTIONS = [
 ]
 const ACCOUNT_OPTIONS = ["HSA", "FSA"]
 
+const ENROLLMENT_FIELDS: (keyof EnrollmentFormData)[] = [
+  "fullName",
+  "preferredName",
+  "employmentStart",
+  "age",
+  "maritalStatus",
+  "educationLevel",
+  "citizenship",
+  "householdCoverage",
+  "dependentCount",
+  "spouseHasSeparateInsurance",
+  "homeStatus",
+  "hasTobaccoUsers",
+  "incomeRange",
+  "financialGoals",
+  "monthlySavingsRate",
+  "milestoneFocus",
+  "healthCoverage",
+  "accountTypes",
+  "wantsLifeDisabilityInsights",
+  "contributes401k",
+  "wantsEmployerMatchHelp",
+  "riskComfort",
+  "additionalNotes",
+  "consentToFollowUp",
+  "isGuest",
+]
+const ACCOUNT_OPTIONS = ["HSA", "FSA"]
+
+function isEnrollmentMatch(a: EnrollmentFormData, b: EnrollmentFormData) {
+  return ENROLLMENT_FIELDS.every((field) => {
+    const current = a[field]
+    const incoming = b[field]
+
+    if (Array.isArray(current) && Array.isArray(incoming)) {
+      if (current.length !== incoming.length) return false
+      return current.every((value, index) => value === incoming[index])
+    }
+
+    return current === incoming
+  })
+}
+
 function OptionPill({
   active,
   children,
@@ -174,9 +217,13 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
 
   useEffect(() => {
     if (!initialData) return
-    setFormData(() => {
-      const template = initialData.isGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
-      return { ...template, ...initialData }
+    const template = initialData.isGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
+    const merged = { ...template, ...initialData }
+    setFormData((prev) => {
+      if (isEnrollmentMatch(prev, merged)) {
+        return prev
+      }
+      return merged
     })
   }, [initialData])
 
