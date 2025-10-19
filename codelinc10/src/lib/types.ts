@@ -50,6 +50,7 @@ export type GuidancePreference = "summary" | "step" | "chat"
 
 export interface EnrollmentFormData {
   userId: string | null
+  email: string
   fullName: string
   preferredName: string
   age: number | null

@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       try {
         await upsertUserProfile(userId, {
           user_id: userId,
-          user_email: prepared.fullName ? `${prepared.fullName.toLowerCase().replace(/\s+/g, '.')}@example.com` : undefined,
+          user_email: prepared.email || undefined,
           full_name: prepared.fullName,
           profile_data: prepared as unknown as Record<string, unknown>,
           is_active: "true",
