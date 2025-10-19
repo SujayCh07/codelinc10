@@ -1,3 +1,4 @@
+
 "use client"
 
 import { type ReactNode, useEffect, useMemo, useState } from "react"
@@ -85,14 +86,12 @@ const ACCOUNT_OPTIONS = ["HSA", "FSA"]
 
 function isEnrollmentMatch(a: EnrollmentFormData, b: EnrollmentFormData) {
   return ENROLLMENT_FIELDS.every((field) => {
-    const current = a[field]
-    const incoming = b[field]
-
+    const current = a[field] as any
+    const incoming = b[field] as any
     if (Array.isArray(current) && Array.isArray(incoming)) {
       if (current.length !== incoming.length) return false
       return current.every((value, index) => value === incoming[index])
     }
-
     return current === incoming
   })
 }
@@ -127,36 +126,35 @@ function OptionPill({
 }
 
 export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpdate }: EnrollmentFormProps) {
+  // -------------------- Hooks (fixed order) --------------------
   const [formData, setFormData] = useState<EnrollmentFormData>(DEFAULT_ENROLLMENT_FORM)
   const [phase, setPhase] = useState<"hr" | "steps" | "analyzing">("hr")
   const [hrStage, setHrStage] = useState<"loading" | "confirm">("loading")
   const [currentStep, setCurrentStep] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
+  // Restore/merge initial data
   useEffect(() => {
     if (!initialData) return
     const template = initialData.isGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
-    const merged = { ...template, ...initialData }
-    setFormData((prev) => {
-      if (isEnrollmentMatch(prev, merged)) {
-        return prev
-      }
-      return merged
-    })
+    const merged = { ...template, ...initialData } as EnrollmentFormData
+    setFormData((prev) => (isEnrollmentMatch(prev, merged) ? prev : merged))
   }, [initialData])
 
+  // Simulated HR fetch
   useEffect(() => {
     if (phase === "hr" && hrStage === "loading") {
       const timer = setTimeout(() => setHrStage("confirm"), 1200)
       return () => clearTimeout(timer)
     }
-    return undefined
   }, [phase, hrStage])
 
+  // Bubble up updates
   useEffect(() => {
     onUpdate?.(formData)
   }, [formData, onUpdate])
 
+  // Helpers
   const updateForm = (values: Partial<EnrollmentFormData>) => {
     setFormData((prev) => ({ ...prev, ...values }))
   }
@@ -165,20 +163,21 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
     () => ({
       toggleOption: (field, value) => {
         setFormData((prev) => {
-          const current = prev[field]
+          const current = prev[field] as unknown
           if (!Array.isArray(current)) return prev
-          const exists = current.includes(value)
-          const next = exists ? current.filter((item) => item !== value) : [...current, value]
-          return { ...prev, [field]: next }
+          const exists = (current as string[]).includes(value)
+          const next = exists ? (current as string[]).filter((item) => item !== value) : [...(current as string[]), value]
+          return { ...prev, [field]: next } as EnrollmentFormData
         })
       },
       toggleBoolean: (field, value) => {
-        setFormData((prev) => ({ ...prev, [field]: value }))
+        setFormData((prev) => ({ ...prev, [field]: value } as EnrollmentFormData))
       },
     }),
     []
   )
 
+  // Steps
   const steps: StepDefinition[] = useMemo(
     () => [
       {
@@ -605,8 +604,10 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
     []
   )
 
+  // Progress
   const progress = ((currentStep + 1) / steps.length) * 100
 
+  // Navigation handlers
   const handleNext = () => {
     const step = steps[currentStep]
     const validation = step.validate?.(formData) ?? null
@@ -635,6 +636,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
     setCurrentStep((value) => Math.max(value - 1, 0))
   }
 
+  // -------------------- Renders (after hooks) --------------------
   if (phase === "hr") {
     return (
       <div className="min-h-screen bg-[#F7F4F2] text-[#2A1A1A]">
@@ -832,4 +834,3 @@ function riskComfortLabel(level: number) {
       return "Balanced"
   }
 }
-
