@@ -2,27 +2,23 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import {
   ArrowRight,
   LogIn,
   UserPlus,
-  Play,
   ShieldCheck,
   Clock,
   Stars,
   Sparkles,
-  CheckCircle2,
+  X,
 } from "lucide-react"
 
 interface LandingScreenProps {
   onStart: () => void
-  hasExistingInsights?: boolean
   onViewInsights?: () => void
   quizCompleted?: boolean
-  onLogin?: () => void
-  onSignup?: () => void
   onDemo?: () => void
 }
 
@@ -34,18 +30,20 @@ const SPOTLIGHTS = [
 
 export default function LandingScreen({
   onStart,
-  hasExistingInsights,
   onViewInsights,
   quizCompleted,
-  onLogin,
-  onSignup,
   onDemo,
 }: LandingScreenProps) {
-  const [activeTab] = useState<"plans" | "costs" | "checklist">("plans")
+  const [modal, setModal] = useState<"login" | "signup" | null>(null)
+  const [devMode, setDevMode] = useState(false)
+
+  const handleFakeSubmit = () => {
+    setTimeout(() => setModal(null), 1200)
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-[#1E0D0E]">
-      {/* Background gradient */}
+      {/* Subtle gradient */}
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[380px] bg-gradient-to-b from-[#FDF4EF] via-[#F8E3DC] to-transparent" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-20 pt-6 sm:px-8">
@@ -57,35 +55,40 @@ export default function LandingScreen({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <span className="hidden text-xs font-semibold uppercase tracking-[0.35em] text-[#7F1527]/80 md:block">
-              Lincoln Financial · FinMate
-            </span>
-          </motion.div>
+            <span className="hidden text-s font-semibold uppercase tracking-[0.35em] text-[#7F1527]/80 md:block">
+  Lincoln Financial ·{" "}
+  <span className="text-[#A41E34] drop-shadow-[0_0_6px_rgba(164,30,52,0.35)] font-extrabold">
+    FinMate
+  </span>
+</span>
 
+          </motion.div>
           <motion.nav
             className="flex items-center gap-2 text-sm"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
           >
-            {hasExistingInsights && onViewInsights && (
-              <Button
-                onClick={onViewInsights}
-                variant="outline"
-                className="rounded-full border-[#E7DADA] bg-white px-4 py-2 text-sm font-semibold text-[#7F1527] hover:bg-[#F9EDEA]"
-              >
-                My Plan
-              </Button>
-            )}
+            {/* Tiny invisible dev button */}
+            <button
+              onClick={() => {
+                setDevMode(true)
+                onViewInsights?.()
+              }}
+              className="opacity-0 absolute right-0 top-0 text-[8px] text-[#7F1527]"
+            >
+              Dev
+            </button>
+
             <Button
-              onClick={onLogin}
+              onClick={() => setModal("login")}
               variant="ghost"
               className="rounded-full px-4 py-2 text-sm font-semibold text-[#7F1527] hover:bg-[#F9EDEA]"
             >
               <LogIn className="mr-2 h-4 w-4" /> Log in
             </Button>
             <Button
-              onClick={onSignup}
+              onClick={() => setModal("signup")}
               className="rounded-full bg-[#A41E34] px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-[#A41E34]/20 transition hover:bg-[#7F1527]"
             >
               <UserPlus className="mr-2 h-4 w-4" /> Sign up
@@ -93,9 +96,8 @@ export default function LandingScreen({
           </motion.nav>
         </header>
 
-        {/* Hero Section */}
+        {/* Hero */}
         <main className="flex flex-col items-center gap-10 py-8 md:grid md:grid-cols-2 md:gap-12 md:py-14">
-          {/* Left: Hero text */}
           <div className="w-full max-w-xl md:order-1 md:justify-self-start">
             <motion.p
               className="text-xs font-semibold uppercase tracking-[0.5em] text-[#A41E34]/80"
@@ -119,11 +121,10 @@ export default function LandingScreen({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.6 }}
             >
-              Get clear, actionable guidance on benefits, savings, and financial protection tailored to your life and
-              goals.
+              Get clear, actionable guidance on benefits, savings, and financial protection tailored to your life and goals.
             </motion.p>
 
-            {/* CTAs */}
+            {/* Buttons */}
             <motion.div
               className="mt-6 flex flex-col gap-3 sm:flex-row"
               initial={{ opacity: 0, y: 12 }}
@@ -162,7 +163,7 @@ export default function LandingScreen({
             </div>
           </div>
 
-          {/* Right: Preview */}
+          {/* Right Preview */}
           <motion.div
             className="w-full md:order-2 md:justify-self-end mt-2 md:mt-0"
             initial={{ opacity: 0, y: 20 }}
@@ -170,7 +171,6 @@ export default function LandingScreen({
             transition={{ duration: 0.6 }}
           >
             <div className="relative mx-auto w-full max-w-[540px] overflow-hidden rounded-[28px] border border-[#E7DADA] bg-white shadow-xl">
-              {/* Browser header */}
               <div className="flex items-center justify-between border-b border-[#F0E6E7] px-5 py-3">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#F56565]" />
@@ -182,68 +182,35 @@ export default function LandingScreen({
               </div>
 
               <div className="grid gap-4 p-5 sm:p-6">
-                {/* Highlights */}
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  {[
-                    { title: "Smarter choices", body: "AI compares plans & costs" },
-                    { title: "Understand spend", body: "Clear yearly projections" },
-                    { title: "Enroll faster", body: "Actionable checklist" },
-                  ].map((f) => (
-                    <div
-                      key={f.title}
-                      className="rounded-2xl border border-[#E7DADA] bg-white p-4 shadow-sm"
-                    >
-                      <p className="text-sm font-semibold text-[#1E0D0E]">{f.title}</p>
-                      <p className="mt-1 text-xs text-[#4D3B3B]">{f.body}</p>
-                    </div>
-                  ))}
-                </div>
+  {[
+    {
+      title: "Compare health plans",
+      body: "Side-by-side analysis of PPO, HMO, and HDHP options — premiums, deductibles, and out-of-pocket costs at a glance.",
+    },
+    {
+      title: "Evaluate dental coverage",
+      body: "See what each plan includes: preventive care, orthodontics, and annual limits, with clear cost breakdowns.",
+    },
+    {
+      title: "Understand vision benefits",
+      body: "Compare copays, eyewear allowances, and network coverage for you and your dependents.",
+    },
+  ].map((f) => (
+    <div
+      key={f.title}
+      className="rounded-2xl border border-[#E7DADA] bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+    >
+      <p className="text-sm font-semibold text-[#1E0D0E]">{f.title}</p>
+      <p className="mt-1 text-xs text-[#4D3B3B] leading-relaxed">{f.body}</p>
+    </div>
+  ))}
+</div>
 
-                {/* Plans mock */}
-                <div className="rounded-2xl border border-[#E7DADA] bg-[#FBF7F6] p-4 sm:p-5">
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {["Plans", "Costs", "Checklist"].map((t) => (
-                      <span
-                        key={t}
-                        className="inline-flex items-center rounded-full border border-[#E3D8D5] bg-white px-3 py-1.5 text-xs font-semibold text-[#7F1527]"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-
-                  {[
-                    {
-                      title: "HSA-eligible PPO vs HDHP",
-                      meta: "Side-by-side premiums, deductibles, OOP max",
-                    },
-                    {
-                      title: "Projected annual spend",
-                      meta: "Includes employer HSA match & tax savings",
-                    },
-                    {
-                      title: "Your next steps",
-                      meta: "Verify dependents • Tobacco attestation • Beneficiaries",
-                    },
-                  ].map((row) => (
-                    <div
-                      key={row.title}
-                      className="flex items-start justify-between rounded-xl border border-[#F0E6E7] bg-white px-4 py-3 mb-2"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-[#1E0D0E]">{row.title}</p>
-                        <p className="text-xs text-[#7F1527]">{row.meta}</p>
-                      </div>
-                      <CheckCircle2 className="mt-1 h-4 w-4 flex-none text-[#A41E34]" />
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </motion.div>
         </main>
 
-        {/* Desktop stats */}
+        {/* Stats desktop */}
         <section className="mt-6 hidden md:block">
           <div className="grid grid-cols-3 gap-4">
             {SPOTLIGHTS.map(({ stat, label, Icon }) => (
@@ -277,6 +244,72 @@ export default function LandingScreen({
           </div>
         </footer>
       </div>
+
+      {/* Fake Login / Signup Modal */}
+      <AnimatePresence>
+        {modal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-sm rounded-3xl border border-[#E7DADA] bg-white p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold text-[#1E0D0E]">
+                  {modal === "login" ? "Log in to FinMate" : "Create an Account"}
+                </h2>
+                <button onClick={() => setModal(null)}>
+                  <X className="h-5 w-5 text-[#7F1527]" />
+                </button>
+              </div>
+              <p className="text-sm text-[#4D3B3B] mb-4">
+                {modal === "login"
+                  ? "Access your personalized insights instantly."
+                  : "Join FinMate and start building your plan."}
+              </p>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleFakeSubmit()
+                }}
+                className="flex flex-col gap-3"
+              >
+                {modal === "signup" && (
+                  <input
+                    required
+                    type="text"
+                    placeholder="Full Name"
+                    className="rounded-xl border border-[#E7DADA] bg-[#FBF7F6] px-4 py-3 text-sm"
+                  />
+                )}
+                <input
+                  required
+                  type="email"
+                  placeholder="Email"
+                  className="rounded-xl border border-[#E7DADA] bg-[#FBF7F6] px-4 py-3 text-sm"
+                />
+                <input
+                  required
+                  type="password"
+                  placeholder="Password"
+                  className="rounded-xl border border-[#E7DADA] bg-[#FBF7F6] px-4 py-3 text-sm"
+                />
+                <Button type="submit" className="mt-2 rounded-full bg-[#A41E34] py-3 text-sm font-semibold text-white hover:bg-[#7F1527]">
+                  {modal === "login" ? "Log In" : "Sign Up"}
+                </Button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

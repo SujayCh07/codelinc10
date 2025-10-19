@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { askFinMate } from "@/lib/chat"
+import { askLifeLens } from "@/lib/chat"
 import { Loader2, X } from "lucide-react"
 
 type Role = "user" | "assistant" | "error" | "system"
@@ -54,7 +54,7 @@ export function ChatModal({
     if (!textParam) { setMessages(m => [...m, { id: crypto.randomUUID(), role:"user", ts: Date.now(), content: text }]); setInput("") }
     setSending(true)
     try {
-      const payload = await askFinMate({ prompt: text, userId, sessionId: sid, context: { ...(baseContext||{}), ...(extraContext||{}) } })
+      const payload = await askLifeLens({ prompt: text, userId, sessionId: sid, context: { ...(baseContext||{}), ...(extraContext||{}) } })
       if ("error" in payload) setMessages(m => [...m, { id: crypto.randomUUID(), role:"error", ts: Date.now(), content: `Error: ${payload.error}` }])
       else setMessages(m => [...m, { id: crypto.randomUUID(), role:"assistant", ts: Date.now(), content: payload.message || "(no content)", provider: payload.provider }])
     } catch (e:any) {
