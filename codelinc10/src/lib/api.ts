@@ -150,7 +150,7 @@ export async function requestPlans(
   }
 }
 
-export async function sendChatMessage(
+async function postChatMessage(
   userId: string,
   message: string
 ): Promise<ApiResult<{ reply: ChatEntry }>> {
@@ -172,6 +172,20 @@ export async function sendChatMessage(
     console.error("Chat API error", error)
     return { error: error instanceof Error ? error.message : "Unknown error" }
   }
+}
+
+export async function sendChatMessage(
+  userId: string,
+  message: string
+): Promise<ApiResult<{ reply: ChatEntry }>> {
+  return postChatMessage(userId, message)
+}
+
+export async function sendLearningMessage(
+  userId: string,
+  message: string
+): Promise<ApiResult<{ reply: ChatEntry }>> {
+  return postChatMessage(`${userId}::learn`, message)
 }
 
 export async function sendPlanReport(
