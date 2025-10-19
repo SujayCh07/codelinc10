@@ -215,6 +215,10 @@ export function initializeQuizState(template: EnrollmentFormData): EnrollmentFor
     hydrated.dependents = 0
   }
 
+  if (hydrated.coveragePreference === "self") {
+    hydrated.tobaccoUse = null
+  }
+
   if (!(["married", "partnered"] as EnrollmentFormData["maritalStatus"][]).includes(hydrated.maritalStatus)) {
     hydrated.spouseHasSeparateInsurance = null
     hydrated.partnerCoverageStatus = "not-applicable"
