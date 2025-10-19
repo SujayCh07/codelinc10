@@ -13,3 +13,6 @@ export async function askLifeLens(input: ChatPayload): Promise<ChatResponse> {
   const t = await res.text()
   return res.ok ? ({ message: t, provider:"bedrock" } as any) : ({ error: t || "upstream_error", status: res.status } as any)
 }
+
+// Alias for compatibility
+export const askFinMate = askLifeLens
