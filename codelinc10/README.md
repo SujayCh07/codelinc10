@@ -11,7 +11,16 @@ LifeLens is a Next.js 15 application that delivers an AI-assisted financial plan
 - **Framer Motion transitions** across screens with Tailwind 4 styling, pastel theming, and glassmorphism accents.
 - **Support dock** and bottom navigation for quick access to primary workflows.
 - **Type-safe data models** for forms, insights, plans, chat, and profile snapshots.
-- **Server routes** for user persistence, plan generation, chat replies, and PDF report stubs (ready for Supabase/Bedrock wiring).
+- **Server routes** for user persistence, plan generation, chat replies, and authentication with DynamoDB and Bedrock.
+
+## Authentication
+
+This application now includes a makeshift authentication system using AWS DynamoDB. See [AUTH_SETUP.md](./AUTH_SETUP.md) for detailed configuration instructions.
+
+- Users can sign in with their email (username) and user ID (password)
+- Profile data is saved to DynamoDB for persistence
+- Amazon Bedrock Claude AI generates personalized insights
+- Works with or without AWS credentials (falls back to in-memory storage)
 
 ## Tech Stack
 
@@ -73,4 +82,23 @@ Vitest is configured with stubbed browser APIs so the tests execute in a Node en
 
 ## Environment Variables
 
-Copy `.env.local.example` to `.env.local` and supply keys for optional integrations such as Supabase or OpenAI.
+The application requires AWS credentials for full functionality. Create a `.env.local` file with:
+
+```bash
+# AWS Configuration for DynamoDB
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+
+# DynamoDB Table Names
+DYNAMODB_USER_PROFILES_TABLE=user_profiles
+DYNAMODB_CHAT_SESSIONS_TABLE=user_chat_sessions
+
+# Amazon Bedrock Configuration
+BEDROCK_REGION=us-east-1
+BEDROCK_MODEL_ID=anthropic.claude-3-sonnet-20240229-v1:0
+```
+
+See [AUTH_SETUP.md](./AUTH_SETUP.md) for complete setup instructions.
+
+**Note:** The application works without AWS credentials but will use in-memory storage and local insights generation instead of DynamoDB and Bedrock.
