@@ -1,9 +1,9 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Sora, Inter } from "next/font/google"
+import { Inter, Sora } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { UserProvider } from "@/lib/user-context"
-import "./globals.css"
+import "@/styles/globals.css"
 
 const sora = Sora({
   subsets: ["latin"],

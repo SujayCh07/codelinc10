@@ -3,12 +3,13 @@
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Play } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
 interface LandingScreenProps {
-  onStart: (isGuest: boolean) => void
+  onStart: () => void
   hasExistingInsights?: boolean
   onViewInsights?: () => void
+  quizCompleted?: boolean
 }
 
 const SPOTLIGHTS = [
@@ -26,13 +27,13 @@ const SPOTLIGHTS = [
   },
 ]
 
-export function LandingScreen({ onStart, hasExistingInsights, onViewInsights }: LandingScreenProps) {
+export function LandingScreen({ onStart, hasExistingInsights, onViewInsights, quizCompleted }: LandingScreenProps) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F7F4F2] text-[#2A1A1A]">
-      <div className="absolute inset-x-0 top-0 h-[360px] bg-gradient-to-br from-[#A41E34] via-[#B8342B] to-[#D94E35]" />
-      <div className="absolute inset-x-0 top-[280px] h-[420px] rounded-[160px] bg-gradient-to-br from-[#F8E3DC] via-[#FDF4EF] to-transparent blur-3xl" />
+      <div className="absolute inset-x-0 top-0 h-[320px] bg-gradient-to-br from-[#A41E34] via-[#B8342B] to-[#D94E35]" />
+      <div className="absolute inset-x-0 top-[240px] h-[360px] rounded-[120px] bg-gradient-to-br from-[#F8E3DC] via-[#FDF4EF] to-transparent blur-3xl" />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 pb-16 pt-6 sm:px-10">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-4xl flex-col px-5 pb-16 pt-6 sm:px-8">
         <header className="flex items-center justify-between text-white">
           <motion.div
             className="flex items-center gap-3"
@@ -61,17 +62,17 @@ export function LandingScreen({ onStart, hasExistingInsights, onViewInsights }: 
               </Button>
             )}
             <Button
-              onClick={() => onStart(false)}
+              onClick={onStart}
               className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-[#A41E34] shadow-lg shadow-[#A41E34]/20 transition hover:bg-[#F9EDEA]"
             >
-              Get Started
+              {quizCompleted ? "View my plans" : "Get Started"}
             </Button>
           </motion.nav>
         </header>
 
         <main className="flex flex-1 flex-col justify-center gap-12 py-12">
           <div className="flex items-center justify-center">
-            <div className="max-w-2xl space-y-8 rounded-[36px] bg-white/95 p-8 text-[#2A1A1A] shadow-2xl shadow-[#A41E34]/10 backdrop-blur">
+            <div className="max-w-2xl space-y-8 rounded-[32px] bg-white/95 p-8 text-[#2A1A1A] shadow-2xl shadow-[#A41E34]/10 backdrop-blur">
               <motion.p
                 className="text-xs font-semibold uppercase tracking-[0.5em] text-[#A41E34]/70"
                 initial={{ opacity: 0, y: 12 }}
@@ -105,23 +106,24 @@ export function LandingScreen({ onStart, hasExistingInsights, onViewInsights }: 
                 <Button
                   size="lg"
                   className="w-full rounded-full bg-[#A41E34] py-6 text-base font-semibold text-white shadow-lg shadow-[#A41E34]/25 transition hover:bg-[#7F1527] sm:w-auto sm:px-10"
-                  onClick={() => onStart(false)}
+                  onClick={onStart}
                 >
-                  Start now
+                  {quizCompleted ? "Open insights" : "Start now"}
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full rounded-full border-[#A41E34]/20 bg-white/70 py-6 text-base font-semibold text-[#A41E34] backdrop-blur transition hover:bg-[#F9EDEA] sm:w-auto sm:px-10"
-                  onClick={() => onStart(true)}
-                >
-                  <Play className="mr-2 h-5 w-5" /> Try a demo
                 </Button>
               </motion.div>
             </div>
 
-
+            {quizCompleted && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="mt-6 w-full max-w-2xl rounded-3xl border border-white/30 bg-white/20 p-4 text-center text-sm font-medium text-white backdrop-blur"
+              >
+                You already completed the LifeLens quiz. Jump back into your insights any time to refresh guidance.
+              </motion.div>
+            )}
           </div>
         </main>
 

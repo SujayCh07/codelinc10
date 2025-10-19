@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LifeLens Next.js App
+
+LifeLens is a Next.js 15 application that delivers an AI-assisted financial planning experience. It features an enrollment journey, personalized insights, a learning hub, timeline tracking, and an always-on LifeLens support dock.
+
+## Features
+
+- **Dynamic quiz flow** with single-question cards, progress tracking, and hydration-safe persistence.
+- **Multi-screen app router experience** for landing, insights dashboard, timeline, learning hub, FAQ, and profile.
+- **Persistent local caching** of enrollment responses, insights, saved moments, chat history, and profile metadata with hydration-safe utilities.
+- **AI-inspired chat panel** that calls Next.js API routes for Claude-style replies with “thinking” states and context-aware prompts.
+- **Framer Motion transitions** across screens with Tailwind 4 styling, pastel theming, and glassmorphism accents.
+- **Support dock** and bottom navigation for quick access to primary workflows.
+- **Type-safe data models** for forms, insights, plans, chat, and profile snapshots.
+- **Server routes** for user persistence, plan generation, chat replies, and PDF report stubs (ready for Supabase/Bedrock wiring).
+
+## Tech Stack
+
+- Next.js 15 with the App Router and TypeScript
+- Tailwind CSS 4 with custom design tokens
+- Framer Motion animations
+- ESLint & Prettier with import sorting
+- Vitest for unit tests
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+   > If installation fails in restricted environments, re-run once you have registry access. The project requires the dev dependencies listed in `package.json`.
+
+2. Create a `.env.local` file (or copy `.env.local.example`) for any API keys.
+
+3. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) to view the app.
+
+## Useful Scripts
+
+| Script            | Description                                |
+| ----------------- | ------------------------------------------ |
+| `npm run dev`     | Start the development server               |
+| `npm run build`   | Build the production bundle                |
+| `npm run start`   | Run the production build                   |
+| `npm run lint`    | Run ESLint (Next.js rules)                 |
+| `npm run lint:fix`| Lint with automatic fixes                  |
+| `npm run typecheck` | Type-check the project with `tsc --noEmit` |
+| `npm run format`  | Check Prettier formatting                  |
+| `npm run format:write` | Format source files                   |
+| `npm run test`    | Execute Vitest unit tests                  |
+
+## Testing
+
+Unit tests cover the insight builder, chat reply logic, and local storage helpers. Run them with:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Vitest is configured with stubbed browser APIs so the tests execute in a Node environment.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Vercel is recommended for zero-config deployments.
+- Configure required environment variables in the Vercel dashboard.
+- The CI workflow (`.github/workflows/ci.yml`) installs dependencies, runs linting, type-checks, and unit tests on pushes and pull requests.
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Copy `.env.local.example` to `.env.local` and supply keys for optional integrations such as Supabase or OpenAI.
