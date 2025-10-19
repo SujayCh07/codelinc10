@@ -173,12 +173,17 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!initialData) return
-    setFormData(() => {
-      const template = initialData.isGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
-      return { ...template, ...initialData }
-    })
-  }, [initialData])
+  if (initialData && Object.keys(initialData).length > 0) {
+    setFormData(prev => ({
+      ...prev,
+      ...initialData,
+      isGuest: initialData.isGuest ?? prev.isGuest,
+    }))
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []) // 👈 run once, ignore re-renders
+
+
 
   useEffect(() => {
     if (phase === "hr" && hrStage === "loading") {
