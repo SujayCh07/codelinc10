@@ -1,8 +1,9 @@
 "use client"
 
-import { ExternalLink, MessageCircle, RefreshCw, Send } from "lucide-react"
+import { AlertCircle, ExternalLink, MessageCircle, RefreshCw, Send } from "lucide-react"
 
 import { openFinMateChat } from "@/components/chat-bus"
+import { InsightsVisualization } from "@/components/insights-visualization"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import type { FinMateInsights } from "@/lib/types"
@@ -13,6 +14,7 @@ interface InsightsDashboardProps {
   onRegenerate: () => void
   onSendReport: () => void
   loading?: boolean
+  usingPlaceholder?: boolean
 }
 
 export function InsightsDashboard({
@@ -21,11 +23,22 @@ export function InsightsDashboard({
   onRegenerate,
   onSendReport,
   loading,
+  usingPlaceholder = false,
 }: InsightsDashboardProps) {
   const topPriority = insights.priorityBenefits[0]
 
   return (
     <div className="relative min-h-screen bg-[#F7F4F2] pb-32 text-[#2A1A1A]">
+      {usingPlaceholder && (
+        <div className="sticky top-0 z-50 border-b border-[#E2D5D7] bg-[#FFF9E6] px-6 py-3">
+          <div className="mx-auto flex w-full max-w-5xl items-center gap-2 text-sm">
+            <AlertCircle className="h-4 w-4 text-[#A41E34]" />
+            <span className="font-medium text-[#4D3B3B]">
+              * Using placeholder data. Add your profile information to see personalized insights.
+            </span>
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 z-40 border-b border-[#E2D5D7] bg-[#F7F4F2]/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
@@ -157,6 +170,14 @@ export function InsightsDashboard({
             Email my priority list to HR
             <Send className="ml-2 h-4 w-4" />
           </Button>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#2A1A1A]">Financial Overview</h2>
+            <span className="text-xs uppercase tracking-[0.3em] text-[#7F1527]">Visual insights</span>
+          </div>
+          <InsightsVisualization data={{}} />
         </section>
 
         <section className="space-y-4">

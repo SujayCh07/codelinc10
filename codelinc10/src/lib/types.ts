@@ -181,3 +181,6 @@ export interface ProfileSnapshot {
   coverageComplexity: EnrollmentFormData["derived"]["coverageComplexity"]
   createdAt: string
 }
+
+// Alias for compatibility with component naming conventions
+export type FinMateInsights = LifeLensInsights

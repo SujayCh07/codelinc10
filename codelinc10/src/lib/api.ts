@@ -150,6 +150,38 @@ export async function requestPlans(
   }
 }
 
+export async function fetchInsights(
+  userId: string
+): Promise<ApiResult<{ insights: LifeLensInsights; usingPlaceholder: boolean }>> {
+  try {
+    const response = await fetch("/api/insights", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, useDatabase: true }),
+    })
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}))
+      return { error: errorBody.error ?? "Unable to fetch insights" }
+    }
+
+    const body = (await response.json()) as {
+      insights: LifeLensInsights
+      usingPlaceholder: boolean
+      dataSource: string
+    }
+    return {
+      data: {
+        insights: coerceRemotePlans(body.insights),
+        usingPlaceholder: body.usingPlaceholder,
+      },
+    }
+  } catch (error) {
+    console.error("Failed to fetch insights", error)
+    return { error: error instanceof Error ? error.message : "Unknown error" }
+  }
+}
+
 async function postChatMessage(
   userId: string,
   message: string
