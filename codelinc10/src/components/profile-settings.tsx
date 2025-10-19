@@ -1,14 +1,16 @@
 "use client"
 
+import { useState } from "react"
+import { Calendar, Briefcase, FileDown, RotateCcw, Sparkles, Trash2, User } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { User, FileDown, RotateCcw, Trash2, Sparkles, Calendar, Briefcase } from "lucide-react"
-import { useState } from "react"
+import { Switch } from "@/components/ui/switch"
+import type { ProfileSnapshot } from "@/lib/types"
 
 interface ProfileSettingsProps {
-  profile: any
+  profile: ProfileSnapshot
   onClearData: () => void
   onReassess: () => void
 }
