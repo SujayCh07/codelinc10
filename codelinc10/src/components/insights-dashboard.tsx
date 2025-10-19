@@ -1,30 +1,10 @@
 "use client"
 
-import {
-  ArrowRight,
-  BookOpen,
-  MessageCircle,
-  RefreshCw,
-  Sparkles,
-} from "lucide-react"
+import { ArrowRight, BookOpen, MessageCircle, RefreshCw, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-
-export interface LifeLensInsights {
-  ownerName: string
-  persona: string
-  statement: string
-  priorities: { title: string; description: string }[]
-  tips: { title: string; description: string; icon: string }[]
-  timeline: { period: string; title: string; description: string }[]
-  focusGoal: string
-  resources: { title: string; description: string; url: string }[]
-  conversation: { speaker: "LifeLens" | "You"; message: string }[]
-  prompts: string[]
-  goalTheme?: string
-  themeKey?: string
-}
+import type { LifeLensInsights } from "@/lib/types"
 
 interface InsightsDashboardProps {
   insights: LifeLensInsights

@@ -2,99 +2,18 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
+import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
-import { Check, ChevronLeft, ChevronRight, Loader2, Sparkles } from "lucide-react"
-
+import { Textarea } from "@/components/ui/textarea"
+import { DEFAULT_ENROLLMENT_FORM, DEMO_ENROLLMENT_FORM } from "@/lib/enrollment"
+import type { EnrollmentFormData } from "@/lib/types"
 import { cn } from "@/lib/utils"
-
-export interface EnrollmentFormData {
-  fullName: string
-  preferredName: string
-  employmentStart: string
-  age: number
-  maritalStatus: string
-  educationLevel: string
-  citizenship: string
-  householdCoverage: string
-  dependentCount: number
-  spouseHasSeparateInsurance: boolean | null
-  homeStatus: string
-  hasTobaccoUsers: boolean | null
-  incomeRange: string
-  financialGoals: string[]
-  monthlySavingsRate: number
-  milestoneFocus: string
-  healthCoverage: boolean | null
-  accountTypes: string[]
-  wantsLifeDisabilityInsights: boolean | null
-  contributes401k: boolean | null
-  wantsEmployerMatchHelp: boolean | null
-  riskComfort: number
-  additionalNotes: string
-  consentToFollowUp: boolean
-  isGuest: boolean
-}
-
-export const DEFAULT_ENROLLMENT_FORM: EnrollmentFormData = {
-  fullName: "Sujay Chava",
-  preferredName: "Sujay",
-  employmentStart: "2023",
-  age: 32,
-  maritalStatus: "Single",
-  educationLevel: "Bachelor's",
-  citizenship: "U.S. citizen",
-  householdCoverage: "You only",
-  dependentCount: 0,
-  spouseHasSeparateInsurance: null,
-  homeStatus: "Rent",
-  hasTobaccoUsers: null,
-  incomeRange: "$80k-$100k",
-  financialGoals: ["Increase savings"],
-  monthlySavingsRate: 8,
-  milestoneFocus: "Plan for a home purchase",
-  healthCoverage: true,
-  accountTypes: ["HSA"],
-  wantsLifeDisabilityInsights: true,
-  contributes401k: true,
-  wantsEmployerMatchHelp: true,
-  riskComfort: 3,
-  additionalNotes: "",
-  consentToFollowUp: false,
-  isGuest: false,
-}
-
-export const DEMO_ENROLLMENT_FORM: EnrollmentFormData = {
-  ...DEFAULT_ENROLLMENT_FORM,
-  fullName: "Jordan Demo",
-  preferredName: "Jordan",
-  employmentStart: "2021",
-  age: 29,
-  maritalStatus: "Married",
-  householdCoverage: "You + partner",
-  dependentCount: 1,
-  spouseHasSeparateInsurance: false,
-  homeStatus: "Rent",
-  hasTobaccoUsers: false,
-  incomeRange: "$100k-$150k",
-  financialGoals: ["Buy a home", "Plan for retirement"],
-  monthlySavingsRate: 12,
-  milestoneFocus: "Build a down payment fund",
-  healthCoverage: true,
-  accountTypes: ["HSA", "FSA"],
-  wantsLifeDisabilityInsights: true,
-  contributes401k: true,
-  wantsEmployerMatchHelp: true,
-  riskComfort: 4,
-  additionalNotes: "",
-  consentToFollowUp: true,
-  isGuest: true,
-}
 
 interface EnrollmentFormProps {
   onComplete: (data: EnrollmentFormData) => void

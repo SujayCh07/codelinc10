@@ -1,21 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { formatDistanceToNow } from "date-fns"
+import { Calendar, CheckCircle2, Circle, Clock } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { CheckCircle2, Circle, Calendar, Clock } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
-
-import { type LifeLensInsights } from "@/components/insights-dashboard"
-
-export interface SavedMoment {
-  id: string
-  category: string
-  summary: string
-  timeline: { period: string; title: string; description: string }[]
-  timestamp: string
-  insight: LifeLensInsights
-}
+import type { LifeLensInsights, SavedMoment } from "@/lib/types"
 
 interface TimelineScreenProps {
   savedInsights: SavedMoment[]
