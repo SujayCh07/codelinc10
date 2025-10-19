@@ -4,25 +4,25 @@ import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { BottomNav } from "@/components/bottom-nav"
-import { ChatPanel } from "@/components/chat-panel"
 import { DynamicQuiz } from "@/components/DynamicQuiz"
 import { FaqScreen } from "@/components/faq-screen"
 import { InsightsDashboard } from "@/components/insights-dashboard"
 import { LandingScreen } from "@/components/landing-screen"
+import { ChatScreen } from "@/components/chat-screen"
 import { ProfileSettings } from "@/components/profile-settings"
-import { SupportDock } from "@/components/support-dock"
 import { TimelineScreen } from "@/components/timeline-screen"
-import { requestPlans, sendChatMessage, sendPlanReport, upsertUser } from "@/lib/api"
+import { requestPlans, sendChatMessage, sendLearningMessage, sendPlanReport, upsertUser } from "@/lib/api"
 import {
   CHAT_STORAGE_KEY,
   DEFAULT_ENROLLMENT_FORM,
   FORM_STORAGE_KEY,
   INSIGHTS_STORAGE_KEY,
+  LEARN_CHAT_STORAGE_KEY,
   MOMENTS_STORAGE_KEY,
   PROFILE_CREATED_KEY,
 } from "@/lib/enrollment"
 import { useHydrated } from "@/lib/hooks/useHydrated"
-import { buildInsights, mergeChatHistory, withDerivedMetrics } from "@/lib/insights"
+import { buildInsights, buildPriorityBenefits, mergeChatHistory, withDerivedMetrics } from "@/lib/insights"
 import {
   removeStorage,
   readStorage,
@@ -33,7 +33,7 @@ import {
 import type {
   ChatEntry,
   EnrollmentFormData,
-  LifeLensInsights,
+  FinMateInsights,
   ProfileSnapshot,
   SavedMoment,
   ScreenKey,
@@ -41,17 +41,64 @@ import type {
 import { useUser } from "@/lib/user-context"
 import { cn } from "@/lib/utils"
 
+function createFreshForm(): EnrollmentFormData {
+  return withDerivedMetrics({
+    ...DEFAULT_ENROLLMENT_FORM,
+    createdAt: new Date().toISOString(),
+  })
+}
+
+function buildLearnWelcomeMessage(): ChatEntry {
+  return {
+    speaker: "FinMate",
+    message:
+      "Welcome to FinMate Learn! Ask about insurance basics, budgeting for benefits, or any financial literacy topic you want to explore.",
+    timestamp: new Date().toISOString(),
+    status: "final",
+  }
+}
+
 export default function Home() {
   const { user, isLoading: userLoading, login, logout } = useUser()
-  const [currentScreen, setCurrentScreen] = useState<ScreenKey>("landing")
-  const [formData, setFormData] = useState<EnrollmentFormData | null>(null)
-  const [insights, setInsights] = useState<LifeLensInsights | null>(null)
+  const [currentScreen, setCurrentScreen] = useState<ScreenKey>(() => "landing")
+  const [formData, setFormData] = useState<EnrollmentFormData | null>(() => createFreshForm())
+  const [insights, setInsights] = useState<FinMateInsights | null>(null)
   const [savedMoments, setSavedMoments] = useState<SavedMoment[]>([])
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
+  const [learnChatHistory, setLearnChatHistory] = useState<ChatEntry[]>([])
+  const [pendingChatPrompt, setPendingChatPrompt] = useState<string | null>(null)
   const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
   const [isGenerating, setIsGenerating] = useState(false)
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false)
   const isHydrated = useHydrated()
+  const learnQuickPrompts = useMemo(
+    () => [
+      "What's the difference between an HSA and FSA?",
+      "How do deductibles and out-of-pocket maximums work?",
+      "How can I budget for my benefits each month?",
+    ],
+    []
+  )
+  const learnResources = useMemo(
+    () => [
+      {
+        title: "Benefit basics 101",
+        description: "Understand premiums, deductibles, and coinsurance in plain language.",
+        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources",
+      },
+      {
+        title: "Budgeting for your benefits",
+        description: "Explore how to set a monthly benefits budget that supports your goals.",
+        url: "https://www.lincolnfinancial.com/public/individuals/plan-for-life-events",
+      },
+      {
+        title: "Health accounts explained",
+        description: "Compare HSAs and FSAs so you can decide which account fits best.",
+        url: "https://www.lincolnfinancial.com/public/individuals/workplace-benefits/resources/health-savings-accounts",
+      },
+    ],
+    []
+  )
 
   useEffect(() => {
     if (!isHydrated) return
@@ -68,12 +115,18 @@ export default function Home() {
     const storedForm = readStorage<EnrollmentFormData | null>(FORM_STORAGE_KEY, null)
     if (storedForm) {
       setFormData(withDerivedMetrics(storedForm))
+    } else {
+      setFormData(createFreshForm())
     }
 
-    const storedInsights = readStorage<LifeLensInsights | null>(INSIGHTS_STORAGE_KEY, null)
+    const storedInsights = readStorage<FinMateInsights | null>(INSIGHTS_STORAGE_KEY, null)
     if (storedInsights) {
       setInsights(storedInsights)
       setHasCompletedQuiz(true)
+      setCurrentScreen("insights")
+    } else {
+      setHasCompletedQuiz(false)
+      setCurrentScreen("landing")
     }
 
     const storedMoments = readStorage<SavedMoment[]>(MOMENTS_STORAGE_KEY, [])
@@ -84,6 +137,13 @@ export default function Home() {
     const storedChat = readStorage<ChatEntry[]>(CHAT_STORAGE_KEY, [])
     if (storedChat.length) {
       setChatHistory(storedChat)
+    }
+
+    const storedLearnChat = readStorage<ChatEntry[]>(LEARN_CHAT_STORAGE_KEY, [])
+    if (storedLearnChat.length) {
+      setLearnChatHistory(storedLearnChat)
+    } else {
+      setLearnChatHistory([buildLearnWelcomeMessage()])
     }
   }, [isHydrated])
 
@@ -115,6 +175,11 @@ export default function Home() {
     writeStorage(CHAT_STORAGE_KEY, chatHistory)
   }, [chatHistory, isHydrated])
 
+  useEffect(() => {
+    if (!isHydrated) return
+    writeStorage(LEARN_CHAT_STORAGE_KEY, learnChatHistory)
+  }, [learnChatHistory, isHydrated])
+
   const ensureUserSession = (name: string) => {
     login({ name, createdAt: profileCreatedAt })
   }
@@ -123,19 +188,20 @@ export default function Home() {
     (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `user-${Date.now()}`)
 
   const handleStart = () => {
-    if (hasCompletedQuiz && insights) {
-      setCurrentScreen("insights")
-      return
-    }
-
-    const template = {
-      ...DEFAULT_ENROLLMENT_FORM,
-      userId: assignUserId(),
-      createdAt: new Date().toISOString(),
-    }
-    const prepared = withDerivedMetrics(template)
+    const base = formData
+      ? {
+          ...formData,
+          userId: formData.userId ?? assignUserId(),
+          createdAt: new Date().toISOString(),
+        }
+      : {
+          ...createFreshForm(),
+          userId: assignUserId(),
+        }
+    const prepared = withDerivedMetrics(base)
     ensureUserSession(prepared.preferredName || prepared.fullName || "Guest")
     setFormData(prepared)
+    setHasCompletedQuiz(false)
     setCurrentScreen("quiz")
   }
 
@@ -143,13 +209,14 @@ export default function Home() {
     setFormData(data)
   }
 
-  const appendMomentForInsights = (nextInsights: LifeLensInsights) => {
+  const appendMomentForInsights = (nextInsights: FinMateInsights) => {
     const timestamp = new Date().toISOString()
     const momentId = `${nextInsights.themeKey ?? "plan"}-${Date.now()}`
+    const summaryTitle = nextInsights.priorityBenefits[0]?.title ?? "Benefit update"
     const newMoment: SavedMoment = {
       id: momentId,
       category: nextInsights.themeKey ?? "foundation",
-      summary: nextInsights.focusGoal,
+      summary: summaryTitle,
       timeline: nextInsights.timeline,
       timestamp,
       insight: nextInsights,
@@ -163,6 +230,7 @@ export default function Home() {
 
   const handleQuizComplete = async (data: EnrollmentFormData) => {
     const prepared = withDerivedMetrics({ ...data, userId: data.userId ?? assignUserId() })
+    ensureUserSession(prepared.preferredName || prepared.fullName || "Guest")
     setFormData(prepared)
     setIsGenerating(true)
     setHasCompletedQuiz(true)
@@ -190,8 +258,11 @@ export default function Home() {
       const planResult = await requestPlans(userId)
       if (planResult.data?.insights) {
         const remoteInsights = planResult.data.insights
-        setInsights(remoteInsights)
-        appendMomentForInsights(remoteInsights)
+        const normalized = remoteInsights.priorityBenefits?.length
+          ? remoteInsights
+          : { ...remoteInsights, priorityBenefits: buildPriorityBenefits(prepared) }
+        setInsights(normalized)
+        appendMomentForInsights(normalized)
       }
     } finally {
       setIsGenerating(false)
@@ -207,8 +278,11 @@ export default function Home() {
       const planResult = await requestPlans(userId)
       if (planResult.data?.insights) {
         const updated = planResult.data.insights
-        setInsights(updated)
-        appendMomentForInsights(updated)
+        const normalized = updated.priorityBenefits?.length
+          ? updated
+          : { ...updated, priorityBenefits: buildPriorityBenefits(formData) }
+        setInsights(normalized)
+        appendMomentForInsights(normalized)
       } else {
         const fallback = buildInsights(formData)
         setInsights(fallback)
@@ -219,38 +293,47 @@ export default function Home() {
     }
   }
 
-  const handleSelectMoment = (selectedInsight: LifeLensInsights) => {
+  const handleSelectMoment = (selectedInsight: FinMateInsights) => {
     setInsights(selectedInsight)
     setCurrentScreen("insights")
   }
 
   const handleNavigate = (target: ScreenKey) => {
     if (target === "insights" && !insights) {
-      setCurrentScreen(formData ? "quiz" : "landing")
+      setCurrentScreen("landing")
       return
+    }
+    if (target !== "chat") {
+      setPendingChatPrompt(null)
     }
     setCurrentScreen(target)
   }
 
   const handleClearAllData = () => {
-    setFormData(null)
+    setFormData(createFreshForm())
     setInsights(null)
     setSavedMoments([])
     setChatHistory([])
+    setLearnChatHistory([buildLearnWelcomeMessage()])
+    setPendingChatPrompt(null)
     setHasCompletedQuiz(false)
     logout()
     removeStorage(FORM_STORAGE_KEY)
     removeStorage(INSIGHTS_STORAGE_KEY)
     removeStorage(MOMENTS_STORAGE_KEY)
     removeStorage(CHAT_STORAGE_KEY)
+    removeStorage(LEARN_CHAT_STORAGE_KEY)
     removeStorage(PROFILE_CREATED_KEY)
-    setProfileCreatedAt(new Date().toISOString())
+    const refreshedCreatedAt = new Date().toISOString()
+    setProfileCreatedAt(refreshedCreatedAt)
     setCurrentScreen("landing")
   }
 
   const handleChatSend = async (message: string) => {
     const trimmed = message.trim()
     if (!trimmed) return
+
+    setPendingChatPrompt(null)
 
     const userEntry: ChatEntry = {
       speaker: "You",
@@ -260,7 +343,7 @@ export default function Home() {
     }
 
     const pendingEntry: ChatEntry = {
-      speaker: "LifeLens",
+      speaker: "FinMate",
       message: "Thinking…",
       timestamp: new Date(Date.now() + 200).toISOString(),
       status: "pending",
@@ -271,9 +354,9 @@ export default function Home() {
     const finalizeReply = (reply: string) => {
       setChatHistory((previous) => {
         const next = [...previous]
-        const pendingIndex = next.findIndex((entry) => entry.status === "pending" && entry.speaker === "LifeLens")
+        const pendingIndex = next.findIndex((entry) => entry.status === "pending" && entry.speaker === "FinMate")
         const finalEntry: ChatEntry = {
-          speaker: "LifeLens",
+          speaker: "FinMate",
           message: reply,
           timestamp: new Date().toISOString(),
           status: "final",
@@ -300,11 +383,65 @@ export default function Home() {
     }
   }
 
+  const handleLearnChatSend = async (message: string) => {
+    const trimmed = message.trim()
+    if (!trimmed) return
+
+    const userEntry: ChatEntry = {
+      speaker: "You",
+      message: trimmed,
+      timestamp: new Date().toISOString(),
+      status: "final",
+    }
+
+    const pendingEntry: ChatEntry = {
+      speaker: "FinMate",
+      message: "Thinking…",
+      timestamp: new Date(Date.now() + 200).toISOString(),
+      status: "pending",
+    }
+
+    setLearnChatHistory((previous) => [...previous, userEntry, pendingEntry])
+
+    const finalizeReply = (reply: string) => {
+      setLearnChatHistory((previous) => {
+        const next = [...previous]
+        const pendingIndex = next.findIndex((entry) => entry.status === "pending" && entry.speaker === "FinMate")
+        const finalEntry: ChatEntry = {
+          speaker: "FinMate",
+          message: reply,
+          timestamp: new Date().toISOString(),
+          status: "final",
+        }
+        if (pendingIndex === -1) {
+          next.push(finalEntry)
+          return next
+        }
+        next[pendingIndex] = finalEntry
+        return next
+      })
+    }
+
+    try {
+      if (!formData?.userId) {
+        finalizeReply("Finish the FinMate questionnaire to personalize these lessons, and we’ll keep your study notes here.")
+        return
+      }
+      const response = await sendLearningMessage(formData.userId, trimmed)
+      finalizeReply(
+        response.data?.reply.message ??
+          "Here’s a financial literacy tip: review how premiums, deductibles, and out-of-pocket maximums work together to plan your budget."
+      )
+    } catch (error) {
+      console.error("Learning chat message failed", error)
+      finalizeReply("I couldn’t load new learning material right now. Let’s try again shortly.")
+    }
+  }
+
   const profileSnapshot: ProfileSnapshot = useMemo(() => {
     if (!formData) {
       return {
         name: user?.name ?? "Guest",
-        aiPersona: insights?.persona ?? "Balanced Navigator",
         age: "—",
         employmentStartDate: "—",
         dependents: 0,
@@ -325,7 +462,6 @@ export default function Home() {
 
     return {
       name: formData.preferredName || formData.fullName,
-      aiPersona: insights?.persona ?? "Balanced Navigator",
       age: formData.age ? String(formData.age) : "—",
       employmentStartDate: formData.employmentStartDate,
       dependents: formData.dependents,
@@ -336,11 +472,7 @@ export default function Home() {
       coverageComplexity: formData.derived.coverageComplexity,
       createdAt: user?.createdAt ?? profileCreatedAt,
     }
-  }, [formData, insights?.persona, profileCreatedAt, user])
-
-  const handleSelectPlan = (planId: string) => {
-    setInsights((current) => (current ? { ...current, selectedPlanId: planId } : current))
-  }
+  }, [formData, profileCreatedAt, user])
 
   const handleProfileUpdate = async (next: EnrollmentFormData) => {
     const prepared = withDerivedMetrics(next)
@@ -372,14 +504,14 @@ export default function Home() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F4F2] text-[#A41E34]">
         <div className="text-center">
-          <div className="mb-4 text-2xl font-semibold">LifeLens</div>
+          <div className="mb-4 text-2xl font-semibold">FinMate</div>
           <div className="text-sm">Preparing your financial guidance...</div>
         </div>
       </div>
     )
   }
 
-  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile"]
+  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "learn", "faq", "profile", "chat"]
 
   return (
     <main className={cn("min-h-screen bg-[#F7F4F2] pb-24", isGenerating && "pointer-events-none opacity-95")}> 
@@ -430,8 +562,11 @@ export default function Home() {
               insights={insights}
               onBackToLanding={() => setCurrentScreen("landing")}
               onRegenerate={handleRegenerate}
-              onSelectPlan={handleSelectPlan}
               onSendReport={handleSendReport}
+              onOpenChat={(prompt) => {
+                setPendingChatPrompt(prompt ?? null)
+                setCurrentScreen("chat")
+              }}
               loading={isGenerating}
             />
           </motion.div>
@@ -482,24 +617,55 @@ export default function Home() {
             />
           </motion.div>
         )}
+
+        {currentScreen === "learn" && (
+          <motion.div
+            key="learn"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChatScreen
+              history={learnChatHistory}
+              onSend={handleLearnChatSend}
+              onBack={() => setCurrentScreen(insights ? "insights" : "landing")}
+              eyebrow="FinMate Learn"
+              title="Build your benefits knowledge"
+              subtitle="Explore financial literacy topics tailored to your enrollment goals."
+              quickPrompts={learnQuickPrompts}
+              quickPromptHeading="Learning prompts"
+              emptyStateMessage="Ask FinMate Learn about benefits basics, employer accounts, or how coverage terms work and we'll explain in plain language."
+              headerBadge="Learning mode"
+              placeholder="Ask about HSAs, budgeting, or how insurance terms work…"
+              resources={learnResources}
+              resourceHeading="Start with these FinMate guides"
+            />
+          </motion.div>
+        )}
+
+        {currentScreen === "chat" && (
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChatScreen
+              history={chatHistory}
+              pendingPrompt={pendingChatPrompt}
+              onPromptConsumed={() => setPendingChatPrompt(null)}
+              onSend={handleChatSend}
+              onBack={() => setCurrentScreen(insights ? "insights" : "landing")}
+            />
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {navVisibleScreens.includes(currentScreen) && (
         <BottomNav currentScreen={currentScreen} onNavigate={handleNavigate} />
       )}
-
-      {insights && currentScreen !== "quiz" && (
-        <SupportDock
-          persona={insights.persona}
-          focusGoal={insights.focusGoal}
-          screen={currentScreen}
-          prompts={insights.prompts}
-          conversation={insights.conversation}
-          onBackToLanding={currentScreen === "insights" ? () => setCurrentScreen("landing") : undefined}
-        />
-      )}
-
-      {insights && <ChatPanel history={chatHistory} onSend={handleChatSend} />}
     </main>
   )
 }

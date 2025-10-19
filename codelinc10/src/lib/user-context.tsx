@@ -27,7 +27,7 @@ interface UserContextValue {
   setUser: Dispatch<SetStateAction<AppUser | null>>
 }
 
-const STORAGE_KEY = "lifelens-user-session"
+const STORAGE_KEY = "finmate-user-session"
 
 const UserContext = createContext<UserContextValue | undefined>(undefined)
 
@@ -48,7 +48,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setUser(parsed)
       }
     } catch (error) {
-      console.warn("Failed to restore LifeLens user", error)
+      console.warn("Failed to restore FinMate user", error)
     } finally {
       setIsLoading(false)
     }
@@ -65,7 +65,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser))
       } catch (error) {
-        console.warn("Failed to persist LifeLens user", error)
+        console.warn("Failed to persist FinMate user", error)
       }
     }
   }
@@ -76,7 +76,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       try {
         window.localStorage.removeItem(STORAGE_KEY)
       } catch (error) {
-        console.warn("Failed to clear LifeLens user", error)
+        console.warn("Failed to clear FinMate user", error)
       }
     }
   }

@@ -1,4 +1,4 @@
-import type { ChatEntry, EnrollmentFormData, LifeLensInsights, PlanResource } from "./types"
+import type { ChatEntry, EnrollmentFormData, FinMateInsights, PlanResource } from "./types"
 
 interface ApiResult<T> {
   data?: T
@@ -55,20 +55,42 @@ function profileToRecord(profile: EnrollmentFormData) {
     work_location_region: profile.workRegion,
     dependents: profile.dependents,
     risk_aversion: mapRiskComfort(profile.riskComfort ?? 3),
-    tobacco_user: Boolean(profile.tobaccoUse),
+    tobacco_user: profile.tobaccoUse,
     disability_status: Boolean(profile.disability),
     employment_start_date: profile.employmentStartDate,
+    coverage_preference: profile.coveragePreference,
+    partner_coverage_status: profile.partnerCoverageStatus,
+    other_medical_plan: profile.healthCoverage,
+    continuous_coverage: profile.hasContinuousCoverage,
+    chronic_conditions: profile.hasHealthConditions,
+    chronic_condition_summary: profile.healthConditionSummary,
+    primary_care_frequency: profile.primaryCareFrequency,
+    prescription_frequency: profile.prescriptionFrequency,
+    activity_level_score: profile.activityLevelScore,
+    benefits_budget_percent: profile.benefitsBudget,
+    plan_priority: profile.planPreference,
+    tax_account_type: profile.taxPreferredAccount,
+    anticipates_life_changes: profile.anticipatesLifeChanges,
+    benefit_usage_frequency: profile.expectedBenefitUsage,
+    travels_out_of_state: profile.travelsOutOfState,
+    needs_international_coverage: profile.needsInternationalCoverage,
+    dental_vision_preference: profile.dentalVisionPreference,
+    contributes_to_retirement: profile.contributesToRetirement,
+    retirement_contribution_rate: profile.retirementContributionRate,
+    wants_retirement_guidance: profile.wantsRetirementGuidance,
+    guidance_preference: profile.guidancePreference,
+    confidence_with_terms: profile.confidenceInsuranceTerms,
   }
 }
 
-function coerceRemotePlans(raw: LifeLensInsights | (LifeLensInsights & { recommendedPlans?: unknown })) {
-  const insights = raw as LifeLensInsights & { recommendedPlans?: { id?: string; name?: string; reason?: string; resources?: PlanResource[]; monthly_cost_estimate?: string }[] }
+function coerceRemotePlans(raw: FinMateInsights | (FinMateInsights & { recommendedPlans?: unknown })) {
+  const insights = raw as FinMateInsights & { recommendedPlans?: { id?: string; name?: string; reason?: string; resources?: PlanResource[]; monthly_cost_estimate?: string }[] }
   if (!insights.plans && Array.isArray(insights.recommendedPlans)) {
     insights.plans = insights.recommendedPlans.map((plan, index) => ({
       planId: plan.id ?? `remote-plan-${index + 1}`,
       planName: plan.name ?? `Plan ${index + 1}`,
       shortDescription: plan.reason ?? "Personalized option",
-      reasoning: plan.reason ?? "LifeLens tailored this path for your profile.",
+      reasoning: plan.reason ?? "FinMate tailored this path for your profile.",
       monthlyCostEstimate: plan.monthly_cost_estimate ?? "—",
       riskMatchScore: 80,
       highlights: [plan.reason ?? "Tailored guidance"],
@@ -96,14 +118,14 @@ export async function upsertUser(profile: EnrollmentFormData): Promise<ApiResult
     const body = (await response.json()) as { userId: string }
     return { data: body }
   } catch (error) {
-    console.error("Failed to upsert LifeLens user", error)
+    console.error("Failed to upsert FinMate user", error)
     return { error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
 
 export async function requestPlans(
   userId: string
-): Promise<ApiResult<{ insights: LifeLensInsights }>> {
+): Promise<ApiResult<{ insights: FinMateInsights }>> {
   try {
     const payload: Record<string, unknown> = { userId }
     if (lastSubmittedProfile) {
@@ -120,7 +142,7 @@ export async function requestPlans(
       return { error: errorBody.error ?? "Unable to generate plans" }
     }
 
-    const body = (await response.json()) as { insights: LifeLensInsights }
+    const body = (await response.json()) as { insights: FinMateInsights }
     return { data: { insights: coerceRemotePlans(body.insights) } }
   } catch (error) {
     console.error("Failed to generate plans", error)
@@ -128,7 +150,7 @@ export async function requestPlans(
   }
 }
 
-export async function sendChatMessage(
+async function postChatMessage(
   userId: string,
   message: string
 ): Promise<ApiResult<{ reply: ChatEntry }>> {
@@ -150,6 +172,20 @@ export async function sendChatMessage(
     console.error("Chat API error", error)
     return { error: error instanceof Error ? error.message : "Unknown error" }
   }
+}
+
+export async function sendChatMessage(
+  userId: string,
+  message: string
+): Promise<ApiResult<{ reply: ChatEntry }>> {
+  return postChatMessage(userId, message)
+}
+
+export async function sendLearningMessage(
+  userId: string,
+  message: string
+): Promise<ApiResult<{ reply: ChatEntry }>> {
+  return postChatMessage(`${userId}::learn`, message)
 }
 
 export async function sendPlanReport(

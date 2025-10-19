@@ -139,7 +139,7 @@ export function SettingsScreen({ profile, onUpdatePreferences, onClearHistory, o
           )}
 
           <div className="text-center text-xs text-muted-foreground">
-            <p>LifeLens v1.0.0</p>
+            <p>FinMate v1.0.0</p>
             <p className="mt-1">Built at CodeLinc 10 Hackathon</p>
           </div>
         </div>

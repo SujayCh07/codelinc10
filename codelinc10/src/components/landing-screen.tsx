@@ -23,7 +23,7 @@ const SPOTLIGHTS = [
   },
   {
     stat: "5k+",
-    label: "employers rely on LifeLens insights",
+    label: "employees guided by FinMate insights",
   },
 ]
 
@@ -41,9 +41,9 @@ export function LandingScreen({ onStart, hasExistingInsights, onViewInsights, qu
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Image src="/lifelens-logo.svg" alt="LifeLens logo" width={140} height={40} className="h-10 w-auto" />
+            <Image src="/finmate-logo.svg" alt="FinMate logo" width={140} height={40} className="h-10 w-auto" />
             <span className="hidden text-xs font-semibold uppercase tracking-[0.35em] text-white/80 sm:block">
-              Lincoln Financial · LifeLens
+              Lincoln Financial · FinMate
             </span>
           </motion.div>
           <motion.nav
@@ -52,20 +52,18 @@ export function LandingScreen({ onStart, hasExistingInsights, onViewInsights, qu
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
           >
-            {hasExistingInsights && onViewInsights && (
-              <Button
-                onClick={onViewInsights}
-                variant="outline"
-                className="rounded-full border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
-              >
-                My Plan
-              </Button>
-            )}
+            <Button
+              onClick={onStart}
+              variant="outline"
+              className="rounded-full border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+            >
+              Demo
+            </Button>
             <Button
               onClick={onStart}
               className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-[#A41E34] shadow-lg shadow-[#A41E34]/20 transition hover:bg-[#F9EDEA]"
             >
-              {quizCompleted ? "View my plans" : "Get Started"}
+              {quizCompleted ? "View my plans" : "Sign in"}
             </Button>
           </motion.nav>
         </header>
@@ -87,7 +85,7 @@ export function LandingScreen({ onStart, hasExistingInsights, onViewInsights, qu
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                Your personalized financial roadmap starts here.
+                Your personalized financial roadmap starts here with FinMate.
               </motion.h1>
               <motion.p
                 className="max-w-xl text-base text-[#4D3B3B] sm:text-lg"
@@ -95,7 +93,7 @@ export function LandingScreen({ onStart, hasExistingInsights, onViewInsights, qu
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
               >
-                Get clear, actionable guidance on benefits, savings, and financial protection tailored to your life and goals.
+                Get clear, actionable guidance on benefits, savings, and protection—all tailored to your household and goals.
               </motion.p>
               <motion.div
                 className="flex flex-col gap-3 sm:flex-row"
@@ -108,9 +106,19 @@ export function LandingScreen({ onStart, hasExistingInsights, onViewInsights, qu
                   className="w-full rounded-full bg-[#A41E34] py-6 text-base font-semibold text-white shadow-lg shadow-[#A41E34]/25 transition hover:bg-[#7F1527] sm:w-auto sm:px-10"
                   onClick={onStart}
                 >
-                  {quizCompleted ? "Open insights" : "Start now"}
+                  {quizCompleted ? "Open insights" : "Start demo"}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
+                {hasExistingInsights && onViewInsights && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full rounded-full border-[#E2D5D7] bg-white/80 py-6 text-base font-semibold text-[#A41E34] transition hover:bg-white sm:w-auto sm:px-10"
+                    onClick={onViewInsights}
+                  >
+                    Return to insights
+                  </Button>
+                )}
               </motion.div>
             </div>
 
@@ -121,7 +129,7 @@ export function LandingScreen({ onStart, hasExistingInsights, onViewInsights, qu
                 transition={{ delay: 0.3, duration: 0.5 }}
                 className="mt-6 w-full max-w-2xl rounded-3xl border border-white/30 bg-white/20 p-4 text-center text-sm font-medium text-white backdrop-blur"
               >
-                You already completed the LifeLens quiz. Jump back into your insights any time to refresh guidance.
+                You already completed the FinMate quiz. Jump back into your insights any time to refresh guidance.
               </motion.div>
             )}
           </div>

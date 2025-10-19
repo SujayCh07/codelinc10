@@ -319,7 +319,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
       {
         id: "household",
         title: "Your household",
-        description: "Understanding who’s alongside you helps LifeLens surface the right coverage and savings moves.",
+        description: "Understanding who’s alongside you helps FinMate surface the right coverage and savings moves.",
         render: (data, update, helpers) => (
           <div className="space-y-6">
             <div className="space-y-2">
@@ -587,7 +587,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
       {
         id: "final",
         title: "Final touch",
-        description: "Preview your LifeLens profile and consent so we can save your insights.",
+        description: "Preview your FinMate profile and consent so we can save your insights.",
         render: (data, update) => (
           <div className="space-y-6">
             <div className="space-y-2">
@@ -610,7 +610,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-[#2A1A1A]">Profile preview</p>
-                  <p className="text-xs text-[#4D3B3B]">Here’s how LifeLens will describe your situation.</p>
+                  <p className="text-xs text-[#4D3B3B]">Here’s how FinMate will describe your situation.</p>
                 </div>
               </div>
               <div className="grid gap-3 text-sm text-[#4D3B3B]">
@@ -631,7 +631,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
                 onCheckedChange={(value) => update({ consentToFollowUp: Boolean(value) })}
               />
               <Label htmlFor="consent" className="cursor-pointer">
-                I consent to LifeLens saving these answers so I can revisit insights and connect with a Lincoln coach.
+                I consent to FinMate saving these answers so I can revisit insights and connect with a Lincoln coach.
               </Label>
             </div>
           </div>
@@ -847,7 +847,7 @@ export function EnrollmentForm({ onComplete, onBackToLanding, initialData, onUpd
             className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur"
           >
             <Loader2 className="h-10 w-10 animate-spin text-[#A41E34]" />
-            <p className="mt-4 text-lg font-semibold text-[#2A1A1A]">Analyzing your LifeLens profile…</p>
+            <p className="mt-4 text-lg font-semibold text-[#2A1A1A]">Analyzing your FinMate profile…</p>
             <p className="text-sm text-[#4D3B3B]">We’re matching Lincoln Financial resources to your story.</p>
           </motion.div>
         )}
