@@ -82,6 +82,11 @@ export default function Home() {
       setInsights(storedInsights)
       setHasCompletedQuiz(true)
       setCurrentScreen("insights")
+      // Check if this is placeholder data by looking at the user's data completeness
+      // If insights exist but no real form data, it's likely placeholder
+      if (!storedForm || storedForm.isGuest) {
+        setUsingPlaceholder(true)
+      }
     } else {
       setHasCompletedQuiz(false)
       setCurrentScreen("quiz")
