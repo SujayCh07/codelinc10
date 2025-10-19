@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowRight, CheckCircle2, MessageCircle, RefreshCw, Send } from "lucide-react"
+import { CheckCircle2, ExternalLink, MessageCircle, RefreshCw, Send } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -11,7 +11,6 @@ interface InsightsDashboardProps {
   insights: LifeLensInsights
   onBackToLanding: () => void
   onRegenerate: () => void
-  onRestartQuiz: () => void
   onSelectPlan: (planId: string) => void
   onSendReport: () => void
   loading?: boolean
@@ -21,7 +20,6 @@ export function InsightsDashboard({
   insights,
   onBackToLanding,
   onRegenerate,
-  onRestartQuiz,
   onSelectPlan,
   onSendReport,
   loading,
@@ -59,7 +57,7 @@ export function InsightsDashboard({
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-6">
+      <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-6">
         <Card className="overflow-hidden rounded-3xl border border-[#E2D5D7] bg-white p-6 shadow-lg">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-3">
@@ -104,6 +102,8 @@ export function InsightsDashboard({
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">{plan.monthlyCostEstimate}</p>
                     <h3 className="mt-2 text-lg font-semibold text-[#2A1A1A]">{plan.planName}</h3>
                     <p className="mt-2 text-sm text-[#4D3B3B]">{plan.shortDescription}</p>
+                    <p className="mt-3 text-xs uppercase tracking-[0.3em] text-[#7F1527]">Why it fits</p>
+                    <p className="mt-1 text-sm text-[#4D3B3B] leading-relaxed">{plan.reasoning}</p>
                   </div>
                   <ul className="space-y-2 text-sm text-[#4D3B3B]">
                     {plan.highlights.map((highlight) => (
@@ -113,6 +113,26 @@ export function InsightsDashboard({
                       </li>
                     ))}
                   </ul>
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.3em] text-[#7F1527]">Guided next steps</p>
+                    <div className="space-y-2 text-sm text-[#4D3B3B]">
+                      {plan.resources.map((resource) => (
+                        <a
+                          key={resource.title}
+                          href={resource.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group flex items-start gap-2 rounded-2xl border border-[#F0E6E7] bg-[#FBF7F6] p-3 transition hover:border-[#A41E34] hover:bg-white"
+                        >
+                          <ExternalLink className="mt-1 h-4 w-4 text-[#A41E34]" />
+                          <span>
+                            <span className="block font-semibold text-[#2A1A1A]">{resource.title}</span>
+                            <span className="text-xs text-[#7F1527] leading-relaxed">{resource.description}</span>
+                          </span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
                   <div className="mt-auto flex items-center justify-between text-sm text-[#7F1527]">
                     <span>Risk match: {plan.riskMatchScore}</span>
                     <Button
@@ -133,22 +153,13 @@ export function InsightsDashboard({
               )
             })}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Button
-              onClick={onRestartQuiz}
-              variant="ghost"
-              className="rounded-full text-sm font-semibold text-[#A41E34] hover:text-[#7F1527]"
-            >
-              Re-take quiz
-            </Button>
-            <Button
-              onClick={onSendReport}
-              className="rounded-full bg-[#A41E34] px-5 py-3 text-sm font-semibold text-white hover:bg-[#7F1527]"
-            >
-              Send to HR
-              <Send className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            onClick={onSendReport}
+            className="w-full rounded-full bg-[#A41E34] px-5 py-3 text-sm font-semibold text-white hover:bg-[#7F1527]"
+          >
+            Send to HR
+            <Send className="ml-2 h-4 w-4" />
+          </Button>
         </section>
 
         <section className="space-y-4">
@@ -167,77 +178,21 @@ export function InsightsDashboard({
           </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr),minmax(0,1fr)]">
-          <Card className="rounded-3xl border border-[#E2D5D7] bg-white p-6 shadow-md">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-[#2A1A1A]">Resources to dive deeper</h2>
-                <p className="text-sm text-[#4D3B3B]">Tailored links based on your focus.</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              {insights.resources.map((resource) => (
-                <a
-                  key={resource.title}
-                  href={resource.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group block rounded-2xl border border-[#F0E6E7] bg-[#FBF7F6] p-4 transition hover:border-[#A41E34] hover:bg-white"
-                >
-                  <p className="text-sm font-semibold text-[#2A1A1A]">{resource.title}</p>
-                  <p className="mt-1 text-sm text-[#4D3B3B]">{resource.description}</p>
-                  <span className="mt-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-[#A41E34] opacity-0 transition group-hover:opacity-100">
-                    View resource <ArrowRight className="h-3 w-3" />
-                  </span>
-                </a>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="flex flex-col gap-4 rounded-3xl border border-[#E2D5D7] bg-white p-6 shadow-md">
+        <Card className="rounded-3xl border border-[#E2D5D7] bg-white p-6 shadow-md">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-[#2A1A1A]">Chat-ready recap</h2>
-              <p className="text-sm text-[#4D3B3B]">See the latest voice of LifeLens and jump back into chat.</p>
+              <h2 className="text-lg font-semibold text-[#2A1A1A]">Keep exploring with LifeLens</h2>
+              <p className="text-sm text-[#4D3B3B]">Jump back into chat for follow-up questions or share your plan.</p>
             </div>
-            <div className="space-y-3">
-              {insights.conversation.map((entry, index) => (
-                <div
-                  key={`${entry.speaker}-${index}`}
-                  className={cn(
-                    "rounded-2xl border border-[#F0E6E7] p-4 text-sm shadow-sm",
-                    entry.speaker === "You" ? "bg-[#FDF4EF] text-[#2A1A1A]" : "bg-white text-[#3F2A2C]"
-                  )}
-                >
-                  <span className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
-                    {entry.speaker === "You" ? "You" : "LifeLens"}
-                  </span>
-                  <p className="mt-2 leading-relaxed">{entry.message}</p>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">Suggested prompts</p>
-              <div className="flex flex-wrap gap-2">
-                {insights.prompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => openChat(prompt)}
-                    className="rounded-full border border-[#F0E6E7] bg-[#FBF7F6] px-4 py-2 text-xs font-semibold text-[#7F1527] transition hover:border-[#A41E34] hover:bg-[#F9EDEA]"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-              <Button
-                className="w-full rounded-full bg-[#A41E34] py-5 text-sm font-semibold text-white hover:bg-[#7F1527]"
-                onClick={() => openChat()}
-              >
-                <MessageCircle className="mr-2 h-4 w-4" /> Chat with LifeLens
-              </Button>
-            </div>
-          </Card>
-        </section>
+            <Button
+              className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527]"
+              onClick={() => openChat()}
+            >
+              Chat with LifeLens
+              <MessageCircle className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </Card>
       </main>
     </div>
   )

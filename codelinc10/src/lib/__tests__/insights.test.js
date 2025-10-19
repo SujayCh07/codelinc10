@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest"
 
-import { DEFAULT_ENROLLMENT_FORM } from "@/lib/enrollment"
+import { SAMPLE_COMPLETED_FORM } from "@/lib/enrollment"
 import { buildChatReply, buildInsights, mergeChatHistory } from "@/lib/insights"
 import type { ChatEntry } from "@/lib/types"
 
 describe("insights generation", () => {
   it("creates three tailored plans and selects a default", () => {
     const insights = buildInsights({
-      ...DEFAULT_ENROLLMENT_FORM,
+      ...SAMPLE_COMPLETED_FORM,
       riskComfort: 4,
       dependents: 1,
     })
@@ -18,7 +18,7 @@ describe("insights generation", () => {
   })
 
   it("responds to cost and plan prompts in chat replies", () => {
-    const insights = buildInsights(DEFAULT_ENROLLMENT_FORM)
+    const insights = buildInsights(SAMPLE_COMPLETED_FORM)
     const costReply = buildChatReply("What will this cost?", insights)
     expect(costReply).toContain("monthly")
     const planReply = buildChatReply("Tell me about the plan", insights)

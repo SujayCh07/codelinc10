@@ -1,22 +1,27 @@
 import { NextResponse } from "next/server"
 
 import { getStore } from "../_store"
-import { buildInsights } from "@/lib/insights"
+import { buildInsights, withDerivedMetrics } from "@/lib/insights"
+import type { EnrollmentFormData } from "@/lib/types"
 
 export async function POST(request: Request) {
   try {
-    const { userId } = (await request.json()) as { userId?: string }
+    const { userId, profile } = (await request.json()) as { userId?: string; profile?: EnrollmentFormData }
     if (!userId) {
       return NextResponse.json({ error: "Missing userId" }, { status: 400 })
     }
 
     const store = getStore()
-    const profile = store.profiles.get(userId)
-    if (!profile) {
+    const preparedProfile = profile
+      ? withDerivedMetrics({ ...profile, userId })
+      : store.profiles.get(userId)
+    if (!preparedProfile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 })
     }
 
-    const insights = buildInsights(profile)
+    store.profiles.set(userId, preparedProfile)
+
+    const insights = buildInsights(preparedProfile)
     store.insights.set(userId, insights)
 
     return NextResponse.json({ insights })
