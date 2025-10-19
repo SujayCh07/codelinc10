@@ -1,6 +1,6 @@
-# LifeLens Next.js App
+# FinMate Next.js App
 
-LifeLens is a Next.js 15 application that delivers an AI-assisted financial planning experience. It features an enrollment journey, personalized insights, a learning hub, timeline tracking, and an always-on LifeLens support dock.
+FinMate is a Next.js 15 application that delivers an AI-assisted financial planning experience. It features an enrollment journey, personalized insights, a learning hub, timeline tracking, and a streamlined mobile navigation experience.
 
 ## Features
 
@@ -9,7 +9,7 @@ LifeLens is a Next.js 15 application that delivers an AI-assisted financial plan
 - **Persistent local caching** of enrollment responses, insights, saved moments, chat history, and profile metadata with hydration-safe utilities.
 - **AI-inspired chat panel** that calls Next.js API routes for Claude-style replies with “thinking” states and context-aware prompts.
 - **Framer Motion transitions** across screens with Tailwind 4 styling, pastel theming, and glassmorphism accents.
-- **Support dock** and bottom navigation for quick access to primary workflows.
+- **Mobile bottom navigation** for quick access to insights, learning, timeline, and profile tools.
 - **Type-safe data models** for forms, insights, plans, chat, and profile snapshots.
 - **Server routes** for user persistence, plan generation, chat replies, and PDF report stubs (ready for Supabase/Bedrock wiring).
 

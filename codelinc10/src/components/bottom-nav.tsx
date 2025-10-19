@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Info, LayoutDashboard, User } from "lucide-react"
+import { BookOpen, Clock, Info, LayoutDashboard, MessageCircle, User } from "lucide-react"
 
 import type { ScreenKey } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -14,8 +14,10 @@ export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
   const navItems = [
     { id: "insights", icon: LayoutDashboard, label: "Insights" },
     { id: "timeline", icon: Clock, label: "Timeline" },
+    { id: "learn", icon: BookOpen, label: "Learn" },
     { id: "faq", icon: Info, label: "FAQ" },
     { id: "profile", icon: User, label: "Profile" },
+    { id: "chat", icon: MessageCircle, label: "Chat" },
   ]
 
   return (

@@ -1,505 +1,235 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { type FormEvent, useState } from "react"
 
-import { BottomNav } from "@/components/bottom-nav"
-import { ChatPanel } from "@/components/chat-panel"
-import { DynamicQuiz } from "@/components/DynamicQuiz"
-import { FaqScreen } from "@/components/faq-screen"
-import { InsightsDashboard } from "@/components/insights-dashboard"
-import { LandingScreen } from "@/components/landing-screen"
-import { ProfileSettings } from "@/components/profile-settings"
-import { SupportDock } from "@/components/support-dock"
-import { TimelineScreen } from "@/components/timeline-screen"
-import { requestPlans, sendChatMessage, sendPlanReport, upsertUser } from "@/lib/api"
-import {
-  CHAT_STORAGE_KEY,
-  DEFAULT_ENROLLMENT_FORM,
-  FORM_STORAGE_KEY,
-  INSIGHTS_STORAGE_KEY,
-  MOMENTS_STORAGE_KEY,
-  PROFILE_CREATED_KEY,
-} from "@/lib/enrollment"
-import { useHydrated } from "@/lib/hooks/useHydrated"
-import { buildInsights, mergeChatHistory, withDerivedMetrics } from "@/lib/insights"
-import {
-  removeStorage,
-  readStorage,
-  readString,
-  writeStorage,
-  writeString,
-} from "@/lib/storage"
-import type {
-  ChatEntry,
-  EnrollmentFormData,
-  LifeLensInsights,
-  ProfileSnapshot,
-  SavedMoment,
-  ScreenKey,
-} from "@/lib/types"
-import { useUser } from "@/lib/user-context"
-import { cn } from "@/lib/utils"
+type ViewState = "landing" | "login" | "signup" | "confirmation"
+
+type Submission = {
+  mode: "login" | "signup"
+  name?: string
+  email: string
+}
 
 export default function Home() {
-  const { user, isLoading: userLoading, login, logout } = useUser()
-  const [currentScreen, setCurrentScreen] = useState<ScreenKey>("landing")
-  const [formData, setFormData] = useState<EnrollmentFormData | null>(null)
-  const [insights, setInsights] = useState<LifeLensInsights | null>(null)
-  const [savedMoments, setSavedMoments] = useState<SavedMoment[]>([])
-  const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
-  const [profileCreatedAt, setProfileCreatedAt] = useState<string>(() => new Date().toISOString())
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false)
-  const isHydrated = useHydrated()
+  const [view, setView] = useState<ViewState>("landing")
+  const [submission, setSubmission] = useState<Submission | null>(null)
 
-  useEffect(() => {
-    if (!isHydrated) return
-
-    const storedProfileCreated = readString(PROFILE_CREATED_KEY, "")
-    if (storedProfileCreated) {
-      setProfileCreatedAt(storedProfileCreated)
-    } else {
-      const created = new Date().toISOString()
-      setProfileCreatedAt(created)
-      writeString(PROFILE_CREATED_KEY, created)
-    }
-
-    const storedForm = readStorage<EnrollmentFormData | null>(FORM_STORAGE_KEY, null)
-    if (storedForm) {
-      setFormData(withDerivedMetrics(storedForm))
-    }
-
-    const storedInsights = readStorage<LifeLensInsights | null>(INSIGHTS_STORAGE_KEY, null)
-    if (storedInsights) {
-      setInsights(storedInsights)
-      setHasCompletedQuiz(true)
-    }
-
-    const storedMoments = readStorage<SavedMoment[]>(MOMENTS_STORAGE_KEY, [])
-    if (storedMoments.length) {
-      setSavedMoments(storedMoments)
-    }
-
-    const storedChat = readStorage<ChatEntry[]>(CHAT_STORAGE_KEY, [])
-    if (storedChat.length) {
-      setChatHistory(storedChat)
-    }
-  }, [isHydrated])
-
-  useEffect(() => {
-    if (!isHydrated) return
-    if (formData) {
-      writeStorage(FORM_STORAGE_KEY, formData)
-    } else {
-      removeStorage(FORM_STORAGE_KEY)
-    }
-  }, [formData, isHydrated])
-
-  useEffect(() => {
-    if (!isHydrated) return
-    if (insights) {
-      writeStorage(INSIGHTS_STORAGE_KEY, insights)
-    } else {
-      removeStorage(INSIGHTS_STORAGE_KEY)
-    }
-  }, [insights, isHydrated])
-
-  useEffect(() => {
-    if (!isHydrated) return
-    writeStorage(MOMENTS_STORAGE_KEY, savedMoments)
-  }, [savedMoments, isHydrated])
-
-  useEffect(() => {
-    if (!isHydrated) return
-    writeStorage(CHAT_STORAGE_KEY, chatHistory)
-  }, [chatHistory, isHydrated])
-
-  const ensureUserSession = (name: string) => {
-    login({ name, createdAt: profileCreatedAt })
+  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const rawEmail = ((form.get("email") as string | null) ?? "").trim()
+    const email = rawEmail
+    const name = rawEmail.split("@")[0] || "Guest"
+    setSubmission({ mode: "login", name, email })
+    setView("confirmation")
   }
 
-  const assignUserId = () =>
-    (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `user-${Date.now()}`)
-
-  const handleStart = () => {
-    if (hasCompletedQuiz && insights) {
-      setCurrentScreen("insights")
-      return
-    }
-
-    const template = {
-      ...DEFAULT_ENROLLMENT_FORM,
-      userId: assignUserId(),
-      createdAt: new Date().toISOString(),
-    }
-    const prepared = withDerivedMetrics(template)
-    ensureUserSession(prepared.preferredName || prepared.fullName || "Guest")
-    setFormData(prepared)
-    setCurrentScreen("quiz")
+  const handleSignup = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const firstName = ((form.get("firstName") as string | null) ?? "").trim()
+    const lastName = ((form.get("lastName") as string | null) ?? "").trim()
+    const email = ((form.get("email") as string | null) ?? "").trim()
+    const name = [firstName, lastName].filter(Boolean).join(" ") || "New FinMate member"
+    setSubmission({ mode: "signup", name, email })
+    setView("confirmation")
   }
 
-  const handleQuizUpdate = (data: EnrollmentFormData) => {
-    setFormData(data)
+  const resetFlow = () => {
+    setView("landing")
+    setSubmission(null)
   }
-
-  const appendMomentForInsights = (nextInsights: LifeLensInsights) => {
-    const timestamp = new Date().toISOString()
-    const momentId = `${nextInsights.themeKey ?? "plan"}-${Date.now()}`
-    const newMoment: SavedMoment = {
-      id: momentId,
-      category: nextInsights.themeKey ?? "foundation",
-      summary: nextInsights.focusGoal,
-      timeline: nextInsights.timeline,
-      timestamp,
-      insight: nextInsights,
-    }
-
-    setSavedMoments((previous) => {
-      const filtered = previous.filter((entry) => entry.summary !== newMoment.summary)
-      return [...filtered, newMoment].slice(-8)
-    })
-  }
-
-  const handleQuizComplete = async (data: EnrollmentFormData) => {
-    const prepared = withDerivedMetrics({ ...data, userId: data.userId ?? assignUserId() })
-    setFormData(prepared)
-    setIsGenerating(true)
-    setHasCompletedQuiz(true)
-
-    const localInsights = buildInsights(prepared)
-    setInsights(localInsights)
-    appendMomentForInsights(localInsights)
-
-    if (localInsights.conversation.length > 0) {
-      const additions: ChatEntry[] = localInsights.conversation.map((entry, index) => ({
-        speaker: entry.speaker,
-        message: entry.message,
-        timestamp: new Date(Date.now() + index).toISOString(),
-        status: "final" as const,
-      }))
-      setChatHistory((previous) => mergeChatHistory(previous, additions))
-    }
-
-    try {
-      const saveResult = await upsertUser(prepared)
-      const userId = saveResult.data?.userId ?? prepared.userId ?? assignUserId()
-      if (userId !== prepared.userId) {
-        setFormData((existing) => (existing ? { ...existing, userId } : existing))
-      }
-      const planResult = await requestPlans(userId)
-      if (planResult.data?.insights) {
-        const remoteInsights = planResult.data.insights
-        setInsights(remoteInsights)
-        appendMomentForInsights(remoteInsights)
-      }
-    } finally {
-      setIsGenerating(false)
-      setCurrentScreen("insights")
-    }
-  }
-
-  const handleRegenerate = async () => {
-    if (!formData) return
-    setIsGenerating(true)
-    try {
-      const userId = formData.userId ?? assignUserId()
-      const planResult = await requestPlans(userId)
-      if (planResult.data?.insights) {
-        const updated = planResult.data.insights
-        setInsights(updated)
-        appendMomentForInsights(updated)
-      } else {
-        const fallback = buildInsights(formData)
-        setInsights(fallback)
-        appendMomentForInsights(fallback)
-      }
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const handleSelectMoment = (selectedInsight: LifeLensInsights) => {
-    setInsights(selectedInsight)
-    setCurrentScreen("insights")
-  }
-
-  const handleNavigate = (target: ScreenKey) => {
-    if (target === "insights" && !insights) {
-      setCurrentScreen(formData ? "quiz" : "landing")
-      return
-    }
-    setCurrentScreen(target)
-  }
-
-  const handleClearAllData = () => {
-    setFormData(null)
-    setInsights(null)
-    setSavedMoments([])
-    setChatHistory([])
-    setHasCompletedQuiz(false)
-    logout()
-    removeStorage(FORM_STORAGE_KEY)
-    removeStorage(INSIGHTS_STORAGE_KEY)
-    removeStorage(MOMENTS_STORAGE_KEY)
-    removeStorage(CHAT_STORAGE_KEY)
-    removeStorage(PROFILE_CREATED_KEY)
-    setProfileCreatedAt(new Date().toISOString())
-    setCurrentScreen("landing")
-  }
-
-  const handleChatSend = async (message: string) => {
-    const trimmed = message.trim()
-    if (!trimmed) return
-
-    const userEntry: ChatEntry = {
-      speaker: "You",
-      message: trimmed,
-      timestamp: new Date().toISOString(),
-      status: "final",
-    }
-
-    const pendingEntry: ChatEntry = {
-      speaker: "LifeLens",
-      message: "Thinking…",
-      timestamp: new Date(Date.now() + 200).toISOString(),
-      status: "pending",
-    }
-
-    setChatHistory((previous) => [...previous, userEntry, pendingEntry])
-
-    const finalizeReply = (reply: string) => {
-      setChatHistory((previous) => {
-        const next = [...previous]
-        const pendingIndex = next.findIndex((entry) => entry.status === "pending" && entry.speaker === "LifeLens")
-        const finalEntry: ChatEntry = {
-          speaker: "LifeLens",
-          message: reply,
-          timestamp: new Date().toISOString(),
-          status: "final",
-        }
-        if (pendingIndex === -1) {
-          next.push(finalEntry)
-          return next
-        }
-        next[pendingIndex] = finalEntry
-        return next
-      })
-    }
-
-    try {
-      if (!formData?.userId) {
-        finalizeReply("I’ll save your answers once you complete the quiz.")
-        return
-      }
-      const response = await sendChatMessage(formData.userId, trimmed)
-      finalizeReply(response.data?.reply.message ?? "Here’s what I recommend: keep following your plan timeline.")
-    } catch (error) {
-      console.error("Chat message failed", error)
-      finalizeReply("I ran into an issue reaching Claude. Let’s try again in a moment.")
-    }
-  }
-
-  const profileSnapshot: ProfileSnapshot = useMemo(() => {
-    if (!formData) {
-      return {
-        name: user?.name ?? "Guest",
-        aiPersona: insights?.persona ?? "Balanced Navigator",
-        age: "—",
-        employmentStartDate: "—",
-        dependents: 0,
-        residencyStatus: "Citizen",
-        citizenship: "United States",
-        riskFactorScore: 0,
-        activitySummary: "",
-        coverageComplexity: "medium",
-        createdAt: user?.createdAt ?? profileCreatedAt,
-      }
-    }
-
-    const activitySummary = formData.physicalActivities
-      ? formData.activityList.length
-        ? formData.activityList.join(", ")
-        : "Active lifestyle"
-      : "Low impact"
-
-    return {
-      name: formData.preferredName || formData.fullName,
-      aiPersona: insights?.persona ?? "Balanced Navigator",
-      age: formData.age ? String(formData.age) : "—",
-      employmentStartDate: formData.employmentStartDate,
-      dependents: formData.dependents,
-      residencyStatus: formData.residencyStatus,
-      citizenship: formData.citizenship,
-      riskFactorScore: formData.derived.riskFactorScore,
-      activitySummary,
-      coverageComplexity: formData.derived.coverageComplexity,
-      createdAt: user?.createdAt ?? profileCreatedAt,
-    }
-  }, [formData, insights?.persona, profileCreatedAt, user])
-
-  const handleSelectPlan = (planId: string) => {
-    setInsights((current) => (current ? { ...current, selectedPlanId: planId } : current))
-  }
-
-  const handleProfileUpdate = async (next: EnrollmentFormData) => {
-    const prepared = withDerivedMetrics(next)
-    setFormData(prepared)
-    setInsights((current) => {
-      if (current || hasCompletedQuiz) {
-        return buildInsights(prepared)
-      }
-      return current
-    })
-    if (prepared.userId) {
-      void upsertUser(prepared)
-    }
-  }
-
-  const handleSendReport = async () => {
-    if (!formData?.userId || !insights?.selectedPlanId) return
-    const result = await sendPlanReport(formData.userId, insights.selectedPlanId)
-    if (result.data?.reportUrl) {
-      if (typeof window !== "undefined") {
-        window.open(result.data.reportUrl, "_blank")
-      }
-    } else if (typeof window !== "undefined") {
-      window.alert(result.error ?? "We couldn’t prepare the report just yet.")
-    }
-  }
-
-  if (!isHydrated || userLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F7F4F2] text-[#A41E34]">
-        <div className="text-center">
-          <div className="mb-4 text-2xl font-semibold">LifeLens</div>
-          <div className="text-sm">Preparing your financial guidance...</div>
-        </div>
-      </div>
-    )
-  }
-
-  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "faq", "profile"]
 
   return (
-    <main className={cn("min-h-screen bg-[#F7F4F2] pb-24", isGenerating && "pointer-events-none opacity-95")}> 
-      <AnimatePresence mode="wait" initial={false}>
-        {currentScreen === "landing" && (
-          <motion.div
-            key="landing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
-          >
-            <LandingScreen
-              onStart={handleStart}
-              hasExistingInsights={!!insights}
-              onViewInsights={() => setCurrentScreen("insights")}
-              quizCompleted={hasCompletedQuiz}
-            />
-          </motion.div>
-        )}
+    <main className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-amber-50 px-4 py-10 text-neutral-900">
+      <div className="mx-auto flex w-full max-w-4xl flex-col items-center justify-center gap-12">
+        <header className="flex flex-col items-center text-center">
+          <p className="text-sm uppercase tracking-[0.4em] text-rose-500">FinMate</p>
+          <h1 className="mt-3 text-4xl font-semibold md:text-5xl">Your friendly benefits buddy</h1>
+          <p className="mt-4 max-w-xl text-base text-neutral-600 md:text-lg">
+            This demo keeps it simple: start from the FinMate landing page and jump into a fake log in or sign up flow to
+            imagine how your future benefits hub could greet teammates.
+          </p>
+        </header>
 
-        {currentScreen === "quiz" && formData && (
-          <motion.div
-            key="quiz"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3 }}
-          >
-            <DynamicQuiz
-              initialData={formData}
-              onBack={() => setCurrentScreen("landing")}
-              onUpdate={handleQuizUpdate}
-              onComplete={handleQuizComplete}
-            />
-          </motion.div>
-        )}
+        <div className="w-full max-w-xl rounded-3xl border border-rose-100 bg-white/80 p-6 shadow-lg backdrop-blur">
+          {view === "landing" && (
+            <div className="flex flex-col items-center gap-6">
+              <p className="text-center text-neutral-600">
+                Pick an option below to see a lightweight experience. Both the login and sign up paths are purely visual and
+                don&apos;t connect to a real account.
+              </p>
+              <div className="flex w-full flex-col gap-3 md:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setView("login")}
+                  className="w-full rounded-full bg-rose-500 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-rose-600 active:scale-95"
+                >
+                  Log in
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("signup")}
+                  className="w-full rounded-full border border-rose-500 px-6 py-3 text-base font-semibold text-rose-500 transition hover:bg-rose-50 active:scale-95"
+                >
+                  Sign up
+                </button>
+              </div>
+            </div>
+          )}
 
-        {currentScreen === "insights" && insights && (
-          <motion.div
-            key="insights"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3 }}
-          >
-            <InsightsDashboard
-              insights={insights}
-              onBackToLanding={() => setCurrentScreen("landing")}
-              onRegenerate={handleRegenerate}
-              onSelectPlan={handleSelectPlan}
-              onSendReport={handleSendReport}
-              loading={isGenerating}
-            />
-          </motion.div>
-        )}
+          {view === "login" && (
+            <form className="flex flex-col gap-5" onSubmit={handleLogin}>
+              <div>
+                <h2 className="text-2xl font-semibold">Welcome back</h2>
+                <p className="mt-1 text-sm text-neutral-600">Use any email and password to preview the login handoff.</p>
+              </div>
+              <label className="flex flex-col gap-2 text-sm font-medium text-neutral-700">
+                Email address
+                <input
+                  required
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring focus:ring-rose-200"
+                />
+              </label>
+              <label className="flex flex-col gap-2 text-sm font-medium text-neutral-700">
+                Password
+                <input
+                  required
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring focus:ring-rose-200"
+                />
+              </label>
+              <button
+                type="submit"
+                className="mt-2 w-full rounded-full bg-rose-500 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-rose-600 active:scale-95"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("signup")}
+                className="text-sm font-medium text-rose-500 underline-offset-4 hover:underline"
+              >
+                Need an account? Create one instead.
+              </button>
+              <button
+                type="button"
+                onClick={resetFlow}
+                className="text-sm font-medium text-neutral-500 underline-offset-4 hover:underline"
+              >
+                Back to landing
+              </button>
+            </form>
+          )}
 
-        {currentScreen === "timeline" && (
-          <motion.div
-            key="timeline"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3 }}
-          >
-            <TimelineScreen
-              savedInsights={savedMoments}
-              onBack={() => setCurrentScreen(insights ? "insights" : "quiz")}
-              onSelectInsight={handleSelectMoment}
-            />
-          </motion.div>
-        )}
+          {view === "signup" && (
+            <form className="flex flex-col gap-5" onSubmit={handleSignup}>
+              <div>
+                <h2 className="text-2xl font-semibold">Join the FinMate family</h2>
+                <p className="mt-1 text-sm text-neutral-600">This mock sign up collects basic details but never stores them.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm font-medium text-neutral-700">
+                  First name
+                  <input
+                    required
+                    name="firstName"
+                    type="text"
+                    placeholder="Taylor"
+                    className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring focus:ring-rose-200"
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm font-medium text-neutral-700">
+                  Last name
+                  <input
+                    required
+                    name="lastName"
+                    type="text"
+                    placeholder="Jordan"
+                    className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring focus:ring-rose-200"
+                  />
+                </label>
+              </div>
+              <label className="flex flex-col gap-2 text-sm font-medium text-neutral-700">
+                Work email
+                <input
+                  required
+                  name="email"
+                  type="email"
+                  placeholder="taylor.jordan@work.com"
+                  className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring focus:ring-rose-200"
+                />
+              </label>
+              <label className="flex flex-col gap-2 text-sm font-medium text-neutral-700">
+                Create password
+                <input
+                  required
+                  name="password"
+                  type="password"
+                  placeholder="Choose something memorable"
+                  className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-neutral-900 shadow-sm focus:border-rose-400 focus:outline-none focus:ring focus:ring-rose-200"
+                />
+              </label>
+              <button
+                type="submit"
+                className="mt-2 w-full rounded-full bg-rose-500 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-rose-600 active:scale-95"
+              >
+                Create account
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("login")}
+                className="text-sm font-medium text-rose-500 underline-offset-4 hover:underline"
+              >
+                Already with us? Log in instead.
+              </button>
+              <button
+                type="button"
+                onClick={resetFlow}
+                className="text-sm font-medium text-neutral-500 underline-offset-4 hover:underline"
+              >
+                Back to landing
+              </button>
+            </form>
+          )}
 
-        {currentScreen === "faq" && (
-          <motion.div
-            key="faq"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3 }}
-          >
-            <FaqScreen onBack={() => setCurrentScreen(insights ? "insights" : "landing")} />
-          </motion.div>
-        )}
+          {view === "confirmation" && submission && (
+            <div className="flex flex-col items-center gap-6 text-center">
+              <div className="rounded-full bg-rose-500/10 p-4">
+                <span className="text-3xl" role="img" aria-label="party popper">
+                  🎉
+                </span>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold">All set, {submission.name}!</h2>
+                <p className="text-sm text-neutral-600">
+                  You just completed the mock {submission.mode === "login" ? "log in" : "sign up"} experience with <strong>{submission.email || "your email"}</strong>.
+                </p>
+                <p className="text-sm text-neutral-500">
+                  In a real build this hand-off would route you to personalized benefits, but for now it&apos;s just a friendly demo.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={resetFlow}
+                className="rounded-full bg-rose-500 px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-rose-600 active:scale-95"
+              >
+                Back to landing
+              </button>
+            </div>
+          )}
+        </div>
 
-        {currentScreen === "profile" && (
-          <motion.div
-            key="profile"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.3 }}
-          >
-            <ProfileSettings
-              profile={profileSnapshot}
-              onClearData={handleClearAllData}
-              onSendReport={handleSendReport}
-              formData={formData}
-              onUpdateProfile={handleProfileUpdate}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {navVisibleScreens.includes(currentScreen) && (
-        <BottomNav currentScreen={currentScreen} onNavigate={handleNavigate} />
-      )}
-
-      {insights && currentScreen !== "quiz" && (
-        <SupportDock
-          persona={insights.persona}
-          focusGoal={insights.focusGoal}
-          screen={currentScreen}
-          prompts={insights.prompts}
-          conversation={insights.conversation}
-          onBackToLanding={currentScreen === "insights" ? () => setCurrentScreen("landing") : undefined}
-        />
-      )}
-
-      {insights && <ChatPanel history={chatHistory} onSend={handleChatSend} />}
+        <footer className="text-center text-xs text-neutral-400">
+          This FinMate prototype skips real authentication. Use it to visualize how a lightweight entry flow could look and feel
+          on mobile.
+        </footer>
+      </div>
     </main>
   )
 }

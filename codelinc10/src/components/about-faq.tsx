@@ -6,9 +6,9 @@ import { Info, HelpCircle, Shield, Cpu, Database, Zap } from "lucide-react"
 export function AboutFaq() {
   const faqs = [
     {
-      question: "How does LifeLens work?",
+      question: "How does FinMate work?",
       answer:
-        "LifeLens uses AI to analyze your life situation, financial goals, and priorities. It then generates personalized recommendations based on your unique circumstances, helping you understand which benefits and financial actions matter most right now.",
+        "FinMate uses AI to analyze your life situation, financial goals, and priorities. It then generates personalized recommendations based on your unique circumstances, helping you understand which benefits and financial actions matter most right now.",
     },
     {
       question: "Is my data secure?",
@@ -16,14 +16,14 @@ export function AboutFaq() {
         "Yes. All data is encrypted and stored securely. We follow industry best practices for data protection and never share your personal information with third parties. You can delete your data at any time from the Profile & Settings page.",
     },
     {
-      question: "What makes LifeLens different?",
+      question: "What makes FinMate different?",
       answer:
-        "Unlike generic financial advice, LifeLens understands your life context. It bridges personal circumstances with actionable financial guidance, simplifying how people understand their benefits and financial path.",
+        "Unlike generic financial advice, FinMate understands your life context. It bridges personal circumstances with actionable financial guidance, simplifying how people understand their benefits and financial path.",
     },
     {
-      question: "Can I use LifeLens as a guest?",
+      question: "Can I use FinMate as a guest?",
       answer:
-        "Yes! You can try LifeLens as a guest without creating an account. However, your data won't be saved between sessions. Create an account to save your profile and track your journey over time.",
+        "Yes! You can try FinMate as a guest without creating an account. However, your data won't be saved between sessions. Create an account to save your profile and track your journey over time.",
     },
     {
       question: "How often should I reassess?",
@@ -42,7 +42,7 @@ export function AboutFaq() {
               <Info className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">About LifeLens</h1>
+              <h1 className="text-3xl font-bold">About FinMate</h1>
               <p className="text-muted-foreground">Our mission and technology</p>
             </div>
           </div>
@@ -52,12 +52,12 @@ export function AboutFaq() {
         <Card className="glass p-6">
           <h2 className="text-2xl font-bold mb-4">Our Mission</h2>
           <p className="text-muted-foreground leading-relaxed mb-4">
-            LifeLens bridges personal context with real financial action, simplifying how people understand their
+            FinMate bridges personal context with real financial action, simplifying how people understand their
             benefits and financial path. We believe that every life event deserves clear financial guidance, and that AI
             can help make complex financial decisions more accessible and personalized.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            Built for Lincoln Financial's mission to empower financial well-being, LifeLens transforms how employees and
+            Built for Lincoln Financial's mission to empower financial well-being, FinMate transforms how employees and
             individuals navigate major life changes by translating their unique situations into tailored advice,
             priorities, and actionable next steps.
           </p>
@@ -87,8 +87,8 @@ export function AboutFaq() {
               <div>
                 <h3 className="font-bold mb-1">AI Analyzes Your Needs</h3>
                 <p className="text-sm text-muted-foreground">
-                  Our AI (powered by AWS Bedrock) processes your information to understand your unique financial persona
-                  and priorities.
+                  Our AI (powered by AWS Bedrock) processes your information to pinpoint your benefits priorities and highlight
+                  any gaps that need attention.
                 </p>
               </div>
             </div>
@@ -121,7 +121,7 @@ export function AboutFaq() {
               <div>
                 <h3 className="font-semibold mb-1">AI-Powered Analysis</h3>
                 <p className="text-sm text-muted-foreground">
-                  AWS Bedrock (Claude 4) for intelligent persona classification and priority ranking
+                  AWS Bedrock (Claude 4) for intelligent priority ranking and plan scoring
                 </p>
               </div>
             </div>
@@ -189,7 +189,7 @@ export function AboutFaq() {
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground space-y-2">
           <p>Powered by AWS Bedrock · Built for Lincoln Financial</p>
-          <p>© 2025 LifeLens. Empowering financial well-being through AI.</p>
+          <p>© 2025 FinMate. Empowering financial well-being through AI.</p>
         </div>
       </div>
     </div>

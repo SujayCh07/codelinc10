@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
     const history = store.chats.get(userId) ?? []
     const reply = {
-      speaker: "LifeLens" as const,
+      speaker: "FinMate" as const,
       message: replyText,
       timestamp: new Date().toISOString(),
       status: "final" as const,

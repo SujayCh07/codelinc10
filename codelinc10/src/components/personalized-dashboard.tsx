@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { AlertCircle, TrendingUp, Shield, Heart, GraduationCap, Home, Sparkles } from "lucide-react"
+import { AlertCircle, TrendingUp, Shield, Heart, GraduationCap, Home } from "lucide-react"
 
 interface PersonalizedDashboardProps {
   profile: any
@@ -34,10 +34,6 @@ export function PersonalizedDashboard({ profile, insights, onReassess }: Persona
         <div className="glass-strong rounded-2xl p-6 shadow-lg">
           <h1 className="text-3xl font-bold mb-2">Welcome{profile.name && `, ${profile.name}`}</h1>
           <p className="text-muted-foreground">Here's what matters most for you right now.</p>
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-            <Sparkles className="w-4 h-4" />
-            {profile.aiPersona}
-          </div>
         </div>
 
         {/* AI Insight */}
@@ -101,7 +97,7 @@ export function PersonalizedDashboard({ profile, insights, onReassess }: Persona
           <Button onClick={onReassess} variant="outline" className="flex-1 bg-transparent">
             Reassess My Situation
           </Button>
-          <Button className="flex-1 bg-primary">Chat with LifeLens AI</Button>
+          <Button className="flex-1 bg-primary">Chat with FinMate AI</Button>
         </div>
       </div>
     </div>

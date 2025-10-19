@@ -3,8 +3,10 @@ export type ScreenKey =
   | "quiz"
   | "insights"
   | "timeline"
+  | "learn"
   | "faq"
   | "profile"
+  | "chat"
 
 export type ResidencyStatus =
   | "Citizen"
@@ -21,20 +23,31 @@ export type MaritalStatusOption =
   | "widowed"
   | "other"
 
-export type CoveragePreference = "self" | "self-plus-partner" | "self-plus-family"
+export type CoveragePreference = "self" | "self-plus-spouse" | "self-plus-family"
 
 export type HomeOwnershipStatus = "rent" | "own" | "with-family" | "other"
 
-export type IncomeRange =
-  | "under-50k"
-  | "50-80k"
-  | "80-120k"
-  | "120-160k"
-  | "160k-plus"
+export type IncomeRange = "under-50k" | "50-100k" | "100-200k" | "200k-plus"
 
 export type HealthCoverageOption = "employer" | "partner" | "marketplace" | "none"
 
 export type ActivityLevel = "relaxed" | "balanced" | "active"
+
+export type PartnerCoverageStatus = "yes" | "no" | "not-applicable"
+
+export type PrimaryCareFrequency = "rarely" | "annually" | "several"
+
+export type PrescriptionFrequency = "never" | "occasionally" | "regularly"
+
+export type PlanPreferenceOption = "lower-premiums" | "lower-deductible" | "balanced"
+
+export type AccountPreferenceOption = "hsa" | "fsa" | "both" | "neither"
+
+export type BenefitUsageFrequency = "rarely" | "occasionally" | "frequently"
+
+export type DentalVisionPreference = "yes" | "no" | "covered"
+
+export type GuidancePreference = "summary" | "step" | "chat"
 
 export interface EnrollmentFormData {
   userId: string | null
@@ -54,6 +67,7 @@ export interface EnrollmentFormData {
   incomeRange: IncomeRange
   healthCoverage: HealthCoverageOption
   spouseHasSeparateInsurance: boolean | null
+  partnerCoverageStatus: PartnerCoverageStatus
   savingsRate: number
   wantsSavingsSupport: boolean | null
   riskComfort: number
@@ -67,6 +81,25 @@ export interface EnrollmentFormData {
   creditScore: number
   citizenship: string
   residencyStatus: ResidencyStatus
+  hasContinuousCoverage: boolean | null
+  hasHealthConditions: boolean | null
+  healthConditionSummary: string
+  primaryCareFrequency: PrimaryCareFrequency
+  prescriptionFrequency: PrescriptionFrequency
+  activityLevelScore: number
+  benefitsBudget: number
+  planPreference: PlanPreferenceOption
+  taxPreferredAccount: AccountPreferenceOption
+  anticipatesLifeChanges: boolean | null
+  expectedBenefitUsage: BenefitUsageFrequency
+  travelsOutOfState: boolean | null
+  needsInternationalCoverage: boolean | null
+  dentalVisionPreference: DentalVisionPreference
+  contributesToRetirement: boolean | null
+  retirementContributionRate: number
+  wantsRetirementGuidance: boolean | null
+  confidenceInsuranceTerms: number
+  guidancePreference: GuidancePreference
   createdAt: string
   isGuest: boolean
   consentToFollowUp: boolean
@@ -83,7 +116,17 @@ export interface PlanResource {
   url: string
 }
 
-export interface LifeLensPlan {
+export interface PriorityBenefit {
+  id: string
+  title: string
+  category: "coverage" | "savings" | "health" | "wellness" | "planning"
+  description: string
+  whyItMatters: string
+  urgency: "Now" | "Next 30 days" | "This quarter"
+  actions: PlanResource[]
+}
+
+export interface FinMatePlan {
   planId: string
   planName: string
   shortDescription: string
@@ -94,32 +137,38 @@ export interface LifeLensPlan {
   resources: PlanResource[]
 }
 
-export interface LifeLensInsights {
+export interface FinMateInsights {
   ownerName: string
-  persona: string
   focusGoal: string
   statement: string
   timeline: { period: string; title: string; description: string }[]
-  conversation: { speaker: "LifeLens" | "You"; message: string }[]
+  conversation: { speaker: "FinMate" | "You"; message: string }[]
   prompts: string[]
-  plans: LifeLensPlan[]
-  recommendedPlans?: { id: string; name: string; reason: string; resources?: PlanResource[] }[]
+  plans: FinMatePlan[]
+  recommendedPlans?: {
+    id: string
+    name: string
+    reason: string
+    resources?: PlanResource[]
+    monthly_cost_estimate?: string
+  }[]
   selectedPlanId: string | null
   goalTheme?: string
   themeKey?: string
+  priorityBenefits: PriorityBenefit[]
 }
 
 export interface SavedMoment {
   id: string
   category: string
   summary: string
-  timeline: LifeLensInsights["timeline"]
+  timeline: FinMateInsights["timeline"]
   timestamp: string
-  insight: LifeLensInsights
+  insight: FinMateInsights
 }
 
 export interface ChatEntry {
-  speaker: "LifeLens" | "You"
+  speaker: "FinMate" | "You"
   message: string
   timestamp: string
   status?: "pending" | "final"
@@ -127,7 +176,6 @@ export interface ChatEntry {
 
 export interface ProfileSnapshot {
   name: string
-  aiPersona: string
   age: string
   employmentStartDate: string
   dependents: number

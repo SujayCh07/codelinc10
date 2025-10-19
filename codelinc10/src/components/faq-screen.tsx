@@ -11,9 +11,9 @@ interface FaqScreenProps {
 export function FaqScreen({ onBack }: FaqScreenProps) {
   const faqs = [
     {
-      question: "How does LifeLens work?",
+      question: "How does FinMate work?",
       answer:
-        "LifeLens uses advanced AI (Claude 4 via AWS Bedrock) to analyze your life situation and generate personalized financial guidance. Simply describe what's happening in your life, and we'll provide tailored benefit recommendations and action steps.",
+        "FinMate uses advanced AI (Claude 4 via AWS Bedrock) to analyze your life situation and generate personalized financial guidance. Simply describe what's happening in your life, and we'll provide tailored benefit recommendations and action steps.",
     },
     {
       question: "Is my data secure?",
@@ -21,14 +21,14 @@ export function FaqScreen({ onBack }: FaqScreenProps) {
         "Yes! We use AWS Cognito for authentication and store data securely in AWS S3. Guest sessions are stored locally on your device. We never share your personal information with third parties.",
     },
     {
-      question: "What makes LifeLens different?",
+      question: "What makes FinMate different?",
       answer:
-        "Unlike generic financial tools, LifeLens understands context. We translate everyday language into actionable financial advice, making benefits accessible to everyone regardless of financial literacy.",
+        "Unlike generic financial tools, FinMate understands context. We translate everyday language into actionable financial advice, making benefits accessible to everyone regardless of financial literacy.",
     },
     {
-      question: "Can I use LifeLens without signing up?",
+      question: "Can I use FinMate without signing up?",
       answer:
-        "You can use LifeLens as a guest. Your insights will be saved locally on your device. Sign up to sync across devices and access additional features.",
+        "You can use FinMate as a guest. Your insights will be saved locally on your device. Sign up to sync across devices and access additional features.",
     },
   ]
 
@@ -59,7 +59,7 @@ export function FaqScreen({ onBack }: FaqScreenProps) {
               <HelpCircle className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">About LifeLens</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">About FinMate</h1>
               <p className="text-sm text-muted-foreground">Built at CodeLinc 10 Hackathon</p>
             </div>
           </div>
@@ -69,7 +69,7 @@ export function FaqScreen({ onBack }: FaqScreenProps) {
           <Card className="glass-strong p-6 border border-border/50">
             <h2 className="text-xl font-bold mb-3">Our Mission</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              LifeLens was created to make financial benefits accessible and understandable for everyone. We believe
+              FinMate was created to make financial benefits accessible and understandable for everyone. We believe
               that navigating life's biggest moments shouldn't require a finance degree. Our AI-powered platform
               translates complex benefits into clear, actionable guidance tailored to your unique situation.
             </p>

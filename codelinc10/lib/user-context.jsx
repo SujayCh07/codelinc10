@@ -19,7 +19,7 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
-const USER_STORAGE_KEY = "lifelens-user"
+const USER_STORAGE_KEY = "finmate-user"
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)

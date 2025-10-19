@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import type { ReactNode } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -10,13 +11,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import {
-  ACTIVITY_OPTIONS,
-  ACTIVITY_LEVEL_OPTIONS,
   COVERAGE_OPTIONS,
   HEALTH_OPTIONS,
-  HOME_OPTIONS,
   INCOME_OPTIONS,
+  EDUCATION_OPTIONS,
+  CITIZENSHIP_OPTIONS,
+  ACCOUNT_PREFERENCE_OPTIONS,
+  BENEFIT_USAGE_OPTIONS,
+  DENTAL_VISION_OPTIONS,
+  GUIDANCE_PREFERENCE_OPTIONS,
+  MARITAL_OPTIONS,
+  PARTNER_COVERAGE_OPTIONS,
+  PLAN_PREFERENCE_OPTIONS,
+  PRIMARY_CARE_OPTIONS,
+  PRESCRIPTION_OPTIONS,
   initializeQuizState,
   questionsFor,
   updateFormValue,
@@ -44,6 +54,7 @@ const QUESTION_TYPE_LABEL: Record<QuizQuestionType, string> = {
   boolean: "Toggle",
   "boolean-choice": "Yes/No",
   "multi-select": "Multi select",
+  textarea: "Details",
 }
 
 const HR_CARD_COPY = [
@@ -55,17 +66,47 @@ const HR_CARD_COPY = [
   { label: "Region", accessor: (data: EnrollmentFormData) => data.workRegion },
 ]
 
+type HrDraft = {
+  fullName: string
+  preferredName: string
+  employmentStartDate: string
+  workCountry: string
+  workState: string
+  workRegion: string
+  citizenship: string
+  maritalStatus: EnrollmentFormData["maritalStatus"]
+  educationLevel: EnrollmentFormData["educationLevel"]
+}
+
+function createHrDraft(data: EnrollmentFormData): HrDraft {
+  return {
+    fullName: data.fullName ?? "",
+    preferredName: data.preferredName ?? "",
+    employmentStartDate: data.employmentStartDate ?? "",
+    workCountry: data.workCountry ?? "",
+    workState: data.workState ?? "",
+    workRegion: data.workRegion ?? "",
+    citizenship: data.citizenship ?? "",
+    maritalStatus: data.maritalStatus,
+    educationLevel: data.educationLevel,
+  }
+}
+
 export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: DynamicQuizProps) {
   const [answers, setAnswers] = useState<EnrollmentFormData>(() => initializeQuizState(initialData))
   const [phase, setPhase] = useState<Phase>("hr")
   const [index, setIndex] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const [hrEditMode, setHrEditMode] = useState(false)
+  const [hrDraft, setHrDraft] = useState<HrDraft>(() => createHrDraft(initialData))
 
   useEffect(() => {
     const prepared = initializeQuizState(initialData)
     setAnswers(prepared)
     setPhase("hr")
     setIndex(0)
+    setHrEditMode(false)
+    setHrDraft(createHrDraft(prepared))
   }, [initialData])
 
   useEffect(() => {
@@ -74,6 +115,16 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
 
   const flow = useMemo(() => questionsFor(answers), [answers])
   const current = phase === "steps" ? flow[index] : null
+  const previousSection = phase === "steps" && index > 0 ? flow[index - 1]?.section ?? null : null
+  const showSectionIntro = Boolean(
+    phase === "steps" && current && current.section && current.section !== previousSection,
+  )
+
+  useEffect(() => {
+    if (!hrEditMode) {
+      setHrDraft(createHrDraft(answers))
+    }
+  }, [answers, hrEditMode])
 
   useEffect(() => {
     if (phase === "steps" && index > flow.length - 1 && flow.length > 0) {
@@ -96,6 +147,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
 
   const goBack = () => {
     if (phase === "hr") {
+      setHrEditMode(false)
       onBack()
       return
     }
@@ -117,6 +169,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
 
   const goNext = () => {
     if (phase === "hr") {
+      setHrEditMode(false)
       setPhase("steps")
       setIndex(0)
       return
@@ -130,11 +183,29 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
     }
   }
 
+  const handleHrDraftChange = <K extends keyof HrDraft>(field: K, value: HrDraft[K]) => {
+    setHrDraft((previous) => ({ ...previous, [field]: value }))
+  }
+
+  const handleCancelHrEdit = () => {
+    setHrEditMode(false)
+    setHrDraft(createHrDraft(answers))
+  }
+
+  const handleSaveHrDetails = () => {
+    const updated = withDerivedMetrics({ ...answers, ...hrDraft })
+    setAnswers(updated)
+    setHrEditMode(false)
+    setPhase("steps")
+    setIndex(0)
+  }
+
   const isCurrentValid = (question: QuizQuestion | null) => {
     if (!question) return false
     const value = valueForQuestion(question)
     switch (question.type) {
       case "text":
+      case "textarea":
         return typeof value === "string" && value.trim().length > 0
       case "number":
       case "slider":
@@ -172,6 +243,16 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
     return Math.min(100, Math.round((completed / flow.length) * 100))
   }, [currentIsValid, flow.length, index, phase])
   const progressLabel = `${Math.round(progress)}%`
+  const hrPreview = useMemo(() => (hrEditMode ? { ...answers, ...hrDraft } : answers), [answers, hrDraft, hrEditMode])
+  const hrDraftIsValid =
+    hrDraft.fullName.trim().length > 0 &&
+    hrDraft.employmentStartDate.trim().length > 0 &&
+    hrDraft.workCountry.trim().length > 0 &&
+    hrDraft.workState.trim().length > 0 &&
+    hrDraft.workRegion.trim().length > 0 &&
+    hrDraft.citizenship.trim().length > 0 &&
+    Boolean(hrDraft.maritalStatus) &&
+    Boolean(hrDraft.educationLevel)
 
   return (
     <div
@@ -182,29 +263,29 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
       aria-busy={submitting}
     >
       <header className="sticky top-0 z-30 border-b border-[#E3D8D5] bg-[#F7F4F2]/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-3 py-4 sm:px-6">
           <button
             type="button"
             onClick={goBack}
             disabled={submitting}
-            className="flex items-center gap-2 rounded-full border border-[#E3D8D5] bg-white px-4 py-2 text-sm font-semibold text-[#7F1527] disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full border border-[#E3D8D5] bg-white px-3 py-2 text-xs font-semibold text-[#7F1527] shadow-sm transition sm:px-4 sm:text-sm disabled:opacity-50"
           >
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
           <div className="text-right">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#7F1527]">LifeLens quiz</p>
-            {phase === "steps" && current ? (
-              <p className="text-xs text-[#7F1527]/70">
-                {index + 1} of {flow.length} · {QUESTION_TYPE_LABEL[current.type]}
-              </p>
-            ) : (
-              <p className="text-xs text-[#7F1527]/70">
-                {phase === "hr" ? "HR confirmation" : "Review"}
-              </p>
-            )}
+            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-[#7F1527] sm:text-xs">
+              {phase === "steps" && current ? current.section : "FinMate quiz"}
+            </p>
+            <p className="text-[10px] text-[#7F1527]/70 sm:text-xs">
+              {phase === "steps" && current
+                ? `Question ${index + 1} of ${flow.length} · ${QUESTION_TYPE_LABEL[current.type]}`
+                : phase === "hr"
+                  ? "HR confirmation"
+                  : "Review"}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-5 pb-2">
+        <div className="flex items-center gap-3 px-3 pb-2 sm:px-6">
           <div
             className="h-1 flex-1 bg-[#EBDDD8]"
             role="progressbar"
@@ -221,7 +302,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col overflow-y-auto px-4 pb-20 pt-6">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-y-auto px-3 pb-24 pt-6 sm:px-6">
         <AnimatePresence mode="wait">
           {phase === "hr" && (
             <motion.section
@@ -230,40 +311,173 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="min-h-[calc(100vh-100px)] scroll-mt-[84px] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+              className="min-h-[calc(100vh-120px)] scroll-mt-[84px] rounded-[24px] border border-[#E2D5D7] bg-white p-5 shadow-sm sm:min-h-[calc(100vh-100px)] sm:rounded-[28px] sm:p-8"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Synced from HR</p>
-                  <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">Welcome back, {answers.preferredName || answers.fullName}</h1>
-                  <p className="mt-3 text-sm text-[#4D3B3B]">
-                    We pulled your basics from the HR system. Review and continue to personalize your LifeLens guidance.
+                  <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">Welcome back, {answers.preferredName || answers.fullName}</h1>
+                  <p className="mt-3 text-sm leading-relaxed text-[#4D3B3B]">
+                    We pulled your basics from the HR system. Review and continue to personalize your FinMate guidance.
                   </p>
                 </div>
-                <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
+                <div className="hidden h-8 w-8 rounded-full border border-[#E3D8D5] sm:block" aria-hidden="true" />
               </div>
 
               <div className="mt-8 space-y-4">
-                <div className="rounded-3xl border border-[#E2D5D7] bg-white p-5 shadow-sm text-sm text-[#4D3B3B]">
+                <div className="rounded-3xl border border-[#E2D5D7] bg-white p-5 shadow-sm text-sm leading-relaxed text-[#4D3B3B]">
                   <p>
-                    <strong>Employee:</strong> {answers.fullName}
+                    <strong>Employee:</strong> {hrPreview.fullName}
                   </p>
                   <p>
-                    <strong>Work location:</strong> {answers.workState}, {answers.workCountry}
+                    <strong>Work location:</strong> {hrPreview.workState}, {hrPreview.workCountry}
                   </p>
                   <p>
                     <strong>Status:</strong> Active – verified via HR system
                   </p>
                 </div>
-
-                <div className="grid gap-3 text-sm text-[#4D3B3B] sm:grid-cols-2">
-                  {HR_CARD_COPY.map((item) => (
-                    <Card key={item.label} className="rounded-2xl border border-[#F0E6E7] bg-[#FBF7F6] p-4 shadow-none">
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7F1527]">{item.label}</p>
-                      <p className="mt-1 text-sm font-semibold text-[#2A1A1A]">{item.accessor(answers) || "—"}</p>
-                    </Card>
-                  ))}
-                </div>
+                {hrEditMode ? (
+                  <div className="space-y-5">
+                    <div className="rounded-3xl border border-dashed border-[#E2D5D7] bg-[#FBF7F6] p-4 text-sm text-[#4D3B3B]">
+                      Double-check anything that looks off. These updates will be saved to your FinMate profile before you start
+                      the questionnaire.
+                    </div>
+                    <div className="grid gap-4 text-sm text-[#4D3B3B] sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="hr-full-name" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Legal name
+                        </Label>
+                        <Input
+                          id="hr-full-name"
+                          value={hrDraft.fullName}
+                          onChange={(event) => handleHrDraftChange("fullName", event.target.value)}
+                          className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hr-preferred-name" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Preferred name
+                        </Label>
+                        <Input
+                          id="hr-preferred-name"
+                          value={hrDraft.preferredName}
+                          onChange={(event) => handleHrDraftChange("preferredName", event.target.value)}
+                          placeholder="How FinMate should greet you"
+                          className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hr-marital-status" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Marital status
+                        </Label>
+                        <select
+                          id="hr-marital-status"
+                          value={hrDraft.maritalStatus}
+                          onChange={(event) =>
+                            handleHrDraftChange("maritalStatus", event.target.value as HrDraft["maritalStatus"])
+                          }
+                          className="h-11 rounded-2xl border border-[#E3D8D5] bg-[#FBF7F6] px-3 text-sm font-medium text-[#2A1A1A]"
+                        >
+                          {MARITAL_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hr-education" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Education
+                        </Label>
+                        <select
+                          id="hr-education"
+                          value={hrDraft.educationLevel}
+                          onChange={(event) =>
+                            handleHrDraftChange("educationLevel", event.target.value as HrDraft["educationLevel"])
+                          }
+                          className="h-11 rounded-2xl border border-[#E3D8D5] bg-[#FBF7F6] px-3 text-sm font-medium text-[#2A1A1A]"
+                        >
+                          {EDUCATION_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hr-employment-date" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Employment start
+                        </Label>
+                        <Input
+                          id="hr-employment-date"
+                          type="date"
+                          value={hrDraft.employmentStartDate}
+                          onChange={(event) => handleHrDraftChange("employmentStartDate", event.target.value)}
+                          className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hr-citizenship" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Citizenship
+                        </Label>
+                        <select
+                          id="hr-citizenship"
+                          value={hrDraft.citizenship}
+                          onChange={(event) => handleHrDraftChange("citizenship", event.target.value)}
+                          className="h-11 rounded-2xl border border-[#E3D8D5] bg-[#FBF7F6] px-3 text-sm font-medium text-[#2A1A1A]"
+                        >
+                          {CITIZENSHIP_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hr-work-state" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Work state
+                        </Label>
+                        <Input
+                          id="hr-work-state"
+                          value={hrDraft.workState}
+                          onChange={(event) => handleHrDraftChange("workState", event.target.value)}
+                          className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hr-work-country" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Work country
+                        </Label>
+                        <Input
+                          id="hr-work-country"
+                          value={hrDraft.workCountry}
+                          onChange={(event) => handleHrDraftChange("workCountry", event.target.value)}
+                          className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="hr-work-region" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">
+                          Work region
+                        </Label>
+                        <Input
+                          id="hr-work-region"
+                          value={hrDraft.workRegion}
+                          onChange={(event) => handleHrDraftChange("workRegion", event.target.value)}
+                          className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 text-sm text-[#4D3B3B] sm:grid-cols-2">
+                    {HR_CARD_COPY.map((item) => (
+                      <Card key={item.label} className="rounded-2xl border border-[#F0E6E7] bg-[#FBF7F6] p-4 shadow-none">
+                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#7F1527]">{item.label}</p>
+                        <p className="mt-1 text-sm font-semibold text-[#2A1A1A]">{item.accessor(hrPreview) || "—"}</p>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.section>
           )}
@@ -275,15 +489,29 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="min-h-[calc(100vh-100px)] scroll-mt-[84px] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+              className="min-h-[calc(100vh-120px)] scroll-mt-[84px] rounded-[24px] border border-[#E2D5D7] bg-white p-5 shadow-sm sm:min-h-[calc(100vh-100px)] sm:rounded-[28px] sm:p-8"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Question {index + 1}</p>
-                  <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">{current.title}</h1>
-                  <p className="mt-3 text-sm text-[#4D3B3B]">{current.prompt}</p>
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-3">
+                  {showSectionIntro && (
+                    <div className="space-y-2">
+                      <span className="inline-flex items-center rounded-full bg-[#F3E8E6] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-[#A41E34]">
+                        {current.section}
+                      </span>
+                      {current.sectionDescription && (
+                        <p className="text-xs leading-relaxed text-[#7F1527]/80 sm:max-w-sm">
+                          {current.sectionDescription}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">
+                    Question {index + 1}
+                  </p>
+                  <h1 className="text-xl font-semibold text-[#2A1A1A] sm:text-2xl">{current.title}</h1>
+                  <p className="text-sm leading-relaxed text-[#4D3B3B]">{current.prompt}</p>
                 </div>
-                <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
+                <div className="hidden h-9 w-9 rounded-full border border-[#E3D8D5] sm:block" aria-hidden="true" />
               </div>
 
               <div className="mt-8 space-y-6">
@@ -299,69 +527,145 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.35 }}
-              className="min-h-[calc(100vh-100px)] scroll-mt-[84px] rounded-[32px] border border-[#E2D5D7] bg-white p-8 shadow-xl"
+              className="min-h-[calc(100vh-120px)] scroll-mt-[84px] rounded-[24px] border border-[#E2D5D7] bg-white p-5 shadow-sm sm:min-h-[calc(100vh-100px)] sm:rounded-[28px] sm:p-8"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#A41E34]/80">Summary</p>
-                  <h1 className="mt-3 text-2xl font-semibold text-[#2A1A1A]">Here’s your LifeLens profile</h1>
-                  <p className="mt-3 text-sm text-[#4D3B3B]">
-                    Confirm your answers and share consent so LifeLens can generate your personalized benefits plans.
+                  <h1 className="mt-3 text-xl font-semibold text-[#2A1A1A] sm:text-2xl">Here’s your FinMate profile</h1>
+                  <p className="mt-3 text-sm leading-relaxed text-[#4D3B3B]">
+                    Confirm your answers and share consent so FinMate can generate your personalized benefits plans.
                   </p>
                 </div>
-                <Sparkles className="hidden h-8 w-8 text-[#A41E34] sm:block" />
+                <div className="hidden h-8 w-8 rounded-full border border-[#E3D8D5] sm:block" aria-hidden="true" />
               </div>
 
-              <div className="mt-8 space-y-4 text-sm text-[#4D3B3B]">
-                <SummaryRow label="Age" value={answers.age ? `${answers.age}` : "—"} />
-                <SummaryRow label="Marital status" value={formatMaritalStatus(answers.maritalStatus)} />
-                <SummaryRow label="Education" value={formatEducationLevel(answers.educationLevel)} />
-                <SummaryRow label="Residency" value={answers.residencyStatus} />
-                <SummaryRow label="Citizenship" value={answers.citizenship} />
-                <SummaryRow label="Work location" value={`${answers.workState}, ${answers.workCountry}`} />
-                <SummaryRow
-                  label="Coverage focus"
-                  value={getLabelForOption(COVERAGE_OPTIONS, answers.coveragePreference)}
-                />
-                {answers.coveragePreference === "self-plus-family" && (
-                  <SummaryRow label="Dependents" value={String(answers.dependents)} />
-                )}
-                {answers.spouseHasSeparateInsurance !== null && (
+              <div className="mt-8 space-y-6 text-sm text-[#4D3B3B]">
+                <SummarySection title="Coverage & Family">
+                  <SummaryRow
+                    label="Coverage selection"
+                    value={getLabelForOption(COVERAGE_OPTIONS, answers.coveragePreference)}
+                  />
                   <SummaryRow
                     label="Partner coverage"
-                    value={answers.spouseHasSeparateInsurance ? "Has their own plan" : "Relies on your plan"}
+                    value={getLabelForOption(PARTNER_COVERAGE_OPTIONS, answers.partnerCoverageStatus)}
                   />
-                )}
-                <SummaryRow label="Home" value={getLabelForOption(HOME_OPTIONS, answers.homeOwnership)} />
-                <SummaryRow label="Household income" value={getLabelForOption(INCOME_OPTIONS, answers.incomeRange)} />
-                <SummaryRow label="Health coverage" value={getLabelForOption(HEALTH_OPTIONS, answers.healthCoverage)} />
-                <SummaryRow label="Savings rate" value={`${answers.savingsRate}% of income`} />
-                {answers.wantsSavingsSupport !== null && (
+                  {answers.coveragePreference === "self-plus-family" && (
+                    <SummaryRow label="Dependents" value={String(answers.dependents)} />
+                  )}
                   <SummaryRow
-                    label="Savings coaching"
-                    value={answers.wantsSavingsSupport ? "Send me reminders" : "I'm all set"}
+                    label="Existing plans"
+                    value={getLabelForOption(HEALTH_OPTIONS, answers.healthCoverage)}
                   />
-                )}
-                <SummaryRow label="Risk tolerance" value={`${answers.riskComfort}/5`} />
-                {answers.investsInMarkets !== null && (
                   <SummaryRow
-                    label="Investing"
-                    value={answers.investsInMarkets ? "Active investor" : "Keeping it simple"}
+                    label="Continuous coverage"
+                    value={formatYesNo(answers.hasContinuousCoverage)}
                   />
-                )}
-                <SummaryRow
-                  label="Activity level"
-                  value={getLabelForOption(ACTIVITY_LEVEL_OPTIONS, answers.activityLevel)}
-                />
-                {answers.activityList.length > 0 && (
-                  <SummaryRow label="Activities" value={answers.activityList.map(capitalize).join(", ")} />
-                )}
+                </SummarySection>
+
+                <SummarySection title="Health & Wellness">
+                  <SummaryRow
+                    label="Ongoing conditions"
+                    value={formatYesNo(answers.hasHealthConditions)}
+                  />
+                  {answers.hasHealthConditions && (
+                    <SummaryRow
+                      label="Condition summary"
+                      value={answers.healthConditionSummary || "Provided verbally"}
+                    />
+                  )}
+                  <SummaryRow
+                    label="Primary care visits"
+                    value={getLabelForOption(PRIMARY_CARE_OPTIONS, answers.primaryCareFrequency)}
+                  />
+                  <SummaryRow
+                    label="Prescription use"
+                    value={getLabelForOption(PRESCRIPTION_OPTIONS, answers.prescriptionFrequency)}
+                  />
+                  <SummaryRow
+                    label="Activity level"
+                    value={`${answers.activityLevelScore}/5 (${formatActivityLevel(answers.activityLevelScore)})`}
+                  />
+                </SummarySection>
+
+                <SummarySection title="Financial & Plan Preference">
+                  <SummaryRow
+                    label="Household income"
+                    value={getLabelForOption(INCOME_OPTIONS, answers.incomeRange)}
+                  />
+                  <SummaryRow
+                    label="Benefits budget"
+                    value={`${answers.benefitsBudget}% of income`}
+                  />
+                  <SummaryRow label="Risk comfort" value={formatRiskComfort(answers.riskComfort)} />
+                  <SummaryRow
+                    label="Plan priority"
+                    value={getLabelForOption(PLAN_PREFERENCE_OPTIONS, answers.planPreference)}
+                  />
+                  <SummaryRow
+                    label="HSA / FSA access"
+                    value={getLabelForOption(ACCOUNT_PREFERENCE_OPTIONS, answers.taxPreferredAccount)}
+                  />
+                </SummarySection>
+
+                <SummarySection title="Life Stage & Usage">
+                  <SummaryRow
+                    label="Life changes expected"
+                    value={formatYesNo(answers.anticipatesLifeChanges)}
+                  />
+                  <SummaryRow
+                    label="Benefit usage"
+                    value={getLabelForOption(BENEFIT_USAGE_OPTIONS, answers.expectedBenefitUsage)}
+                  />
+                  <SummaryRow
+                    label="Out-of-state travel"
+                    value={formatYesNo(answers.travelsOutOfState)}
+                  />
+                  <SummaryRow
+                    label="International coverage"
+                    value={formatYesNo(answers.needsInternationalCoverage)}
+                  />
+                  <SummaryRow
+                    label="Dental / vision"
+                    value={getLabelForOption(DENTAL_VISION_OPTIONS, answers.dentalVisionPreference)}
+                  />
+                </SummarySection>
+
+                <SummarySection title="Retirement & Long-Term">
+                  <SummaryRow
+                    label="Contributing now"
+                    value={formatYesNo(answers.contributesToRetirement)}
+                  />
+                  {answers.contributesToRetirement && (
+                    <SummaryRow
+                      label="Contribution rate"
+                      value={`${answers.retirementContributionRate}% of income`}
+                    />
+                  )}
+                  {answers.contributesToRetirement !== null && (
+                    <SummaryRow
+                      label="Guidance requests"
+                      value={formatYesNo(answers.wantsRetirementGuidance)}
+                    />
+                  )}
+                </SummarySection>
+
+                <SummarySection title="Plan Experience">
+                  <SummaryRow
+                    label="Confidence with insurance terms"
+                    value={`${answers.confidenceInsuranceTerms}/5`}
+                  />
+                  <SummaryRow
+                    label="Guidance preference"
+                    value={getLabelForOption(GUIDANCE_PREFERENCE_OPTIONS, answers.guidancePreference)}
+                  />
+                </SummarySection>
               </div>
 
               <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-[#E2D5D7] bg-[#FBF7F6] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-[#2A1A1A]">I agree to share this profile for plan generation</p>
-                  <p className="text-xs text-[#7F1527]">Required so LifeLens can generate recommendations and chat summaries.</p>
+                  <p className="text-xs text-[#7F1527]">Required so FinMate can generate recommendations and chat summaries.</p>
                 </div>
                 <Switch
                   checked={consentChecked}
@@ -377,7 +681,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
                   animate={{ opacity: 1 }}
                   className="mt-4 text-sm font-semibold text-[#7F1527]"
                 >
-                  Analyzing your LifeLens profile…
+                  Analyzing your FinMate profile…
                 </motion.p>
               )}
             </motion.section>
@@ -389,7 +693,7 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
             variant="outline"
             onClick={goBack}
             disabled={submitting}
-            className="rounded-full border-[#E3D8D5] px-6 py-3 text-sm font-semibold text-[#7F1527] disabled:opacity-50"
+            className="rounded-full border-[#E3D8D5] px-5 py-3 text-sm font-semibold text-[#7F1527] shadow-sm transition disabled:opacity-50"
           >
             Back
           </Button>
@@ -398,16 +702,59 @@ export function DynamicQuiz({ initialData, onComplete, onBack, onUpdate }: Dynam
             <Button
               onClick={handleSubmit}
               disabled={!consentChecked || submitting}
-              className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527] disabled:opacity-40"
+              className="inline-flex items-center justify-center rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7F1527] disabled:opacity-40"
             >
               {submitting ? "Analyzing…" : "Generate my insights"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+          ) : phase === "hr" ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              {hrEditMode ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelHrEdit}
+                    className="rounded-full border-[#E3D8D5] px-5 py-3 text-sm font-semibold text-[#7F1527] shadow-sm transition"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSaveHrDetails}
+                    disabled={!hrDraftIsValid || submitting}
+                    className="inline-flex items-center justify-center rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7F1527] disabled:opacity-40"
+                  >
+                    Save & continue
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setHrEditMode(true)}
+                    className="rounded-full border-[#E3D8D5] px-5 py-3 text-sm font-semibold text-[#7F1527] shadow-sm transition"
+                  >
+                    Edit details
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={goNext}
+                    className="inline-flex items-center justify-center rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7F1527]"
+                  >
+                    Confirm & continue
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           ) : (
             <Button
               onClick={goNext}
               disabled={submitting || (phase === "steps" && !currentIsValid)}
-              className="rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white hover:bg-[#7F1527] disabled:opacity-40"
+              className="inline-flex items-center justify-center rounded-full bg-[#A41E34] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#7F1527] disabled:opacity-40"
             >
               {phase === "hr" ? "Start personalizing" : "Continue"}
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -437,6 +784,9 @@ function renderField(
             onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)}
             className="h-12 rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] px-4 text-base"
           />
+          {question.helperText && (
+            <p className="text-xs text-[#7F1527]/80">{question.helperText}</p>
+          )}
         </div>
       )
     case "select":
@@ -448,11 +798,12 @@ function renderField(
               type="button"
               onClick={() => onChange(option.value)}
               className={cn(
-                "flex items-center justify-between rounded-2xl border px-4 py-4 text-left text-sm transition",
+                "flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A41E34]/30",
                 value === option.value
                   ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
                   : "border-[#E3D8D5] bg-[#FBF7F6] text-[#2A1A1A] hover:border-[#A41E34]/40",
               )}
+              aria-pressed={value === option.value}
             >
               <span>
                 <span className="block font-semibold">{option.label}</span>
@@ -463,26 +814,43 @@ function renderField(
               <ArrowRight className="h-4 w-4" />
             </button>
           ))}
+          {question.helperText && (
+            <p className="text-xs text-[#7F1527]/80">{question.helperText}</p>
+          )}
         </div>
       )
     case "slider": {
       const numericValue = typeof value === "number" ? value : question.min ?? 0
+      const minLabel = question.minLabel ?? (question.min !== undefined ? `${question.min}` : "")
+      const maxLabel = question.maxLabel ?? (question.max !== undefined ? `${question.max}` : "")
       return (
         <div className="space-y-4">
-          <Slider
-            min={question.min ?? 0}
-            max={question.max ?? 10}
-            step={question.step ?? 1}
-            value={[numericValue]}
-            onValueChange={(numbers) => onChange(numbers[0])}
-          />
+          <div className="space-y-3">
+            <Slider
+              min={question.min ?? 0}
+              max={question.max ?? 10}
+              step={question.step ?? 1}
+              value={[numericValue]}
+              onValueChange={(numbers) => onChange(numbers[0])}
+              aria-label={question.title}
+            />
+            {(minLabel || maxLabel) && (
+              <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-[#7F1527]/70">
+                <span>{minLabel}</span>
+                <span>{maxLabel}</span>
+              </div>
+            )}
+          </div>
           <p className="text-sm font-semibold text-[#7F1527]">
-            {question.id === "riskComfort"
-              ? `${numericValue}/5`
-              : question.id === "savingsRate"
-                ? `${numericValue}%`
+            {question.valueFormatter
+              ? question.valueFormatter(numericValue)
+              : question.id === "riskComfort"
+                ? `${numericValue}/5`
                 : `${numericValue}`}
           </p>
+          {question.helperText && (
+            <p className="text-xs text-[#7F1527]/80">{question.helperText}</p>
+          )}
         </div>
       )
     }
@@ -495,21 +863,25 @@ function renderField(
               type="button"
               onClick={() => onChange(choice.value)}
               className={cn(
-                "rounded-full border px-5 py-3 text-sm font-semibold transition",
+                "w-full rounded-full border px-5 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A41E34]/30 sm:w-auto",
                 value === choice.value
                   ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
                   : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40",
               )}
+              aria-pressed={value === choice.value}
             >
               {choice.label}
             </button>
           ))}
+          {question.helperText && (
+            <p className="w-full text-xs text-[#7F1527]/80">{question.helperText}</p>
+          )}
         </div>
       )
     case "multi-select":
       return (
         <div className="flex flex-wrap gap-2">
-          {(question.options ?? ACTIVITY_OPTIONS).map((option) => {
+          {(question.options ?? []).map((option) => {
             const active = Array.isArray(value) && value.includes(option.value)
             return (
               <button
@@ -525,21 +897,50 @@ function renderField(
                   onChange(next)
                 }}
                 className={cn(
-                  "rounded-full border px-4 py-2 text-sm font-semibold transition",
+                  "rounded-full border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A41E34]/30",
                   active
                     ? "border-transparent bg-gradient-to-r from-[#A41E34] to-[#D94E35] text-white"
                     : "border-[#E3D8D5] bg-[#FBF7F6] text-[#7F1527] hover:border-[#A41E34]/40",
                 )}
+                aria-pressed={active}
               >
                 {option.label}
               </button>
             )
           })}
+          {question.helperText && (
+            <p className="w-full text-xs text-[#7F1527]/80">{question.helperText}</p>
+          )}
+        </div>
+      )
+    case "textarea":
+      return (
+        <div className="space-y-2">
+          <Label className="text-sm text-[#7F1527]">Share details</Label>
+          <Textarea
+            value={typeof value === "string" ? value : ""}
+            rows={4}
+            placeholder={question.placeholder}
+            onChange={(event) => onChange(event.target.value)}
+            className="rounded-2xl border-[#E3D8D5] bg-[#FBF7F6] px-4 py-3 text-sm"
+          />
+          {question.helperText && (
+            <p className="text-xs text-[#7F1527]/80">{question.helperText}</p>
+          )}
         </div>
       )
     default:
       return null
   }
+}
+
+function SummarySection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-xs font-semibold uppercase tracking-[0.3em] text-[#7F1527]">{title}</h2>
+      <div className="space-y-3">{children}</div>
+    </section>
+  )
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
@@ -552,24 +953,11 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 }
 
 function formatMaritalStatus(value: EnrollmentFormData["maritalStatus"]) {
-  return toTitleCase(value.replace(/-/g, " "))
+  return getLabelForOption(MARITAL_OPTIONS, value)
 }
 
 function formatEducationLevel(value: EnrollmentFormData["educationLevel"]) {
-  switch (value) {
-    case "high-school":
-      return "High school"
-    case "associate":
-      return "Associate"
-    case "bachelor":
-      return "Bachelor"
-    case "master":
-      return "Master"
-    case "doctorate":
-      return "Doctorate"
-    default:
-      return toTitleCase(value.replace(/-/g, " "))
-  }
+  return getLabelForOption(EDUCATION_OPTIONS, value)
 }
 
 function getLabelForOption(options: QuizOption[], value: string) {
@@ -577,16 +965,19 @@ function getLabelForOption(options: QuizOption[], value: string) {
   return match ? match.label : value || "—"
 }
 
-function capitalize(value: string) {
-  if (!value) return value
-  return value.charAt(0).toUpperCase() + value.slice(1)
+function formatYesNo(value: boolean | null) {
+  if (value === null) return "—"
+  return value ? "Yes" : "No"
 }
 
-function toTitleCase(value: string) {
-  if (!value) return value
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((segment) => capitalize(segment))
-    .join(" ")
+function formatRiskComfort(score: number) {
+  const labels = ["Very low", "Low", "Moderate", "High", "Very high"]
+  const index = Math.max(1, Math.min(5, score)) - 1
+  return `${score}/5 · ${labels[index] ?? "Balanced"}`
+}
+
+function formatActivityLevel(score: number) {
+  if (score >= 4) return "Very active"
+  if (score <= 2) return "Sedentary"
+  return "Balanced"
 }

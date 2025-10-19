@@ -1,26 +1,13 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter, Sora } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { UserProvider } from "@/lib/user-context"
 import "@/styles/globals.css"
 
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-sora",
-  display: "swap",
-})
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-})
-
 export const metadata: Metadata = {
-  title: "LifeLens - AI-Powered Personal Financial Advisor",
+  title: "FinMate – AI-Powered Personal Financial Advisor",
   description:
-    "Every life event deserves clear financial guidance. AI-driven support to help you understand benefits, savings, and next steps.",
+    "FinMate gives every employee clear, confident financial guidance. Explore benefits, savings moves, and coverage choices with AI support.",
   generator: "v0.app",
 }
 
@@ -31,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${sora.variable} ${inter.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <UserProvider>
           {children}
         </UserProvider>
