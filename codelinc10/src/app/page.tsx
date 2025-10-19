@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { BottomNav } from "@/components/bottom-nav"
 import { ChatModal } from "@/components/chat-modal"
 import { DynamicQuiz } from "@/components/DynamicQuiz"
-import { FaqScreen } from "@/components/faq-screen"
+import { UploadScreen } from "@/components/upload-screen"
 import { InsightsDashboard } from "@/components/insights-dashboard"
 import LandingScreen from "@/components/landing-screen"
 import { LearningHub } from "@/components/learning-hub"
@@ -321,7 +321,7 @@ export default function Home() {
     )
   }
 
-  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "learn", "faq", "profile"]
+  const navVisibleScreens: ScreenKey[] = ["insights", "timeline", "learn", "upload", "profile"]
 
   return (
     <>
@@ -395,15 +395,15 @@ export default function Home() {
           </motion.div>
         )}
 
-        {currentScreen === "faq" && (
+        {currentScreen === "upload" && (
           <motion.div
-            key="faq"
+            key="upload"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.3 }}
           >
-            <FaqScreen onBack={() => setCurrentScreen(insights ? "insights" : "landing")} />
+            <UploadScreen onBack={() => setCurrentScreen(insights ? "insights" : "landing")} />
           </motion.div>
         )}
 

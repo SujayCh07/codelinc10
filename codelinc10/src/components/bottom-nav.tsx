@@ -1,6 +1,6 @@
 "use client"
 
-import { BookOpen, Clock, Info, LayoutDashboard, MessageCircle, User } from "lucide-react"
+import { BookOpen, Clock, Upload, LayoutDashboard, MessageCircle, User } from "lucide-react"
 
 import type { ScreenKey } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -15,7 +15,7 @@ export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
     { id: "insights", icon: LayoutDashboard, label: "Insights" },
     { id: "timeline", icon: Clock, label: "Timeline" },
     { id: "learn", icon: BookOpen, label: "Learn" },
-    { id: "faq", icon: Info, label: "FAQ" },
+    { id: "upload", icon: Upload, label: "Upload" },
     { id: "profile", icon: User, label: "Profile" },
   ]
 
@@ -29,7 +29,7 @@ export function BottomNav({ currentScreen, onNavigate }: BottomNavProps) {
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => onNavigate(item.id as ScreenKey)}
               className={cn(
                 "flex flex-col items-center gap-1 px-3 py-1 text-xs font-semibold transition-all touch-manipulation active:scale-95",
                 isActive ? "text-[#A41E34]" : "text-[#6F4D51] hover:text-[#A41E34]",

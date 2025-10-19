@@ -4,7 +4,7 @@ export type ScreenKey =
   | "insights"
   | "timeline"
   | "learn"
-  | "faq"
+  | "upload"
   | "profile"
 
 export type ResidencyStatus =
