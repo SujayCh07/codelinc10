@@ -3,7 +3,7 @@ export type ChatResponse =
   | { message: string; provider: "bedrock" | "claude-fallback"; note?: string }
   | { error: string; [k: string]: any }
 
-export async function askLifeLens(input: ChatPayload): Promise<ChatResponse> {
+export async function askFinMate(input: ChatPayload): Promise<ChatResponse> {
   const res = await fetch("/api/chat", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(input) })
   const ct = res.headers.get("content-type") || ""
   if (ct.includes("application/json")) {

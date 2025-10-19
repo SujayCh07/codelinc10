@@ -118,9 +118,9 @@ export const SAMPLE_COMPLETED_FORM: EnrollmentFormData = {
   derived: buildDerived({ riskFactorScore: 52, activityRiskModifier: 4 }),
 }
 
-export const FORM_STORAGE_KEY = "lifelens-form-cache"
-export const INSIGHTS_STORAGE_KEY = "lifelens-insights-cache"
-export const MOMENTS_STORAGE_KEY = "lifelens-moments-cache"
-export const CHAT_STORAGE_KEY = "lifelens-chat-cache"
-export const LEARN_CHAT_STORAGE_KEY = "lifelens-learn-chat-cache"
-export const PROFILE_CREATED_KEY = "lifelens-profile-created"
+export const FORM_STORAGE_KEY = "FinMate-form-cache"
+export const INSIGHTS_STORAGE_KEY = "FinMate-insights-cache"
+export const MOMENTS_STORAGE_KEY = "FinMate-moments-cache"
+export const CHAT_STORAGE_KEY = "FinMate-chat-cache"
+export const LEARN_CHAT_STORAGE_KEY = "FinMate-learn-chat-cache"
+export const PROFILE_CREATED_KEY = "FinMate-profile-created"

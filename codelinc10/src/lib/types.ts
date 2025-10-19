@@ -124,7 +124,7 @@ export interface PriorityBenefit {
   actions: PlanResource[]
 }
 
-export interface LifeLensPlan {
+export interface FinMatePlan {
   planId: string
   planName: string
   shortDescription: string
@@ -135,14 +135,14 @@ export interface LifeLensPlan {
   resources: PlanResource[]
 }
 
-export interface LifeLensInsights {
+export interface FinMateInsights {
   ownerName: string
   focusGoal: string
   statement: string
   timeline: { period: string; title: string; description: string }[]
-  conversation: { speaker: "LifeLens" | "You"; message: string }[]
+  conversation: { speaker: "FinMate" | "You"; message: string }[]
   prompts: string[]
-  plans: LifeLensPlan[]
+  plans: FinMatePlan[]
   recommendedPlans?: { id: string; name: string; reason: string; resources?: PlanResource[] }[]
   selectedPlanId: string | null
   goalTheme?: string
@@ -154,13 +154,13 @@ export interface SavedMoment {
   id: string
   category: string
   summary: string
-  timeline: LifeLensInsights["timeline"]
+  timeline: FinMateInsights["timeline"]
   timestamp: string
-  insight: LifeLensInsights
+  insight: FinMateInsights
 }
 
 export interface ChatEntry {
-  speaker: "LifeLens" | "You"
+  speaker: "FinMate" | "You"
   message: string
   timestamp: string
   status?: "pending" | "final"
