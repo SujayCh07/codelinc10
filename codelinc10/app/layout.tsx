@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Sora, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { UserProvider } from "@/lib/user-context"
 import "./globals.css"
 
 const sora = Sora({
@@ -31,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${sora.variable} ${inter.variable} font-sans antialiased`}>
-        {children}
+        <UserProvider>
+          {children}
+        </UserProvider>
         <Analytics />
       </body>
     </html>

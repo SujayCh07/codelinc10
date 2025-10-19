@@ -7,6 +7,8 @@ import { ArrowRight, Play } from "lucide-react"
 
 interface LandingScreenProps {
   onStart: (isGuest: boolean) => void
+  hasExistingInsights?: boolean
+  onViewInsights?: () => void
 }
 
 const SPOTLIGHTS = [
@@ -24,7 +26,7 @@ const SPOTLIGHTS = [
   },
 ]
 
-export function LandingScreen({ onStart }: LandingScreenProps) {
+export function LandingScreen({ onStart, hasExistingInsights, onViewInsights }: LandingScreenProps) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F7F4F2] text-[#2A1A1A]">
       <div className="absolute inset-x-0 top-0 h-[360px] bg-gradient-to-br from-[#A41E34] via-[#B8342B] to-[#D94E35]" />
@@ -49,12 +51,15 @@ export function LandingScreen({ onStart }: LandingScreenProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
           >
-            <button
-              type="button"
-              className="rounded-full px-4 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
-            >
-              About
-            </button>
+            {hasExistingInsights && onViewInsights && (
+              <Button
+                onClick={onViewInsights}
+                variant="outline"
+                className="rounded-full border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+              >
+                My Plan
+              </Button>
+            )}
             <Button
               onClick={() => onStart(false)}
               className="rounded-full bg-white px-5 py-2 text-sm font-semibold text-[#A41E34] shadow-lg shadow-[#A41E34]/20 transition hover:bg-[#F9EDEA]"
@@ -65,15 +70,15 @@ export function LandingScreen({ onStart }: LandingScreenProps) {
         </header>
 
         <main className="flex flex-1 flex-col justify-center gap-12 py-12">
-          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr),340px]">
-            <div className="space-y-8 rounded-[36px] bg-white/95 p-8 text-[#2A1A1A] shadow-2xl shadow-[#A41E34]/10 backdrop-blur">
+          <div className="flex items-center justify-center">
+            <div className="max-w-2xl space-y-8 rounded-[36px] bg-white/95 p-8 text-[#2A1A1A] shadow-2xl shadow-[#A41E34]/10 backdrop-blur">
               <motion.p
-                className="text-xs font-semibold uppercase tracking-[0.5em] text-white/70"
+                className="text-xs font-semibold uppercase tracking-[0.5em] text-[#A41E34]/70"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                Built around learn · personalize · act
+                AI-Powered Financial Guidance
               </motion.p>
               <motion.h1
                 className="text-4xl font-semibold leading-tight text-[#1E0D0E] sm:text-5xl"
@@ -81,7 +86,7 @@ export function LandingScreen({ onStart }: LandingScreenProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                Understand your benefits, in plain English.
+                Your personalized financial roadmap starts here.
               </motion.h1>
               <motion.p
                 className="max-w-xl text-base text-[#4D3B3B] sm:text-lg"
@@ -89,7 +94,7 @@ export function LandingScreen({ onStart }: LandingScreenProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
               >
-                LifeLens is your Lincoln Financial guide that translates healthcare, savings, and protection decisions into steps you can act on with confidence.
+                Get clear, actionable guidance on benefits, savings, and financial protection tailored to your life and goals.
               </motion.p>
               <motion.div
                 className="flex flex-col gap-3 sm:flex-row"
@@ -116,42 +121,7 @@ export function LandingScreen({ onStart }: LandingScreenProps) {
               </motion.div>
             </div>
 
-            <motion.aside
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.25, duration: 0.6 }}
-              className="relative overflow-hidden rounded-3xl border border-white/30 bg-white/80 p-6 text-[#2A1A1A] shadow-xl backdrop-blur"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/70 to-transparent" />
-              <div className="relative space-y-4 text-sm text-[#3F2A2C]">
-                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#A41E34]">Live preview</p>
-                <h3 className="text-xl font-semibold text-[#1E0D0E]">Your guided LifeLens journey</h3>
-                <p>
-                  Watch your dashboard adapt as you answer questions—each card snaps into place with the next move ready.
-                </p>
-                <motion.div
-                  className="grid gap-3 rounded-2xl bg-white p-4 shadow-inner"
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 6, repeat: Infinity }}
-                >
-                  <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3em] text-[#A41E34]">
-                    <span>Health</span>
-                    <span>Protection</span>
-                    <span>Growth</span>
-                  </div>
-                  <div className="grid gap-2 text-left text-[#2A1A1A]">
-                    <div className="rounded-xl bg-[#F9EDEA] px-3 py-2">
-                      <p className="text-[11px] uppercase tracking-[0.35em] text-[#A41E34]">This week</p>
-                      <p className="text-sm font-semibold">Review your benefits snapshot</p>
-                    </div>
-                    <div className="rounded-xl bg-[#FDF4EF] px-3 py-2">
-                      <p className="text-[11px] uppercase tracking-[0.35em] text-[#A41E34]">Next 30 days</p>
-                      <p className="text-sm font-semibold">Boost your savings autopilot</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-            </motion.aside>
+
           </div>
         </main>
 

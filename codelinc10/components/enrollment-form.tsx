@@ -134,7 +134,6 @@ const GOAL_OPTIONS = [
   { label: "📈 Grow investments", value: "Plan for retirement" },
   { label: "🎓 College planning", value: "Prepare for education costs" },
 ]
-const ACCOUNT_OPTIONS = ["HSA", "FSA"]
 
 const ENROLLMENT_FIELDS: (keyof EnrollmentFormData)[] = [
   "fullName",

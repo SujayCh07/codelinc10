@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
+import { useUser } from "@/lib/user-context"
 
 import { LandingScreen } from "@/components/landing-screen"
 import {
@@ -40,6 +41,7 @@ interface ProfileSnapshot {
 }
 
 export default function Home() {
+  const { user, isLoading: userLoading, login, logout } = useUser()
   const [currentScreen, setCurrentScreen] = useState<Screen>("landing")
   const [formData, setFormData] = useState<EnrollmentFormData | null>(null)
   const [insights, setInsights] = useState<LifeLensInsights | null>(null)
@@ -74,7 +76,6 @@ export default function Home() {
       if (storedInsights) {
         const parsedInsights = JSON.parse(storedInsights) as LifeLensInsights
         setInsights(parsedInsights)
-        setCurrentScreen("insights")
       }
 
       if (storedMoments) {
@@ -118,6 +119,14 @@ export default function Home() {
   }, [chatHistory, isHydrated])
 
   const handleStart = (asGuest: boolean) => {
+    // Create user session when starting
+    if (!user) {
+      login({
+        name: asGuest ? "Guest User" : "New User",
+        isGuest: asGuest,
+      })
+    }
+    
     const template = asGuest ? DEMO_ENROLLMENT_FORM : DEFAULT_ENROLLMENT_FORM
     setFormData({ ...template, isGuest: asGuest })
     setCurrentScreen("enrollment")
@@ -198,11 +207,13 @@ export default function Home() {
     setInsights(null)
     setSavedMoments([])
     setChatHistory([])
+    logout()
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(FORM_STORAGE_KEY)
       window.localStorage.removeItem(INSIGHTS_STORAGE_KEY)
       window.localStorage.removeItem(MOMENTS_STORAGE_KEY)
       window.localStorage.removeItem(CHAT_STORAGE_KEY)
+      window.localStorage.removeItem(PROFILE_CREATED_KEY)
     }
     setCurrentScreen("landing")
   }
@@ -219,10 +230,13 @@ export default function Home() {
     setChatHistory((previous) => [...previous, userEntry, replyEntry])
   }
 
-  if (!isHydrated) {
+  if (!isHydrated || userLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white text-[#A41E34]">
-        Preparing LifeLens…
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F4F2] text-[#A41E34]">
+        <div className="text-center">
+          <div className="mb-4 text-2xl font-semibold">LifeLens</div>
+          <div className="text-sm">Preparing your financial guidance...</div>
+        </div>
       </div>
     )
   }
@@ -230,7 +244,7 @@ export default function Home() {
   const profileSnapshot: ProfileSnapshot = useMemo(() => {
     if (!formData) {
       return {
-        name: "Guest",
+        name: user?.name ?? "Guest",
         aiPersona: insights?.persona ?? "Balanced Navigator",
         ageRange: "—",
         employmentType: "—",
@@ -238,7 +252,7 @@ export default function Home() {
         dependents: 0,
         lifeEvents: [],
         goals: [],
-        createdAt: profileCreatedAt,
+        createdAt: user?.createdAt ?? profileCreatedAt,
       }
     }
 
@@ -258,9 +272,9 @@ export default function Home() {
       dependents: formData.dependentCount,
       lifeEvents: formData.milestoneFocus ? [formData.milestoneFocus] : [],
       goals: formData.financialGoals,
-      createdAt: profileCreatedAt,
+      createdAt: user?.createdAt ?? profileCreatedAt,
     }
-  }, [formData, insights?.persona, profileCreatedAt])
+  }, [formData, insights?.persona, profileCreatedAt, user])
 
   return (
     <main className="min-h-screen bg-[#F7F4F2] pb-24">
@@ -273,7 +287,11 @@ export default function Home() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35 }}
           >
-            <LandingScreen onStart={handleStart} />
+            <LandingScreen 
+              onStart={handleStart} 
+              hasExistingInsights={!!insights}
+              onViewInsights={() => setCurrentScreen("insights")}
+            />
           </motion.div>
         )}
 
