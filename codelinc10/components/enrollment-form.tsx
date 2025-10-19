@@ -163,6 +163,7 @@ const ENROLLMENT_FIELDS: (keyof EnrollmentFormData)[] = [
   "consentToFollowUp",
   "isGuest",
 ]
+const ACCOUNT_OPTIONS = ["HSA", "FSA"]
 
 function isEnrollmentMatch(a: EnrollmentFormData, b: EnrollmentFormData) {
   return ENROLLMENT_FIELDS.every((field) => {
