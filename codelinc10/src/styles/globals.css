@@ -191,6 +191,16 @@
   border: 1px solid var(--glass-border);
 }
 
+@layer components {
+  :where(h2, h3) + .grid {
+    margin-top: clamp(1rem, 1.5vw, 1.75rem);
+  }
+
+  .dark :where(h2:has(+ .grid), h3:has(+ .grid)) {
+    color: oklch(0.98 0 0);
+  }
+}
+
 /* Gradient animations */
 @keyframes gradient-shift {
   0%,
